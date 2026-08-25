@@ -561,6 +561,9 @@
               <template v-else-if="item.ref instanceof BeamConcentratedLoad">
                 {{ $t('loadType.concentrated') }}
               </template>
+              <template v-else-if="item.ref instanceof BeamConcentratedDeformation">
+                {{ $t('loadType.concentrated_deformation') }}
+              </template>
               <template v-else-if="loadType(item.ref) === 'temperature'">
                 {{ $t('loadType.temperature') }}
               </template>
@@ -777,6 +780,7 @@
                 <div class="inline-edit-group load mr-2">
                   <span v-if="loadType(item.ref) === 'udl'" class="input-before">f<sub>x</sub></span>
                   <span v-else-if="loadType(item.ref) === 'concentrated'" class="input-before">F<sub>x</sub></span>
+                  <span v-else-if="loadType(item.ref) === 'concentrated_deformation'" class="input-before">D<sub>x</sub></span>
                   <span
                     v-else-if="loadType(item.ref) === 'temperature'"
                     class="input-before"
@@ -808,6 +812,11 @@
                     v-html="formatMeasureAsHTML(appStore.units.Force)"
                   ></div>
                   <div
+                    v-else-if="loadType(item.ref) === 'concentrated_deformation'"
+                    class="input-after"
+                    v-html="formatMeasureAsHTML(appStore.units.Length)"
+                  ></div>
+                  <div
                     v-else-if="loadType(item.ref) === 'temperature'"
                     class="input-after"
                     v-html="formatMeasureAsHTML(appStore.units.Temperature)"
@@ -816,6 +825,7 @@
                 <div class="inline-edit-group load mr-2">
                   <span v-if="loadType(item.ref) === 'udl'" class="input-before">f<sub>z</sub></span>
                   <span v-else-if="loadType(item.ref) === 'concentrated'" class="input-before">F<sub>z</sub></span>
+                  <span v-else-if="loadType(item.ref) === 'concentrated_deformation'" class="input-before">D<sub>z</sub></span>
                   <span
                     v-else-if="loadType(item.ref) === 'temperature'"
                     class="input-before"
@@ -847,6 +857,11 @@
                     v-html="formatMeasureAsHTML(appStore.units.Force)"
                   ></div>
                   <div
+                    v-else-if="loadType(item.ref) === 'concentrated_deformation'"
+                    class="input-after"
+                    v-html="formatMeasureAsHTML(appStore.units.Length)"
+                  ></div>
+                  <div
                     v-else-if="loadType(item.ref) === 'temperature'"
                     class="input-after"
                     v-html="formatMeasureAsHTML(appStore.units.Temperature)"
@@ -874,7 +889,27 @@
                 <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Moment)"></div>
               </div>
 
-              <div v-if="item.ref instanceof BeamConcentratedLoad" class="inline-edit-group load mr-2">
+              <div v-if="item.ref instanceof BeamConcentratedDeformation" class="inline-edit-group load mr-2">
+                <span class="input-before">R<sub>y</sub></span>
+                <input
+                  :value="appStore.convertMoment(item.ref.values[2])"
+                  class="inline-edit"
+                  style="width: 60px"
+                  @keydown="checkNumber($event)"
+                  @change="
+                    changeSetArrayItem(
+                      item.ref,
+                      'values',
+                      2,
+                      $event.target as HTMLInputElement,
+                      appStore.convertInverseMoment
+                    )
+                  "
+                />
+                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Angle)"></div>
+              </div>
+
+              <div v-if="item.ref instanceof BeamConcentratedLoad || item.ref instanceof BeamConcentratedDeformation" class="inline-edit-group load mr-2">
                 <span class="input-before">d</span>
                 <input
                   :value="appStore.convertLength(item.ref.values[3])"
@@ -901,10 +936,15 @@
                   class="input-after"
                   v-html="formatMeasureAsHTML(appStore.units.Length)"
                 ></div>
+                <div
+                  v-else-if="item.ref instanceof BeamConcentratedDeformation"
+                  class="input-after"
+                  v-html="formatMeasureAsHTML(appStore.units.Length)"
+                ></div>
               </div>
               <!-- TODO: Trapezoidal load cant render non LCS -->
               <div
-                v-if="item.ref instanceof BeamElementUniformEdgeLoad || item.ref instanceof BeamConcentratedLoad"
+                v-if="item.ref instanceof BeamElementUniformEdgeLoad || item.ref instanceof BeamConcentratedLoad || item.ref instanceof BeamConcentratedDeformation"
                 v-tooltip.bottom="$t('common.lcs')"
                 class="inline-edit-group"
               >
@@ -1516,6 +1556,7 @@ import {
   BeamElementTrapezoidalEdgeLoad,
   BeamConcentratedLoad,
   BeamTemperatureLoad,
+  BeamConcentratedDeformation,
   NodalLoad,
 } from 'ts-fem';
 
@@ -1657,6 +1698,7 @@ const loads = computed(() => {
       | BeamElementUniformEdgeLoad
       | BeamElementTrapezoidalEdgeLoad
       | BeamConcentratedLoad
+      | BeamConcentratedDeformation
       | NodalLoad
       | PrescribedDisplacement;
   }[] = [];
@@ -1821,7 +1863,12 @@ const formatElementLoadsAtElement = (item: Beam2D): [number, string][] => {
   return nls.map((nl) => {
     const tmp = [];
 
-    const ff = nl.type === 'concentrated' ? 'F' : 'f';
+    const LABEL_MAP: Record<string, string> = {
+      concentrated: 'F',
+      concentrated_deformation: 'D',
+    };
+
+    const ff = LABEL_MAP[nl.type] ?? 'f';
     if (nl.type === 'temperature' && 'values' in nl.ref) {
       if (Math.abs(nl.ref.values[0]) > 1e-12)
         tmp.push(t('loads.temperatureDeltaTs') + ' = ' + appStore.convertTemperature(nl.ref.values[0]));

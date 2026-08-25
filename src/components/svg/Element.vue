@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { smoothPath } from '../../utils/smoothPath';
-import { Node, LoadCase, Beam2D, BeamConcentratedLoad, BeamElementTrapezoidalEdgeLoad } from 'ts-fem';
+import { Node, LoadCase, Beam2D, BeamConcentratedLoad, BeamConcentratedDeformation, BeamElementTrapezoidalEdgeLoad } from 'ts-fem';
 import { computed } from 'vue';
 
 type ResultLabelMode = 'axis' | 'horizontal';
@@ -162,29 +162,67 @@ const hingeRadius = computed(() => Math.min(6 / props.scale, hingeOffset.value *
 const results = computed(() => {
   if (!props.loadCase.solved || !props.showDeformedShape) return '';
 
-  const result = [];
   const hinges = props.element.hinges[0] && props.element.hinges[1];
   const eload = props.loadCase.elementLoadList.filter((l) => l.target === props.element.label);
   const truss = hinges && eload.length === 0;
+  const geo = props.element.computeGeo();
 
   const nseg = truss ? 1 : 16;
   const scaleBy = props.deformedShapeMultiplier / props.scale;
   const n1 = props.element.domain.nodes.get(props.element.nodes[0]) as Node;
   let def = null;
 
-  def = props.element.computeGlobalDefl(props.loadCase, nseg);
+  const dvalues: number[] = [];
 
-  const geo = props.element.computeGeo();
-  const cos = geo.dx / geo.l;
-  const sin = geo.dz / geo.l;
-  for (let s = 0; s <= nseg; s++) {
-    const xc = n1.coords[0] + (cos * geo.l * s) / nseg;
-    const zc = n1.coords[2] + (sin * geo.l * s) / nseg;
+  const straightPath = (points: [number, number][]): string => {
+    if (points.length === 0) return '';
+    return points.reduce((acc, [x, y], i) => {
+      return i === 0 ? `M ${x},${y}` : `${acc} L ${x},${y}`;
+    }, '');
+  };
 
-    result.push([xc + def.u[s] * scaleBy, zc + def.w[s] * scaleBy]);
+  // 1. Add concentrated deformation points
+  const concentrated_deformations = props.loadCase.elementLoadList.filter(
+    (l) => l.target === props.element.label && l instanceof BeamConcentratedDeformation
+  ) as BeamConcentratedDeformation[];
+
+  for (const c of concentrated_deformations) {
+    const dVal = c.values[3];
+
+    // Clamp the left point to strictly [0, geo.l]
+    const dLeft = Math.min(Math.max(0, dVal - 1e-7), geo.l);
+    
+    // Clamp the right point to strictly [0, geo.l]
+    const dRight = Math.min(Math.max(0, dVal + 1e-7), geo.l);
+
+    dvalues.push(dLeft, dRight);
   }
 
-  return smoothPath(result);
+
+  // 2. Add regular segment points
+  for (let s = 0; s <= nseg; s++) {
+    dvalues.push((geo.l * s) / nseg);
+  }
+
+  // 3. Sort points chronologically along the element axis
+  dvalues.sort((a, b) => a - b);
+
+  const cos = geo.dx / geo.l;
+  const sin = geo.dz / geo.l;
+
+  // 4. Compute combined global displacements and original geometry at each d
+  const result = dvalues.map((d) => {
+    const def = props.element.computeGlobalDeflAt(props.loadCase, d);
+
+    // Calculate base x and z directly using physical distance 'd'
+    const xc = n1.coords[0] + cos * d;
+    const zc = n1.coords[2] + sin * d;
+
+    return [xc + def.u * scaleBy, zc + def.w * scaleBy];
+  });
+
+  // return smoothPath(result);
+  return straightPath(result);
 });
 
 const forces = computed(() => {

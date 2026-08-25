@@ -21,6 +21,7 @@ import EditElementLoadDialog from './dialogs/EditElementLoad.vue';
 
 import SVGElementLoad from './svg/ElementLoad.vue';
 import SVGElementConcentratedLoad from './svg/ElementConcentratedLoad.vue';
+import SVGElementConcentratedDeformation from './svg/ElementConcentratedDeformation.vue';
 import SVGNodalLoad from './svg/NodalLoad.vue';
 import SVGPrescribedDisplacement from './svg/PrescribedDisplacement.vue';
 import SVGNode from './svg/Node.vue';
@@ -63,6 +64,7 @@ import { useLayoutStore } from '@/store/layout';
 import { undoRedoManager } from '../CommandManager';
 import { EventType, eventBus } from '../EventBus';
 import { BeamConcentratedLoad } from 'ts-fem';
+import { BeamConcentratedDeformation } from 'ts-fem';
 import { useClipboardStore } from '../store/clipboard';
 import {
   createDimensionPoint,
@@ -517,6 +519,7 @@ const onElementLoadHover = (e: MouseEvent, el: BeamElementLoad) => {
   const isDistributed = el instanceof BeamElementUniformEdgeLoad || el instanceof BeamElementTrapezoidalEdgeLoad;
   if (el instanceof BeamElementTrapezoidalEdgeLoad) lt = 'loadType.trapezoidal';
   else if (el instanceof BeamConcentratedLoad) lt = 'loadType.concentrated';
+  else if (el instanceof BeamConcentratedDeformation) lt = 'loadType.concentrated_deformation';
   else if (el instanceof BeamTemperatureLoad) lt = 'loadType.temperature';
   const ff = isDistributed ? 'f' : 'F';
   // A distributed load is an intensity, a concentrated one a force; both parts of the unit count.
@@ -2189,6 +2192,25 @@ defineExpose({ centerContent, fitContent });
                 <SVGElementConcentratedLoad
                   v-else-if="eload instanceof BeamConcentratedLoad"
                   :key="`element-cl-${index}`"
+                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
+                  :data-element-load-id="index"
+                  :eload="eload"
+                  :scale="scale"
+                  :convert-force="appStore.convertForce"
+                  :convert-moment="appStore.convertMoment"
+                  :font-size="viewerStore.fontSize"
+                  :number-format="appStore.numberFormatter"
+                  @mousemove="onElementLoadHover($event, eload)"
+                  @mouseleave="hideTooltip"
+                  @pointerup="onElementLoadClick($event, index)"
+                  @dblclick="
+                    openModal(EditElementLoadDialog, { index });
+                    projectStore.clearSelection();
+                  "
+                />
+                <SVGElementConcentratedDeformation
+                  v-else-if="eload instanceof BeamConcentratedDeformation"
+                  :key="`element-cd-${index}`"
                   :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
                   :data-element-load-id="index"
                   :eload="eload"

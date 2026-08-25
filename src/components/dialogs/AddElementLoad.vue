@@ -35,41 +35,41 @@
                   />
                 </v-col>
 
-                <template v-if="['udl', 'concentrated'].includes(loadType)">
+                <template v-if="['udl', 'concentrated', 'concentrated_deformation'].includes(loadType)">
                   <v-col cols="12" md="12">
                     <v-text-field
                       v-model="loadNodeValueFx"
-                      :label="`${unitAndLabel.l}x`"
+                      :label="`${mainLabel}x`"
                       hide-details="auto"
                       :rules="numberRules"
-                      :suffix="unitAndLabel.u"
+                      :suffix="mainUnits"
                       @keydown="checkNumber($event)"
                     ></v-text-field>
                   </v-col>
 
-                  <v-col cols="12" md="12">
+                  <v-col v-if="['udl', 'concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
                     <v-text-field
                       v-model="loadNodeValueFz"
-                      :label="`${unitAndLabel.l}z`"
+                      :label="`${mainLabel}z`"
                       hide-details="auto"
                       :rules="numberRules"
-                      :suffix="unitAndLabel.u"
+                      :suffix="mainUnits"
                       @keydown="checkNumber($event)"
                     ></v-text-field>
                   </v-col>
 
-                  <v-col v-if="loadType === 'concentrated'" cols="12" md="12">
+                  <v-col v-if="['udl', 'concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
                     <v-text-field
                       v-model="loadNodeValueMy"
-                      :label="`My`"
+                      :label="`${momentLabel}y`"
                       hide-details="auto"
                       :rules="numberRules"
-                      :suffix="unitAndLabel.r"
+                      :suffix="momentUnits"
                       @keydown="checkNumber($event)"
                     ></v-text-field>
                   </v-col>
 
-                  <v-col v-if="loadType === 'concentrated'" cols="12" md="12">
+                  <v-col v-if="['concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
                     <v-text-field
                       v-model="elementLoadPos"
                       :label="$t('loads.loadPositionOnBeam')"
@@ -144,7 +144,7 @@
                   </v-col>
                 </template>
 
-                <v-col v-if="['udl', 'trapezoidal', 'concentrated'].includes(loadType)" cols="12" md="12">
+                <v-col v-if="['udl', 'trapezoidal', 'concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
                   <v-checkbox
                     v-bind="props"
                     v-model="elementLCS"
@@ -212,6 +212,7 @@ import { checkNumber, executeModelMutationWithUndo, parseFloat2, numberRules } f
 import ElementLoadPreview from '../ElementLoadPreview.vue';
 import {
   BeamConcentratedLoad,
+  BeamConcentratedDeformation,
   BeamElementTrapezoidalEdgeLoad,
   BeamElementUniformEdgeLoad,
   BeamTemperatureLoad,
@@ -232,10 +233,65 @@ const open = ref(true);
 const valid = ref(false);
 const loadType = ref('udl');
 
+// Define unit and label specs per load type
+const LOAD_CONFIG: Record<
+  string,
+  {
+    mainLabel: string;
+    momentLabel: string;
+    getMainUnits: (store: typeof appStore) => string;
+    getMomentUnits: (store: typeof appStore) => string;
+  }
+> = {
+  concentrated: {
+    mainLabel: 'F',
+    momentLabel: 'M',
+    getMainUnits: (store) => store.units.Force,
+    getMomentUnits: (store) => `${store.units.Force}m`,
+  },
+  concentrated_deformation: {
+    mainLabel: 'D',
+    momentLabel: 'R',
+    getMainUnits: (store) => store.units.Length,
+    getMomentUnits: (store) => store.units.Angle,
+  },
+  trapezoidal: {
+    mainLabel: 'f',
+    momentLabel: 'm',
+    getMainUnits: (store) => `${store.units.Force}/${store.units.Length}`,
+    getMomentUnits: (store) => `${store.units.Force}m/${store.units.Length}`,
+  },
+  udl: {
+    mainLabel: 'f',
+    momentLabel: 'm',
+    getMainUnits: (store) => `${store.units.Force}/${store.units.Length}`,
+    getMomentUnits: (store) => `${store.units.Force}m/${store.units.Length}`,
+  },
+  temperature: {
+    mainLabel: 'T',
+    momentLabel: 'ΔT',
+    getMainUnits: (store) => store.units.Temperature,
+    getMomentUnits: (store) => `${store.units.Temperature}/m`,
+  },
+};
+
+// Computed properties using the map
+const mainLabel = computed(() => LOAD_CONFIG[loadType.value]?.mainLabel ?? 'unknown');
+const momentLabel = computed(() => LOAD_CONFIG[loadType.value]?.momentLabel ?? 'R');
+
+const mainUnits = computed(() => 
+  LOAD_CONFIG[loadType.value]?.getMainUnits(appStore) ?? appStore.units.Length
+);
+
+const momentUnits = computed(() => 
+  LOAD_CONFIG[loadType.value]?.getMomentUnits(appStore) ?? 'rad'
+);
+
 const loadTypes = [
   { label: t('loadType.udl'), value: 'udl' },
   { label: t('loadType.trapezoidal'), value: 'trapezoidal' },
   { label: t('loadType.concentrated'), value: 'concentrated' },
+  { label: t('loadType.concentrated_deformation'), value: 'concentrated_deformation' },
   { label: t('loadType.temperature'), value: 'temperature' },
 ];
 
@@ -263,6 +319,9 @@ const loadElementId = ref(String(props.label ?? [...useProjectStore().solver.dom
 const loadNodeValueFx = ref(`${appStore.convertForce(0)}`);
 const loadNodeValueFz = ref(`${appStore.convertForce(0)}`);
 const loadNodeValueMy = ref(`${appStore.convertMoment(0)}`);
+const loadNodeValueDx = ref(`${appStore.convertLength(0)}`);
+const loadNodeValueDz = ref(`${appStore.convertLength(0)}`);
+const loadNodeValueRy = ref(`${appStore.convertMoment(0)}`);
 const loadTrapezoidStartFx = ref(`${appStore.convertForce(0)}`);
 const loadTrapezoidStartFz = ref(`${appStore.convertForce(0)}`);
 const loadTrapezoidEndFx = ref(`${appStore.convertForce(0)}`);
@@ -279,6 +338,9 @@ const inverseIntensity = computed(() =>
 const realFx = computed(() => inverseIntensity.value(parseFloat2(loadNodeValueFx.value)));
 const realFz = computed(() => inverseIntensity.value(parseFloat2(loadNodeValueFz.value)));
 const realMy = computed(() => appStore.convertInverseMoment(parseFloat2(loadNodeValueMy.value)));
+const realDx = computed(() => appStore.convertInverseLength(parseFloat2(loadNodeValueDx.value)));
+const realDz = computed(() => appStore.convertInverseLength(parseFloat2(loadNodeValueDz.value)));
+const realRy = computed(() => appStore.convertInverseMoment(parseFloat2(loadNodeValueRy.value)));
 const realTrapStartFx = computed(() => appStore.convertInverseForceDistance(parseFloat2(loadTrapezoidStartFx.value)));
 const realTrapStartFz = computed(() => appStore.convertInverseForceDistance(parseFloat2(loadTrapezoidStartFz.value)));
 const realTrapEndFx = computed(() => appStore.convertInverseForceDistance(parseFloat2(loadTrapezoidEndFx.value)));
@@ -309,6 +371,15 @@ const previewLoad = computed(() => {
       loadElementId.value,
       domain,
       [realFx.value, realFz.value, realMy.value, realDist.value],
+      elementLCS.value
+    );
+  }
+
+  if (loadType.value === 'concentrated_deformation') {
+    return new BeamConcentratedDeformation(
+      loadElementId.value,
+      domain,
+      [realDx.value, realDz.value, realRy.value, realDist.value],
       elementLCS.value
     );
   }
@@ -356,6 +427,13 @@ const addElementLoad = () => {
         elementLCS.value
       );
 
+    if (loadType.value === 'concentrated_deformation')
+      useProjectStore().solver.loadCases[0].createBeamConcentratedDeformation(
+        loadElementId.value,
+        [realDx.value, realDz.value, realRy.value, realDist.value],
+        elementLCS.value
+      );
+
     if (loadType.value === 'temperature')
       useProjectStore().solver.loadCases[0].createBeamTemperatureLoad(loadElementId.value, [
         realTc.value,
@@ -372,9 +450,16 @@ const target = computed(() => {
   return useProjectStore().solver.domain.elements.get(loadElementId.value)!;
 });
 
-// default concentrated load position to mid-span
+// default concentrated load position to mid-span ?
 watch(loadType, () => {
   if (loadType.value === 'concentrated') {
+    const geo = target.value.computeGeo();
+    elementLoadPos.value = `${appStore.convertLength(Math.max(Math.min(Math.floor(geo.l / 2), 5.0), geo.l / 10))}`;
+  }
+});
+
+watch(loadType, () => {
+  if (loadType.value === 'concentrated_deformation') {
     const geo = target.value.computeGeo();
     elementLoadPos.value = `${appStore.convertLength(Math.max(Math.min(Math.floor(geo.l / 2), 5.0), geo.l / 10))}`;
   }

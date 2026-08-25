@@ -379,6 +379,7 @@
   "loadType": {
     "loadType": "Load type",
     "concentrated": "Concentrated load",
+    "concentrated_deformation": "Concentrated deformation",
     "trapezoidal": "Trapezoidal load",
     "udl": "Uniformly distributed load",
     "temperature": "Temperature load"

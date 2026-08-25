@@ -26,14 +26,14 @@
                     />
                   </v-col>
 
-                  <template v-if="['udl', 'concentrated'].includes(loadType)">
+                  <template v-if="['udl', 'concentrated', 'concentrated_deformation'].includes(loadType)">
                     <v-col cols="12" md="12">
                       <v-text-field
                         v-model="elementNodeValueFx"
-                        :label="`${unitAndLabel.l}x`"
+                        :label="`${mainLabel}x`"
                         hide-details="auto"
                         :rules="numberRules"
-                        :suffix="unitAndLabel.u"
+                        :suffix="mainUnits"
                         @keydown="checkNumber($event)"
                       ></v-text-field>
                     </v-col>
@@ -41,26 +41,26 @@
                     <v-col cols="12" md="12">
                       <v-text-field
                         v-model="elementNodeValueFz"
-                        :label="`${unitAndLabel.l}z`"
+                        :label="`${mainLabel}z`"
                         hide-details="auto"
                         :rules="numberRules"
-                        :suffix="unitAndLabel.u"
+                        :suffix="mainUnits"
                         @keydown="checkNumber($event)"
                       ></v-text-field>
                     </v-col>
 
-                    <v-col v-if="loadType === 'concentrated'" cols="12" md="12">
+                    <v-col v-if="['concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
                       <v-text-field
                         v-model="loadNodeValueMy"
                         :label="`My`"
                         hide-details="auto"
                         :rules="numberRules"
-                        :suffix="unitAndLabel.r"
+                        :suffix="mainUnits"
                         @keydown="checkNumber($event)"
                       ></v-text-field>
                     </v-col>
 
-                    <v-col v-if="loadType === 'concentrated'" cols="12" md="12">
+                    <v-col v-if="['concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
                       <v-text-field
                         v-model="elementLoadPos"
                         :label="$t('loads.loadPositionOnBeam')"
@@ -80,7 +80,7 @@
                             v-model="trapezoidStartFx"
                             hide-details="auto"
                             :rules="numberRules"
-                            :suffix="unitAndLabel.u"
+                            :suffix="mainUnits"
                             @keydown="checkNumber($event)"
                           >
                             <template #label>
@@ -93,7 +93,7 @@
                             v-model="trapezoidEndFx"
                             hide-details="auto"
                             :rules="numberRules"
-                            :suffix="unitAndLabel.u"
+                            :suffix="mainUnits"
                             @keydown="checkNumber($event)"
                           >
                             <template #label>
@@ -110,7 +110,7 @@
                             v-model="trapezoidStartFz"
                             hide-details="auto"
                             :rules="numberRules"
-                            :suffix="unitAndLabel.u"
+                            :suffix="mainUnits"
                             @keydown="checkNumber($event)"
                           >
                             <template #label>
@@ -123,7 +123,7 @@
                             v-model="trapezoidEndFz"
                             hide-details="auto"
                             :rules="numberRules"
-                            :suffix="unitAndLabel.u"
+                            :suffix="mainUnits"
                             @keydown="checkNumber($event)"
                           >
                             <template #label>
@@ -135,7 +135,7 @@
                     </v-col>
                   </template>
 
-                  <v-col v-if="['udl', 'trapezoidal', 'concentrated'].includes(loadType)" cols="12" md="12">
+                  <v-col v-if="['udl', 'trapezoidal', 'concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
                     <v-checkbox
                       v-bind="props"
                       v-model="elementLCS"
@@ -203,6 +203,7 @@ import { useAppStore } from '@/store/app';
 import { checkNumber, numberRules, parseFloat2, loadType as LT } from '@/utils';
 import {
   BeamConcentratedLoad,
+  BeamConcentratedDeformation,
   BeamElementTrapezoidalEdgeLoad,
   BeamElementUniformEdgeLoad,
   BeamTemperatureLoad,
@@ -214,7 +215,8 @@ type EditableElementLoad =
   | BeamElementUniformEdgeLoad
   | BeamElementTrapezoidalEdgeLoad
   | BeamConcentratedLoad
-  | BeamTemperatureLoad;
+  | BeamTemperatureLoad
+  | BeamConcentratedDeformation;
 
 const projectStore = useProjectStore();
 const appStore = useAppStore();
@@ -239,6 +241,71 @@ const load = computed<EditableElementLoad>(() => {
 });
 
 const loadType = computed(() => LT(load.value));
+// Define unit and label specs per load type
+const LOAD_CONFIG: Record<
+  string,
+  {
+    mainLabel: string;
+    momentLabel: string;
+    getMainUnits: (store: typeof appStore) => string;
+    getMomentUnits: (store: typeof appStore) => string;
+  }
+> = {
+  concentrated: {
+    mainLabel: 'F',
+    momentLabel: 'M',
+    getMainUnits: (store) => store.units.Force,
+    getMomentUnits: (store) => `${store.units.Force}m`,
+  },
+  concentrated_deformation: {
+    mainLabel: 'D',
+    momentLabel: 'R',
+    getMainUnits: (store) => store.units.Length,
+    getMomentUnits: (store) => store.units.Angle,
+  },
+  trapezoidal: {
+    mainLabel: 'f',
+    momentLabel: 'm',
+    getMainUnits: (store) => `${store.units.Force}/${store.units.Length}`,
+    getMomentUnits: (store) => `${store.units.Force}m/${store.units.Length}`,
+  },
+  udl: {
+    mainLabel: 'f',
+    momentLabel: 'm',
+    getMainUnits: (store) => `${store.units.Force}/${store.units.Length}`,
+    getMomentUnits: (store) => `${store.units.Force}m/${store.units.Length}`,
+  },
+  temperature: {
+    mainLabel: 'T',
+    momentLabel: 'ΔT',
+    getMainUnits: (store) => store.units.Temperature,
+    getMomentUnits: (store) => `${store.units.Temperature}/m`,
+  },
+};
+
+import { useI18n } from 'vue-i18n';
+const { t } = useI18n();
+
+// Computed properties using the map
+const mainLabel = computed(() => LOAD_CONFIG[loadType.value]?.mainLabel ?? 'unknown');
+const momentLabel = computed(() => LOAD_CONFIG[loadType.value]?.momentLabel ?? 'R');
+
+const mainUnits = computed(() => 
+  LOAD_CONFIG[loadType.value]?.getMainUnits(appStore) ?? appStore.units.Length
+);
+
+const momentUnits = computed(() => 
+  LOAD_CONFIG[loadType.value]?.getMomentUnits(appStore) ?? 'rad'
+);
+
+const loadTypes = [
+  { label: t('loadType.udl'), value: 'udl' },
+  { label: t('loadType.trapezoidal'), value: 'trapezoidal' },
+  { label: t('loadType.concentrated'), value: 'concentrated' },
+  { label: t('loadType.concentrated_deformation'), value: 'concentrated_deformation' },
+  { label: t('loadType.temperature'), value: 'temperature' },
+];
+
 const unitAndLabel = computed(() => {
   let u = appStore.units.Force;
   let r = appStore.units.Moment;
@@ -262,6 +329,9 @@ watch(loadType, (newVal) => {
 const elementNodeValueFx = ref('0.0');
 const elementNodeValueFz = ref('0.0');
 const loadNodeValueMy = ref(`${appStore.convertMoment(0)}`);
+const elementNodeValueDx = ref('0.0');
+const elementNodeValueDz = ref('0.0');
+const loadNodeValueRy = ref('0.0');
 const trapezoidStartFx = ref('0.0');
 const trapezoidStartFz = ref('0.0');
 const trapezoidEndFx = ref('0.0');
@@ -286,6 +356,9 @@ const inverseIntensity = computed(() =>
 const realFx = computed(() => inverseIntensity.value(parseFloat2(elementNodeValueFx.value)));
 const realFz = computed(() => inverseIntensity.value(parseFloat2(elementNodeValueFz.value)));
 const realMy = computed(() => appStore.convertInverseMoment(parseFloat2(loadNodeValueMy.value)));
+const realDx = computed(() => appStore.convertInverseLength(parseFloat2(elementNodeValueDx.value)));
+const realDz = computed(() => appStore.convertInverseLength(parseFloat2(elementNodeValueDz.value)));
+const realRy = computed(() => appStore.convertInverseMoment(parseFloat2(loadNodeValueRy.value)));
 const realTrapStartFx = computed(() => appStore.convertInverseForceDistance(parseFloat2(trapezoidStartFx.value)));
 const realTrapStartFz = computed(() => appStore.convertInverseForceDistance(parseFloat2(trapezoidStartFz.value)));
 const realTrapEndFx = computed(() => appStore.convertInverseForceDistance(parseFloat2(trapezoidEndFx.value)));
@@ -320,6 +393,15 @@ const previewLoad = computed(() => {
     );
   }
 
+  if (loadType.value === 'concentrated_deformation') {
+    return new BeamConcentratedDeformation(
+      load.value.target,
+      domain,
+      [realDx.value, realDz.value, realRy.value, realDist.value],
+      elementLCS.value
+    );
+  }
+
   if (loadType.value === 'temperature') {
     return new BeamTemperatureLoad(load.value.target, domain, [realTc.value, realTbt.value, 0]);
   }
@@ -338,7 +420,8 @@ onMounted(() => {
   if (
     load.value instanceof BeamElementUniformEdgeLoad ||
     load.value instanceof BeamElementTrapezoidalEdgeLoad ||
-    load.value instanceof BeamConcentratedLoad
+    load.value instanceof BeamConcentratedLoad ||
+    load.value instanceof BeamConcentratedDeformation
   ) {
     elementLCS.value = load.value.lcs;
   }
@@ -353,6 +436,11 @@ onMounted(() => {
   if (load.value instanceof BeamConcentratedLoad) {
     elementLoadPos.value = appStore.convertLength(load.value.values[3]).toString();
     loadNodeValueMy.value = appStore.convertMoment(load.value.values[2]).toString();
+  }
+
+  if (load.value instanceof BeamConcentratedDeformation) {
+    elementLoadPos.value = appStore.convertLength(load.value.values[3]).toString();
+    loadNodeValueRy.value = appStore.convertMoment(load.value.values[2]).toString();
   }
 
   if (load.value instanceof BeamTemperatureLoad) {
@@ -374,7 +462,8 @@ const editNodalLoad = () => {
   if (
     load.value instanceof BeamElementUniformEdgeLoad ||
     load.value instanceof BeamElementTrapezoidalEdgeLoad ||
-    load.value instanceof BeamConcentratedLoad
+    load.value instanceof BeamConcentratedLoad || 
+    load.value instanceof BeamConcentratedDeformation
   ) {
     load.value.lcs = elementLCS.value;
   }
@@ -390,6 +479,13 @@ const editNodalLoad = () => {
 
   if (load.value instanceof BeamConcentratedLoad) {
     load.value.values[2] = realMy.value;
+    load.value.values[3] = realDist.value;
+  }
+
+  if (load.value instanceof BeamConcentratedDeformation) {
+    load.value.values[0] = realDx.value;
+    load.value.values[1] = realDz.value;
+    load.value.values[2] = realRy.value;
     load.value.values[3] = realDist.value;
   }
 

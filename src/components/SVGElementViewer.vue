@@ -16,6 +16,7 @@ import {
   BeamElementTrapezoidalEdgeLoad,
   BeamElementUniformEdgeLoad,
   BeamConcentratedLoad,
+  BeamConcentratedDeformation,
   PrescribedDisplacement,
 } from 'ts-fem';
 import { Matrix, max, min } from 'mathjs';

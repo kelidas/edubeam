@@ -1,5 +1,6 @@
 import {
   BeamConcentratedLoad,
+  BeamConcentratedDeformation,
   BeamElementTrapezoidalEdgeLoad,
   BeamElementUniformEdgeLoad,
   BeamTemperatureLoad,
@@ -13,6 +14,8 @@ export const loadType = (el: Load) => {
     return 'trapezoidal';
   } else if (el instanceof BeamConcentratedLoad) {
     return 'concentrated';
+  } else if (el instanceof BeamConcentratedDeformation) {
+    return 'concentrated_deformation';
   } else if (el instanceof BeamTemperatureLoad) {
     return 'temperature';
   } else {
