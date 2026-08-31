@@ -146,6 +146,13 @@ input.inline-edit  {
   padding: 1px 6px;
 }
 
+// .inline-edit forces a white background, so disabled inputs need to be greyed explicitly
+input.inline-edit:disabled {
+  background: #f5f5f5;
+  color: rgba(0, 0, 0, 0.38);
+  cursor: not-allowed;
+}
+
 div.inline-edit.fw {
   width: 90px;
 }

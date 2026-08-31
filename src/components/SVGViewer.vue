@@ -53,6 +53,7 @@ import ContextMenuElement from './ContextMenuElement.vue';
 import ContextMenuNode from './ContextMenuNode.vue';
 import ContextMenuElementLoad from './ContextMenuElementLoad.vue';
 import ContextMenuNodalLoad from './ContextMenuNodalLoad.vue';
+import ContextMenuPrescribedDisplacement from './ContextMenuPrescribedDisplacement.vue';
 import ContextMenuDimension from './ContextMenuDimension.vue';
 
 import { MouseMode } from '@/mouse';
@@ -2529,9 +2530,10 @@ defineExpose({ centerContent, fitContent });
         <ContextMenuNode v-if="projectStore.selection.type === 'node'"></ContextMenuNode>
         <ContextMenuElement v-if="projectStore.selection.type === 'element'"></ContextMenuElement>
         <ContextMenuElementLoad v-if="projectStore.selection.type === 'element-load'"></ContextMenuElementLoad>
-        <ContextMenuNodalLoad
-          v-if="['nodal-load', 'prescribedbc-load'].includes(projectStore.selection.type)"
-        ></ContextMenuNodalLoad>
+        <ContextMenuNodalLoad v-if="projectStore.selection.type === 'nodal-load'"></ContextMenuNodalLoad>
+        <ContextMenuPrescribedDisplacement
+          v-if="projectStore.selection.type === 'prescribedbc-load'"
+        ></ContextMenuPrescribedDisplacement>
         <ContextMenuDimension v-if="projectStore.selection.type === 'dimension'"></ContextMenuDimension>
         <!-- <ContextMenuNodalLoad v-if="projectStore.selection.type === 'nodal-load'"></ContextMenuNodalLoad>
         <ContextMenuElementLoad v-if="projectStore.selection.type === 'element-load'"></ContextMenuElementLoad> -->

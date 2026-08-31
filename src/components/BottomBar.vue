@@ -632,14 +632,14 @@
             <div v-if="item.type === 'prescribed'" class="d-flex">
               <div
                 class="inline-edit-group load mr-2"
-                :class="{ disabled: !isDofSupported(item.target, DofID.Dx) }"
+                :class="{ disabled: !canPrescribeDof(item.ref, DofID.Dx) }"
                 style="width: 128px"
               >
                 <label class="input-before">D<sub>x</sub></label>
                 <input
                   :value="appStore.convertLength(item.ref.prescribedValues[0])"
                   class="inline-edit"
-                  :disabled="!isDofSupported(item.target, DofID.Dx)"
+                  :disabled="!canPrescribeDof(item.ref, DofID.Dx)"
                   @keydown="checkNumber($event)"
                   @change="
                     changeSetArrayItem(
@@ -655,14 +655,14 @@
               </div>
               <div
                 class="inline-edit-group load mr-2"
-                :class="{ disabled: !isDofSupported(item.target, DofID.Dz) }"
+                :class="{ disabled: !canPrescribeDof(item.ref, DofID.Dz) }"
                 style="width: 128px"
               >
                 <span class="input-before">D<sub>z</sub></span>
                 <input
                   :value="appStore.convertLength(item.ref.prescribedValues[2])"
                   class="inline-edit"
-                  :disabled="!isDofSupported(item.target, DofID.Dz)"
+                  :disabled="!canPrescribeDof(item.ref, DofID.Dz)"
                   @keydown="checkNumber($event)"
                   @change="
                     changeSetArrayItem(
@@ -678,14 +678,14 @@
               </div>
               <div
                 class="inline-edit-group load"
-                :class="{ disabled: !isDofSupported(item.target, DofID.Ry) }"
+                :class="{ disabled: !canPrescribeDof(item.ref, DofID.Ry) }"
                 style="width: 128px"
               >
                 <span class="input-before">R<sub>y</sub></span>
                 <input
                   :value="item.ref.prescribedValues[4]"
                   class="inline-edit"
-                  :disabled="!isDofSupported(item.target, DofID.Ry)"
+                  :disabled="!canPrescribeDof(item.ref, DofID.Ry)"
                   @keydown="checkNumber($event)"
                   @change="
                     changeSetArrayItem(item.ref, 'prescribedValues', 4, $event.target as HTMLInputElement, (v) => v)
@@ -1586,6 +1586,11 @@ const elementLoadFromMoment = (load: Load) => (value: number) => loadConfig(load
 const elementLoadMainUnits = (load: Load) => loadConfig(load).getMainUnits(appStore);
 const elementLoadMomentUnits = (load: Load) => loadConfig(load).getMomentUnits(appStore);
 
+// A displacement can only be prescribed on a DOF the node actually constrains, so the
+// other components stay read-only here just as they are in the add/edit dialogs.
+const canPrescribeDof = (load: PrescribedDisplacement, dof: DofID) =>
+  projStore.solver.domain.nodes.get(load.target)?.bcs.has(dof) ?? false;
+
 onMounted(() => {
   window.addEventListener('keydown', (e) => {
     if (e.key == 'Escape' || e.keyCode === 13) {
@@ -1718,11 +1723,6 @@ const elementLoadInverseConverter = (load: ElementLoadValues) => {
   if (type === 'udl') return appStore.convertInverseForceDistance;
 
   return appStore.convertInverseForce;
-};
-
-/** A displacement can only be prescribed in a DOF that is supported (constrained) at the target node. */
-const isDofSupported = (target: number, dof: DofID) => {
-  return projStore.solver.domain.nodes.get(target)?.bcs.has(dof) ?? false;
 };
 
 const materials = computed(() => {
