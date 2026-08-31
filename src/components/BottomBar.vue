@@ -780,7 +780,9 @@
                 <div class="inline-edit-group load mr-2">
                   <span v-if="loadType(item.ref) === 'udl'" class="input-before">f<sub>x</sub></span>
                   <span v-else-if="loadType(item.ref) === 'concentrated'" class="input-before">F<sub>x</sub></span>
-                  <span v-else-if="loadType(item.ref) === 'concentrated_deformation'" class="input-before">D<sub>x</sub></span>
+                  <span v-else-if="loadType(item.ref) === 'concentrated_deformation'" class="input-before"
+                    >D<sub>x</sub></span
+                  >
                   <span
                     v-else-if="loadType(item.ref) === 'temperature'"
                     class="input-before"
@@ -806,7 +808,9 @@
                 <div class="inline-edit-group load mr-2">
                   <span v-if="loadType(item.ref) === 'udl'" class="input-before">f<sub>z</sub></span>
                   <span v-else-if="loadType(item.ref) === 'concentrated'" class="input-before">F<sub>z</sub></span>
-                  <span v-else-if="loadType(item.ref) === 'concentrated_deformation'" class="input-before">D<sub>z</sub></span>
+                  <span v-else-if="loadType(item.ref) === 'concentrated_deformation'" class="input-before"
+                    >D<sub>z</sub></span
+                  >
                   <span
                     v-else-if="loadType(item.ref) === 'temperature'"
                     class="input-before"
@@ -870,7 +874,10 @@
                 <div class="input-after" v-html="formatMeasureAsHTML(elementLoadMomentUnits(item.ref))"></div>
               </div>
 
-              <div v-if="item.ref instanceof BeamConcentratedLoad || item.ref instanceof BeamConcentratedDeformation" class="inline-edit-group load mr-2">
+              <div
+                v-if="item.ref instanceof BeamConcentratedLoad || item.ref instanceof BeamConcentratedDeformation"
+                class="inline-edit-group load mr-2"
+              >
                 <span class="input-before">d</span>
                 <input
                   :value="appStore.convertLength(item.ref.values[3])"
@@ -891,7 +898,11 @@
               </div>
               <!-- TODO: Trapezoidal load cant render non LCS -->
               <div
-                v-if="item.ref instanceof BeamElementUniformEdgeLoad || item.ref instanceof BeamConcentratedLoad || item.ref instanceof BeamConcentratedDeformation"
+                v-if="
+                  item.ref instanceof BeamElementUniformEdgeLoad ||
+                  item.ref instanceof BeamConcentratedLoad ||
+                  item.ref instanceof BeamConcentratedDeformation
+                "
                 v-tooltip.bottom="$t('common.lcs')"
                 class="inline-edit-group"
               >

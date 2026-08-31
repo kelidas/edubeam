@@ -1,6 +1,13 @@
 <script lang="ts" setup>
 import { smoothPath } from '../../utils/smoothPath';
-import { Node, LoadCase, Beam2D, BeamConcentratedLoad, BeamConcentratedDeformation, BeamElementTrapezoidalEdgeLoad } from 'ts-fem';
+import {
+  Node,
+  LoadCase,
+  Beam2D,
+  BeamConcentratedLoad,
+  BeamConcentratedDeformation,
+  BeamElementTrapezoidalEdgeLoad,
+} from 'ts-fem';
 import { computed } from 'vue';
 
 type ResultLabelMode = 'axis' | 'horizontal';
@@ -191,13 +198,12 @@ const results = computed(() => {
 
     // Clamp the left point to strictly [0, geo.l]
     const dLeft = Math.min(Math.max(0, dVal - 1e-7), geo.l);
-    
+
     // Clamp the right point to strictly [0, geo.l]
     const dRight = Math.min(Math.max(0, dVal + 1e-7), geo.l);
 
     dvalues.push(dLeft, dRight);
   }
-
 
   // 2. Add regular segment points
   for (let s = 0; s <= nseg; s++) {

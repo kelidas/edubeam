@@ -120,7 +120,11 @@
           </v-col>
         </template>
 
-        <v-col v-if="['udl', 'trapezoidal', 'concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
+        <v-col
+          v-if="['udl', 'trapezoidal', 'concentrated', 'concentrated_deformation'].includes(loadType)"
+          cols="12"
+          md="12"
+        >
           <v-checkbox
             v-model="lcs"
             v-tooltip.left="$t('common.lcs')"
