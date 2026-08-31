@@ -103,7 +103,7 @@ const momentLabelPosition = computed(() => {
       v-if="eload.values[0] !== 0 || eload.values[1] !== 0"
       :points="`${position.x},${position.z} ${position.x + 40 / scale},${position.z}`"
       :transform="`rotate(${angle - 90} ${position.x} ${position.z})`"
-      :stroke-dasharray="`${5 / scale} ${4 / scale}`"
+      stroke-dasharray="6 4"
       class="decoration shaft"
       vector-effect="non-scaling-stroke"
     />
