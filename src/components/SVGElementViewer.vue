@@ -669,6 +669,12 @@ defineExpose({ centerContent, fitContent });
         marker-end: var(--marker-force);
       }
 
+      /* An imposed deformation carries a dashed shaft, so it does not read as a force */
+      &.decoration.shaft {
+        stroke: v-bind('colors.loads');
+        stroke-width: 1.5px;
+      }
+
       &.decoration.moment.cw {
         marker-end: var(--marker-moment-cw);
       }

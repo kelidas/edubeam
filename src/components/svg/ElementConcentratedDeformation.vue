@@ -98,6 +98,16 @@ const momentLabelPosition = computed(() => {
       :transform="`translate(${position.x} ${position.z})`"
     />
 
+    <!-- An imposed deformation is not a force, so its arrow carries a dashed shaft -->
+    <polyline
+      v-if="eload.values[0] !== 0 || eload.values[1] !== 0"
+      :points="`${position.x},${position.z} ${position.x + 40 / scale},${position.z}`"
+      :transform="`rotate(${angle - 90} ${position.x} ${position.z})`"
+      :stroke-dasharray="`${5 / scale} ${4 / scale}`"
+      class="decoration shaft"
+      vector-effect="non-scaling-stroke"
+    />
+
     <polyline
       v-if="eload.values[0] !== 0 || eload.values[1] !== 0"
       :points="`${position.x},${position.z} ${position.x + 40 / scale},${position.z}`"
