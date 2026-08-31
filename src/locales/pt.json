@@ -314,6 +314,7 @@
   "loadType": {
     "loadType": "Tipo de carga",
     "concentrated": "Carga concentrada",
+    "concentrated_deformation": "Deformação concentrada",
     "trapezoidal": "Carga trapezoidal",
     "udl": "Carga distribuída uniforme",
     "temperature": "Carga térmica"

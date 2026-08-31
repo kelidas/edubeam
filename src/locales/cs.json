@@ -370,6 +370,7 @@
   },
   "loadType": {
     "concentrated": "Osamělá síla",
+    "concentrated_deformation": "Osamělé přetvoření",
     "udl": "Spojité rovnoměrné zatížení",
     "trapezoidal": "Lineárně proměnné zatížení",
     "temperature": "Změna teploty",

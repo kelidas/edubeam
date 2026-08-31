@@ -314,6 +314,7 @@
   "loadType": {
     "loadType": "Lasttyp",
     "concentrated": "Einzellast",
+    "concentrated_deformation": "Einzelverformung",
     "trapezoidal": "Trapezlast",
     "udl": "Gleichmäßig verteilte Last",
     "temperature": "Temperaturlast"
