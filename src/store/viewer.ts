@@ -33,6 +33,17 @@ export const useViewerStore = defineStore(
     const snapToGrid = ref(true);
     const gridStep = ref(0.1);
     const resultsScalePx_ = ref(48);
+
+    /**
+     * Per quantity multiplier on top of the automatic scale, so a diagram that comes out too flat
+     * or too tall can be adjusted without touching the others.
+     */
+    const resultScale = reactive({
+      deformedShape: 1,
+      normalForce: 1,
+      shearForce: 1,
+      bendingMoment: 1,
+    });
     const supportSize = ref(1);
 
     const fontSize = ref(14);
@@ -66,6 +77,10 @@ export const useViewerStore = defineStore(
       snapToGrid.value = true;
       gridStep.value = 0.1;
       resultsScalePx_.value = 48;
+      resultScale.deformedShape = 1;
+      resultScale.normalForce = 1;
+      resultScale.shearForce = 1;
+      resultScale.bendingMoment = 1;
       supportSize.value = 1;
 
       fontSize.value = 14;
@@ -90,6 +105,7 @@ export const useViewerStore = defineStore(
       snapToGrid,
       gridStep,
       resultsScalePx_: resultsScalePx_,
+      resultScale,
 
       fontSize,
 
