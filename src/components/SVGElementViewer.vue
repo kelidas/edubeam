@@ -23,6 +23,7 @@ import { Matrix, max, min } from 'mathjs';
 
 import SVGElementLoad from './svg/ElementLoad.vue';
 import SVGElementConcentratedLoad from './svg/ElementConcentratedLoad.vue';
+import SVGElementConcentratedDeformation from './svg/ElementConcentratedDeformation.vue';
 import SVGNodalLoad from './svg/NodalLoad.vue';
 import SVGPrescribedDisplacement from './svg/PrescribedDisplacement.vue';
 import SVGNode from './svg/Node.vue';
@@ -84,6 +85,8 @@ const props = withDefaults(
     convertLength?: (value: number) => number;
     resultLabelMode?: 'axis' | 'horizontal';
     numberFormat?: Intl.NumberFormat;
+    /** deformations need more precision than the 2-decimal default format */
+    deformationNumberFormat?: Intl.NumberFormat;
     zoomEnabled?: boolean;
     fontSize?: number;
   }>(),
@@ -131,6 +134,7 @@ const props = withDefaults(
     convertLength: (v) => v,
     resultLabelMode: 'axis',
     numberFormat: () => new Intl.NumberFormat(),
+    deformationNumberFormat: () => new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }),
     zoomEnabled: false,
     fontSize: 13,
   }
@@ -368,6 +372,16 @@ defineExpose({ centerContent, fitContent });
                   :convert-moment="props.convertMoment"
                   :font-size="props.fontSize"
                   :number-format="props.numberFormat"
+                />
+                <SVGElementConcentratedDeformation
+                  v-else-if="eload instanceof BeamConcentratedDeformation"
+                  :key="`element-cd-${index}`"
+                  :data-element-load-id="index"
+                  :eload="eload"
+                  :scale="scale"
+                  :convert-displacement="props.convertLength"
+                  :font-size="props.fontSize"
+                  :number-format="props.deformationNumberFormat"
                 />
               </template>
               <SVGNodalLoad

@@ -29,6 +29,9 @@ export const useAppStore = defineStore(
     const numberFormatter = ref(
       new Intl.NumberFormat(locale.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     );
+    // Deformations span orders of magnitude depending on the length unit (0.005 m is 5 mm),
+    // so they are formatted by significant digits instead of a fixed number of decimals.
+    const deformationFormatter = ref(new Intl.NumberFormat(locale.value, { maximumSignificantDigits: 4 }));
 
     // The converter cant handle moment units, so we store them separately and call the converter for length and force separately
     const momentUnits = ref({ force: 'kN', length: 'm' });
@@ -141,6 +144,7 @@ export const useAppStore = defineStore(
     watch(locale, (newLocale) => {
       setLocale(newLocale);
       numberFormatter.value = new Intl.NumberFormat(newLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      deformationFormatter.value = new Intl.NumberFormat(newLocale, { maximumSignificantDigits: 4 });
     });
 
     const dialogs = reactive({
@@ -203,6 +207,7 @@ export const useAppStore = defineStore(
       bottomBarHeight,
       locale,
       numberFormatter,
+      deformationFormatter,
       units,
       momentUnits,
       dialogs,

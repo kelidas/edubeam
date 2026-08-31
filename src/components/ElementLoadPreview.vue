@@ -43,7 +43,12 @@ const nodes = computed<Node[]>(() => {
 });
 
 const dimensionLines = computed(() => {
-  if (!(props.load instanceof BeamConcentratedLoad)) return [];
+  if (
+    !(props.load instanceof BeamConcentratedLoad) &&
+    !(props.load instanceof BeamConcentratedDeformation)
+  ) {
+    return [];
+  }
 
   const element = props.load.domain.elements.get(props.load.target) as Beam2D | undefined;
   if (!element) return [];
@@ -118,6 +123,7 @@ watch(
       :fit-reserve-px="0"
       :support-size="0.75"
       :number-format="appStore.numberFormatter"
+      :deformation-number-format="appStore.deformationFormatter"
       :convert-force="appStore.convertForce"
       :convert-force-distance="appStore.convertForceDistance"
       :convert-moment="appStore.convertMoment"

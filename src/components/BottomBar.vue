@@ -787,7 +787,7 @@
                     v-html="$t('loads.temperatureDeltaTs')"
                   ></span>
                   <input
-                    :value="elementLoadDisplayValue(item.ref, 0)"
+                    :value="elementLoadToMain(item.ref, item.ref.values[0])"
                     class="inline-edit"
                     style="width: 60px"
                     @keydown="checkNumber($event)"
@@ -797,30 +797,11 @@
                         'values',
                         0,
                         $event.target as HTMLInputElement,
-                        elementLoadInverseConverter(item.ref)
+                        elementLoadFromMain(item.ref)
                       )
                     "
                   />
-                  <div
-                    v-if="loadType(item.ref) === 'udl'"
-                    class="input-after"
-                    v-html="formatMeasureAsHTML(appStore.units.ForceDistance)"
-                  ></div>
-                  <div
-                    v-else-if="loadType(item.ref) === 'concentrated'"
-                    class="input-after"
-                    v-html="formatMeasureAsHTML(appStore.units.Force)"
-                  ></div>
-                  <div
-                    v-else-if="loadType(item.ref) === 'concentrated_deformation'"
-                    class="input-after"
-                    v-html="formatMeasureAsHTML(appStore.units.Length)"
-                  ></div>
-                  <div
-                    v-else-if="loadType(item.ref) === 'temperature'"
-                    class="input-after"
-                    v-html="formatMeasureAsHTML(appStore.units.Temperature)"
-                  ></div>
+                  <div class="input-after" v-html="formatMeasureAsHTML(elementLoadMainUnits(item.ref))"></div>
                 </div>
                 <div class="inline-edit-group load mr-2">
                   <span v-if="loadType(item.ref) === 'udl'" class="input-before">f<sub>z</sub></span>
@@ -832,7 +813,11 @@
                     v-html="$t('loads.temperatureDeltaTbt')"
                   ></span>
                   <input
-                    :value="elementLoadDisplayValue(item.ref, 1)"
+                    :value="
+                      loadType(item.ref) === 'temperature'
+                        ? elementLoadToMoment(item.ref, item.ref.values[1])
+                        : elementLoadToMain(item.ref, item.ref.values[1])
+                    "
                     class="inline-edit"
                     style="width: 60px"
                     @keydown="checkNumber($event)"
@@ -842,37 +827,33 @@
                         'values',
                         1,
                         $event.target as HTMLInputElement,
-                        elementLoadInverseConverter(item.ref)
+                        loadType(item.ref) === 'temperature'
+                          ? elementLoadFromMoment(item.ref)
+                          : elementLoadFromMain(item.ref)
                       )
                     "
                   />
                   <div
-                    v-if="loadType(item.ref) === 'udl'"
                     class="input-after"
-                    v-html="formatMeasureAsHTML(appStore.units.ForceDistance)"
-                  ></div>
-                  <div
-                    v-else-if="loadType(item.ref) === 'concentrated'"
-                    class="input-after"
-                    v-html="formatMeasureAsHTML(appStore.units.Force)"
-                  ></div>
-                  <div
-                    v-else-if="loadType(item.ref) === 'concentrated_deformation'"
-                    class="input-after"
-                    v-html="formatMeasureAsHTML(appStore.units.Length)"
-                  ></div>
-                  <div
-                    v-else-if="loadType(item.ref) === 'temperature'"
-                    class="input-after"
-                    v-html="formatMeasureAsHTML(appStore.units.Temperature)"
+                    v-html="
+                      formatMeasureAsHTML(
+                        loadType(item.ref) === 'temperature'
+                          ? elementLoadMomentUnits(item.ref)
+                          : elementLoadMainUnits(item.ref)
+                      )
+                    "
                   ></div>
                 </div>
               </template>
 
-              <div v-if="item.ref instanceof BeamConcentratedLoad" class="inline-edit-group load mr-2">
-                <span class="input-before">M<sub>y</sub></span>
+              <div
+                v-if="item.ref instanceof BeamConcentratedLoad || item.ref instanceof BeamConcentratedDeformation"
+                class="inline-edit-group load mr-2"
+              >
+                <span v-if="item.ref instanceof BeamConcentratedLoad" class="input-before">M<sub>y</sub></span>
+                <span v-else class="input-before">R<sub>y</sub></span>
                 <input
-                  :value="appStore.convertMoment(item.ref.values[2])"
+                  :value="elementLoadToMoment(item.ref, item.ref.values[2])"
                   class="inline-edit"
                   style="width: 60px"
                   @keydown="checkNumber($event)"
@@ -882,31 +863,11 @@
                       'values',
                       2,
                       $event.target as HTMLInputElement,
-                      appStore.convertInverseMoment
+                      elementLoadFromMoment(item.ref)
                     )
                   "
                 />
-                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Moment)"></div>
-              </div>
-
-              <div v-if="item.ref instanceof BeamConcentratedDeformation" class="inline-edit-group load mr-2">
-                <span class="input-before">R<sub>y</sub></span>
-                <input
-                  :value="appStore.convertMoment(item.ref.values[2])"
-                  class="inline-edit"
-                  style="width: 60px"
-                  @keydown="checkNumber($event)"
-                  @change="
-                    changeSetArrayItem(
-                      item.ref,
-                      'values',
-                      2,
-                      $event.target as HTMLInputElement,
-                      appStore.convertInverseMoment
-                    )
-                  "
-                />
-                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Angle)"></div>
+                <div class="input-after" v-html="formatMeasureAsHTML(elementLoadMomentUnits(item.ref))"></div>
               </div>
 
               <div v-if="item.ref instanceof BeamConcentratedLoad || item.ref instanceof BeamConcentratedDeformation" class="inline-edit-group load mr-2">
@@ -926,21 +887,7 @@
                     )
                   "
                 />
-                <div
-                  v-if="item.ref instanceof BeamElementUniformEdgeLoad"
-                  class="input-after"
-                  v-html="formatMeasureAsHTML(appStore.units.ForceDistance)"
-                ></div>
-                <div
-                  v-else-if="item.ref instanceof BeamConcentratedLoad"
-                  class="input-after"
-                  v-html="formatMeasureAsHTML(appStore.units.Length)"
-                ></div>
-                <div
-                  v-else-if="item.ref instanceof BeamConcentratedDeformation"
-                  class="input-after"
-                  v-html="formatMeasureAsHTML(appStore.units.Length)"
-                ></div>
+                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
               </div>
               <!-- TODO: Trapezoidal load cant render non LCS -->
               <div
@@ -1587,7 +1534,7 @@ import {
   nameBeamForce,
   loadType,
 } from '../utils';
-import { DofID, Beam2D, PrescribedDisplacement } from 'ts-fem';
+import { DofID, Beam2D, PrescribedDisplacement, type Load } from 'ts-fem';
 import { formatExpValueAsHTML, formatMeasureAsHTML } from '../SVGUtils';
 import { buildResultsTsv, downloadResultsCsv, resultUnitsFromStore } from '../utils/exportResults';
 
@@ -1613,6 +1560,7 @@ import EditNode from './dialogs/EditNode.vue';
 import { useLayoutStore } from '@/store/layout';
 import StiffnessMatrix from '@/components/StiffnessMatrix.vue';
 import { float2String } from '../utils/index';
+import { LOAD_CONFIG } from './dialogs/ElementLoadForm';
 
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -1627,6 +1575,16 @@ const props = defineProps({
     default: 231,
   },
 });
+
+// Element loads store SI values; which unit they map to depends on the load type
+// (forces for F/f, lengths for D, moments for M, radians for R, temperatures for T).
+const loadConfig = (load: Load) => LOAD_CONFIG[loadType(load)] ?? LOAD_CONFIG.udl;
+const elementLoadToMain = (load: Load, value: number) => loadConfig(load).toMain(appStore, value);
+const elementLoadToMoment = (load: Load, value: number) => loadConfig(load).toMoment(appStore, value);
+const elementLoadFromMain = (load: Load) => (value: number) => loadConfig(load).fromMain(appStore, value);
+const elementLoadFromMoment = (load: Load) => (value: number) => loadConfig(load).fromMoment(appStore, value);
+const elementLoadMainUnits = (load: Load) => loadConfig(load).getMainUnits(appStore);
+const elementLoadMomentUnits = (load: Load) => loadConfig(load).getMomentUnits(appStore);
 
 onMounted(() => {
   window.addEventListener('keydown', (e) => {
@@ -1869,31 +1827,35 @@ const formatElementLoadsAtElement = (item: Beam2D): [number, string][] => {
     };
 
     const ff = LABEL_MAP[nl.type] ?? 'f';
+    // deformations are lengths and rotations, so the label goes through the load type's
+    // own converters rather than assuming forces
+    const toMain = (v: number) => elementLoadToMain(nl.ref, v);
+    const toMoment = (v: number) => elementLoadToMoment(nl.ref, v);
+
     if (nl.type === 'temperature' && 'values' in nl.ref) {
       if (Math.abs(nl.ref.values[0]) > 1e-12)
-        tmp.push(t('loads.temperatureDeltaTs') + ' = ' + appStore.convertTemperature(nl.ref.values[0]));
+        tmp.push(t('loads.temperatureDeltaTs') + ' = ' + toMain(nl.ref.values[0]));
       if (Math.abs(nl.ref.values[1]) > 1e-12)
-        tmp.push(t('loads.temperatureDeltaTbt') + ' = ' + appStore.convertTemperature(nl.ref.values[1]));
+        tmp.push(t('loads.temperatureDeltaTbt') + ' = ' + toMoment(nl.ref.values[1]));
     } else if (nl.type === 'trapezoidal' && nl.ref instanceof BeamElementTrapezoidalEdgeLoad) {
       const startFx = nl.ref.startValues[0];
       const endFx = nl.ref.endValues[0];
       const startFz = nl.ref.startValues[1];
       const endFz = nl.ref.endValues[1];
       if (Math.abs(startFx) > 1e-12 || Math.abs(endFx) > 1e-12) {
-        const startText = appStore.convertForceDistance(startFx);
-        const endText = appStore.convertForceDistance(endFx);
-        tmp.push(`${ff}<sub>x</sub> = ${startText} → ${endText}`);
+        tmp.push(`${ff}<sub>x</sub> = ${toMain(startFx)} → ${toMain(endFx)}`);
       }
       if (Math.abs(startFz) > 1e-12 || Math.abs(endFz) > 1e-12) {
-        const startText = appStore.convertForceDistance(startFz);
-        const endText = appStore.convertForceDistance(endFz);
-        tmp.push(`${ff}<sub>z</sub> = ${startText} → ${endText}`);
+        tmp.push(`${ff}<sub>z</sub> = ${toMain(startFz)} → ${toMain(endFz)}`);
       }
     } else if ('values' in nl.ref) {
-      const convert = nl.type === 'udl' ? appStore.convertForceDistance : appStore.convertForce;
-
-      if (Math.abs(nl.ref.values[0]) > 1e-12) tmp.push(ff + '<sub>x</sub> = ' + convert(nl.ref.values[0]));
-      if (Math.abs(nl.ref.values[1]) > 1e-12) tmp.push(ff + '<sub>z</sub> = ' + convert(nl.ref.values[1]));
+      if (Math.abs(nl.ref.values[0]) > 1e-12) tmp.push(ff + '<sub>x</sub> = ' + toMain(nl.ref.values[0]));
+      if (Math.abs(nl.ref.values[1]) > 1e-12) tmp.push(ff + '<sub>z</sub> = ' + toMain(nl.ref.values[1]));
+      // without this a moment-only load renders an empty chip
+      if (nl.type === 'concentrated' && Math.abs(nl.ref.values[2]) > 1e-12)
+        tmp.push('M<sub>y</sub> = ' + toMoment(nl.ref.values[2]));
+      if (nl.type === 'concentrated_deformation' && Math.abs(nl.ref.values[2]) > 1e-12)
+        tmp.push('R<sub>y</sub> = ' + toMoment(nl.ref.values[2]));
     }
     return [nl.index, tmp.join(', ')];
   });

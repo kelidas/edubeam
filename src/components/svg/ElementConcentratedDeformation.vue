@@ -6,12 +6,14 @@ const props = withDefaults(
   defineProps<{
     eload: BeamConcentratedDeformation;
     scale: number;
-    convertForce: (f: number) => number;
-    convertMoment?: (m: number) => number;
+    /** displacement (length) converter, values[0] and values[1] */
+    convertDisplacement: (d: number) => number;
+    /** rotation (angle) converter, values[2] */
+    convertRotation?: (r: number) => number;
     fontSize?: number;
     numberFormat: Intl.NumberFormat;
   }>(),
-  { fontSize: 13, convertMoment: (m: number) => m }
+  { fontSize: 13, convertRotation: (r: number) => r }
 );
 
 const target = computed(() => {
@@ -113,7 +115,7 @@ const momentLabelPosition = computed(() => {
       dominant-baseline="central"
       :transform="momentLabelPosition"
     >
-      {{ numberFormat.format(Math.abs(convertMoment(eload.values[2]))) }}
+      {{ numberFormat.format(Math.abs(convertRotation(eload.values[2]))) }}
     </text>
 
     <text
@@ -126,12 +128,12 @@ const momentLabelPosition = computed(() => {
     >
       {{
         numberFormat.format(
-          convertForce(Math.sqrt(eload.values[0] * eload.values[0] + eload.values[1] * eload.values[1]))
+          convertDisplacement(Math.sqrt(eload.values[0] * eload.values[0] + eload.values[1] * eload.values[1]))
         )
       }}
       <template v-if="eload.values[0] !== 0 && eload.values[1] !== 0">
-        ({{ numberFormat.format(convertForce(eload.values[0])) }};
-        {{ numberFormat.format(convertForce(eload.values[1])) }})
+        ({{ numberFormat.format(convertDisplacement(eload.values[0])) }};
+        {{ numberFormat.format(convertDisplacement(eload.values[1])) }})
       </template>
     </text>
   </g>

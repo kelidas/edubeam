@@ -555,7 +555,24 @@ const onElementLoadHover = (e: MouseEvent, el: BeamElementLoad) => {
     }
 
     if (Math.abs(el.values[1]) > 1e-32) {
-      tooltipContent.innerHTML += `${ff}<sub>z</sub> = ${convertIntensity(el.values[1])} ${uu}`;
+      tooltipContent.innerHTML += `${ff}<sub>z</sub> = ${appStore.convertForce(el.values[1])} ${uu}<br>`;
+    }
+
+    if (el instanceof BeamConcentratedLoad && Math.abs(el.values[2]) > 1e-32) {
+      tooltipContent.innerHTML += `M<sub>y</sub> = ${appStore.convertMoment(el.values[2])} ${appStore.units.Moment}`;
+    }
+  } else if (el instanceof BeamConcentratedDeformation) {
+    // deformations are lengths and rotations, not forces
+    if (Math.abs(el.values[0]) > 1e-32) {
+      tooltipContent.innerHTML += `D<sub>x</sub> = ${appStore.convertLength(el.values[0])} ${appStore.units.Length}<br>`;
+    }
+
+    if (Math.abs(el.values[1]) > 1e-32) {
+      tooltipContent.innerHTML += `D<sub>z</sub> = ${appStore.convertLength(el.values[1])} ${appStore.units.Length}<br>`;
+    }
+
+    if (Math.abs(el.values[2]) > 1e-32) {
+      tooltipContent.innerHTML += `R<sub>y</sub> = ${el.values[2]} ${appStore.units.Angle}`;
     }
   }
 
@@ -2215,10 +2232,9 @@ defineExpose({ centerContent, fitContent });
                   :data-element-load-id="index"
                   :eload="eload"
                   :scale="scale"
-                  :convert-force="appStore.convertForce"
-                  :convert-moment="appStore.convertMoment"
+                  :convert-displacement="appStore.convertLength"
                   :font-size="viewerStore.fontSize"
-                  :number-format="appStore.numberFormatter"
+                  :number-format="appStore.deformationFormatter"
                   @mousemove="onElementLoadHover($event, eload)"
                   @mouseleave="hideTooltip"
                   @pointerup="onElementLoadClick($event, index)"

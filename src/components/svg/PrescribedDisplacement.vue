@@ -14,7 +14,7 @@ const props = withDefaults(
   }>(),
   {
     fontSize: 13,
-    numberFormat: new Intl.NumberFormat(),
+    numberFormat: () => new Intl.NumberFormat(),
   }
 );
 
@@ -50,7 +50,7 @@ const target = computed(() => {
     >
       {{ formatScientificNumber(convertLength(nload.prescribedValues[0]), 2) }};
       {{ formatScientificNumber(convertLength(nload.prescribedValues[2]), 2) }};
-      {{ formatScientificNumber(convertLength(nload.prescribedValues[4]), 2) }}
+      {{ formatScientificNumber(nload.prescribedValues[4], 2) }}
     </text>
   </g>
 </template>
