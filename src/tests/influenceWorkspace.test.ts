@@ -72,3 +72,42 @@ describe('influence line workspace', () => {
     expect(projectStore.solveDiagnostics.errors.some((e) => e.code === 'ELEMENT_LOAD_MISSING_TARGET')).toBe(true);
   });
 });
+
+describe('influence line persistence', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('survives a save and reload', async () => {
+    const projectStore = buildBeam();
+
+    projectStore.solver.loadCases[0].createBeamElementUniformEdgeLoad('1', [0, 1000], true);
+    projectStore.influenceLoadCase().createBeamConcentratedDeformation('1', [0, -1, 0.5, 1.5], true);
+    projectStore.influenceLoadCase().createPrescribedDisplacement(2, { 2: 0.01 });
+
+    const { serializeModel, deserializeModel } = await import('@/utils/serializeModel');
+    const saved = serializeModel(projectStore.solver, []);
+
+    const { LinearStaticSolver } = await import('ts-fem');
+    const restored = new LinearStaticSolver();
+    expect(deserializeModel(saved, restored, [])).toBe(true);
+
+    // the real loads in the first case, untouched
+    expect(restored.loadCases[0].elementLoadList).toHaveLength(1);
+
+    // the dislocation and the support displacement in the second
+    expect(restored.loadCases).toHaveLength(2);
+    expect(restored.loadCases[1].elementLoadList).toHaveLength(1);
+    expect(restored.loadCases[1].elementLoadList[0].values).toEqual([0, -1, 0.5, 1.5]);
+    expect(restored.loadCases[1].prescribedBC).toHaveLength(1);
+    expect(restored.loadCases[1].prescribedBC[0].prescribedValues[2]).toBe(0.01);
+  });
+
+  it('writes no influence keys when the case is empty', async () => {
+    const projectStore = buildBeam();
+
+    const { serializeModel, parseSerializedModel } = await import('@/utils/serializeModel');
+    const parsed = parseSerializedModel(serializeModel(projectStore.solver, []));
+
+    expect(parsed).not.toHaveProperty('icd');
+    expect(parsed).not.toHaveProperty('ipd');
+  });
+});

@@ -6,6 +6,8 @@ import {
   BeamConcentratedLoad,
   BeamTemperatureLoad,
   BeamElementTrapezoidalEdgeLoad,
+  BeamConcentratedDeformation,
+  LoadCase,
 } from 'ts-fem';
 import { createDimensionId, ensureDimensionId } from './id';
 import { deserializeShape, isSerializedShape, serializeShape } from './sectionProperties';
@@ -194,6 +196,24 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
     pd.push([load.target, load.prescribedValues]);
   });
 
+  // The influence line workspace: the second case holds its unit dislocations and the support
+  // displacements they are combined with, apart from the real loads.
+  const icd = [];
+  const ipd = [];
+  const influence = ls.loadCases[1];
+
+  if (influence) {
+    influence.elementLoadList
+      .filter((el) => el instanceof BeamConcentratedDeformation)
+      .forEach((load: BeamConcentratedDeformation) => {
+        icd.push([load.target, load.values, load.lcs]);
+      });
+
+    influence.prescribedBC.forEach((load) => {
+      ipd.push([load.target, load.prescribedValues]);
+    });
+  }
+
   const obj: {
     n?: unknown[];
     e?: unknown[];
@@ -206,6 +226,8 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
     pd?: unknown[];
     d?: unknown[];
     etr?: unknown[];
+    icd?: unknown[];
+    ipd?: unknown[];
   } = {};
 
   if (_nodes.length > 0) obj.n = _nodes;
@@ -218,6 +240,8 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
   if (etraploads.length > 0) obj.etr = etraploads;
   if (nloads.length > 0) obj.nl = nloads;
   if (pd.length > 0) obj.pd = pd;
+  if (icd.length > 0) obj.icd = icd;
+  if (ipd.length > 0) obj.ipd = ipd;
 
   obj.d = dims.map((e) => {
     const id = ensureDimensionId(e);
@@ -317,6 +341,19 @@ export const deserializeModel = (base64String: string, ls: LinearStaticSolver, d
   if ('pd' in tmp) {
     for (const e of tmp.pd) {
       ls.loadCases[0].createPrescribedDisplacement(e[0], e[1]);
+    }
+  }
+
+  if ('icd' in tmp || 'ipd' in tmp) {
+    if (ls.loadCases.length < 2) ls.loadCases.push(new LoadCase('influence', ls.domain));
+    const influence = ls.loadCases[1];
+
+    for (const e of tmp.icd ?? []) {
+      influence.createBeamConcentratedDeformation(e[0], e[1], e[2] !== undefined ? e[2] : true);
+    }
+
+    for (const e of tmp.ipd ?? []) {
+      influence.createPrescribedDisplacement(e[0], e[1]);
     }
   }
 
