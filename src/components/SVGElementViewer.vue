@@ -87,6 +87,8 @@ const props = withDefaults(
     convertForceDistance?: (value: number) => number;
     convertMoment?: (value: number) => number;
     convertLength?: (value: number) => number;
+    /** Deflections span orders of magnitude, so they are formatted by significant digits. */
+    deformationNumberFormat?: Intl.NumberFormat;
     resultLabelMode?: 'axis' | 'horizontal';
     numberFormat?: Intl.NumberFormat;
     zoomEnabled?: boolean;
@@ -135,6 +137,7 @@ const props = withDefaults(
     convertForceDistance: (v) => v,
     convertMoment: (v) => v,
     convertLength: (v) => v,
+    deformationNumberFormat: () => new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }),
     resultLabelMode: 'axis',
     numberFormat: () => new Intl.NumberFormat(),
     zoomEnabled: false,
@@ -419,6 +422,8 @@ defineExpose({ centerContent, fitContent });
               :result-label-mode="props.resultLabelMode"
               :convert-force="props.convertForce"
               :convert-moment="props.convertMoment"
+              :convert-length="props.convertLength"
+              :deformation-number-format="props.deformationNumberFormat"
               :font-size="props.fontSize"
             />
           </g>
@@ -444,6 +449,8 @@ defineExpose({ centerContent, fitContent });
               :result-label-mode="props.resultLabelMode"
               :convert-force="props.convertForce"
               :convert-moment="props.convertMoment"
+              :convert-length="props.convertLength"
+              :deformation-number-format="props.deformationNumberFormat"
               :font-size="props.fontSize"
             />
           </g>
@@ -651,6 +658,10 @@ defineExpose({ centerContent, fitContent });
 
   .prescribed polyline {
     stroke: v-bind('colors.loads');
+  }
+
+  text.deflection-label {
+    fill: v-bind('colors.deformedShape');
   }
 
   .nodal-load {

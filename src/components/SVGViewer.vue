@@ -321,6 +321,25 @@ const LOAD_DECORATION_PX = 60;
  * diagrams, reactions and loads plus one line of labels. Reserving it whether or
  * not they are shown keeps the fitted view identical across display settings.
  */
+/** Diagrams whose scale can be adjusted, named as the viewer settings name them. */
+const scalableResults = computed(() =>
+  [
+    { key: 'deformedShape' as const, label: 'w', shown: viewerStore.showDeformedShape },
+    { key: 'normalForce' as const, label: 'N&nbsp;(x)', shown: viewerStore.showNormalForce },
+    { key: 'shearForce' as const, label: 'V<sub>z</sub>&nbsp;(x)', shown: viewerStore.showShearForce },
+    { key: 'bendingMoment' as const, label: 'M<sub>y</sub>&nbsp;(x)', shown: viewerStore.showBendingMoment },
+  ].filter((row) => row.shown)
+);
+
+type ResultScaleKey = 'deformedShape' | 'normalForce' | 'shearForce' | 'bendingMoment';
+
+/** One wheel notch, one button press: a quarter up or down, never past a factor of a thousand. */
+const stepResultScale = (key: ResultScaleKey, direction: number) => {
+  const next = viewerStore.resultScale[key] * (direction > 0 ? 1.25 : 1 / 1.25);
+
+  viewerStore.resultScale[key] = Math.min(Math.max(next, 1e-3), 1e3);
+};
+
 const fitReserve = computed(() => Math.max(viewerStore.resultsScalePx_, LOAD_DECORATION_PX) + viewerStore.fontSize + 8);
 
 const modelBounds = () => boundsFromPoints(projectStore.nodes.map((node) => [node.coords[0], node.coords[2]] as const));
@@ -1799,64 +1818,94 @@ defineExpose({ centerContent, fitContent });
 <template>
   <div class="d-flex flex-column fill-height svg-viewer">
     <!-- <div style="position: absolute; top: 0; left: 0; background: red; z-index: 101">{{ intersected }}</div> -->
-    <div
-      v-if="!appStore.inViewerMode"
-      class="text-body-2 d-flex ga-1 line-height-1"
-      style="position: absolute; z-index: 100; bottom: 16px; right: 16px"
-    >
-      <div class="d-flex align-center ga-1">
-        <v-chip density="compact" class="d-flex pa-0 overflow-hidden">
-          <!-- Grid toggle -->
-          <v-tooltip text="Toggle grid (G)" location="top">
-            <template #activator="{ props: tooltipProps }">
-              <v-btn
-                v-bind="tooltipProps"
-                size="24"
-                density="compact"
-                variant="text"
-                rounded="0"
-                :class="viewerStore.showGrid ? 'text-black' : 'text-grey'"
-                @click="toggleGridVisibility"
-              >
-                <div>G</div>
-              </v-btn>
-            </template>
-          </v-tooltip>
-          <!-- Snap to grid -->
-          <v-tooltip text="Toggle snap to grid (S)" location="top">
-            <template #activator="{ props: tooltipProps }">
-              <v-btn
-                v-bind="tooltipProps"
-                size="24"
-                density="compact"
-                variant="text"
-                rounded="0"
-                :class="viewerStore.snapToGrid ? 'text-black' : 'text-grey'"
-                @click="toggleSnapToGrid"
-              >
-                <div>S</div>
-              </v-btn>
-            </template>
-          </v-tooltip>
-        </v-chip>
-      </div>
-      <v-chip-group>
-        <v-chip class="justify-end" density="compact" @click="appStore.openSettings()">
-          <div class="d-flex ga-1">
-            <span v-html="formatMeasureAsHTML(appStore.units.Length)"></span>
-            <span v-html="formatMeasureAsHTML(appStore.units.Area)"></span>
-            <span v-html="formatMeasureAsHTML(appStore.units.Force)"></span>
-            <span v-html="formatMeasureAsHTML(appStore.units.Moment)"></span>
-            <span v-html="formatMeasureAsHTML(appStore.units.Pressure)"></span>
-          </div>
-        </v-chip>
-      </v-chip-group>
+    <div v-if="!appStore.inViewerMode" style="position: absolute; z-index: 100; bottom: 16px; right: 24px">
+      <div class="text-body-2 d-flex flex-column pa-1 ga-2 align-end justify-end line-height-1">
+        <!--
+          Result scales, in the corner above the units. The wheel over a row is the quick gesture
+          on a desktop; the buttons beside it do the same, since a touch screen has no wheel. The
+          factor doubles as a reset button.
+        -->
+        <div
+          v-if="scalableResults.length > 0"
+          id="resultScales"
+          class="bg-grey-lighten-5 elevation-1 rounded pa-1 pr-2 d-flex flex-column ga-1"
+        >
+          <div class="text-caption text-medium-emphasis px-1">{{ $t('settings.results_scale') }}</div>
 
-      <!-- <v-chip-group>
-        <v-chip density="compact">
-          {{ projectStore.solver.neq }} free DOFs {{ projectStore.solver.pneq }} supported DOFs
-        </v-chip>
-      </v-chip-group> -->
+          <div
+            v-for="row in scalableResults"
+            :key="row.key"
+            class="d-flex align-center justify-end ga-2"
+            @wheel.prevent="stepResultScale(row.key, $event.deltaY < 0 ? 1 : -1)"
+          >
+            <span class="text-no-wrap px-1" v-html="row.label"></span>
+            <v-btn icon variant="tonal" class="scale-step" @click="stepResultScale(row.key, -1)">
+              <v-icon icon="mdi-minus" size="16" />
+            </v-btn>
+            <v-btn
+              v-tooltip.left="$t('settings.reset_settings')"
+              size="x-small"
+              variant="text"
+              class="px-1"
+              style="min-width: 48px"
+              @click="viewerStore.resultScale[row.key] = 1"
+            >
+              {{ appStore.numberFormatter.format(viewerStore.resultScale[row.key]) }}&times;
+            </v-btn>
+            <v-btn icon variant="tonal" class="scale-step" @click="stepResultScale(row.key, 1)">
+              <v-icon icon="mdi-plus" size="16" />
+            </v-btn>
+          </div>
+        </div>
+
+        <div class="d-flex ga-1 align-center">
+          <div class="d-flex align-center ga-1">
+            <v-chip density="compact" class="d-flex pa-0 overflow-hidden">
+              <!-- Grid toggle -->
+              <v-tooltip text="Toggle grid (G)" location="top">
+                <template #activator="{ props: tooltipProps }">
+                  <v-btn
+                    v-bind="tooltipProps"
+                    size="24"
+                    density="compact"
+                    variant="text"
+                    rounded="0"
+                    :class="viewerStore.showGrid ? 'text-black' : 'text-grey'"
+                    @click="toggleGridVisibility"
+                  >
+                    <div>G</div>
+                  </v-btn>
+                </template>
+              </v-tooltip>
+              <!-- Snap to grid -->
+              <v-tooltip text="Toggle snap to grid (S)" location="top">
+                <template #activator="{ props: tooltipProps }">
+                  <v-btn
+                    v-bind="tooltipProps"
+                    size="24"
+                    density="compact"
+                    variant="text"
+                    rounded="0"
+                    :class="viewerStore.snapToGrid ? 'text-black' : 'text-grey'"
+                    @click="toggleSnapToGrid"
+                  >
+                    <div>S</div>
+                  </v-btn>
+                </template>
+              </v-tooltip>
+            </v-chip>
+          </div>
+          <v-chip class="justify-end" density="compact" @click="appStore.openSettings()">
+            <div class="d-flex ga-1">
+              <span v-html="formatMeasureAsHTML(appStore.units.Length)"></span>
+              <span v-html="formatMeasureAsHTML(appStore.units.Area)"></span>
+              <span v-html="formatMeasureAsHTML(appStore.units.Force)"></span>
+              <span v-html="formatMeasureAsHTML(appStore.units.Moment)"></span>
+              <span v-html="formatMeasureAsHTML(appStore.units.Pressure)"></span>
+            </div>
+          </v-chip>
+        </div>
+      </div>
     </div>
     <div v-if="!appStore.inViewerMode" id="undoRedo" style="position: absolute; top: 24px; left: 24px; z-index: 100">
       <v-btn
@@ -2281,7 +2330,9 @@ defineExpose({ centerContent, fitContent });
                 :nload="nload"
                 :scale="scale"
                 :convert-length="appStore.convertLength"
-                :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
+                :multiplier="
+                  projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+                "
                 :font-size="viewerStore.fontSize"
                 :number-format="appStore.numberFormatter"
                 @mousemove="onPrescribedBCHover($event, nload)"
@@ -2309,13 +2360,23 @@ defineExpose({ centerContent, fitContent });
               :show-bending-moment="!isZooming && viewerStore.showBendingMoment"
               :show-label="!isZooming && viewerStore.showElementLabels"
               :load-case="viewerLoadCase"
-              :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
-              :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
-              :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
-              :bending-moment-multiplier="projectStore.bendingMomentScale * viewerStore.resultsScalePx_"
+              :deformed-shape-multiplier="
+                projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+              "
+              :normal-force-multiplier="
+                projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+              "
+              :shear-force-multiplier="
+                projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+              "
+              :bending-moment-multiplier="
+                projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+              "
               :result-label-mode="resolvedResultLabelMode"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
+              :convert-length="appStore.convertLength"
+              :deformation-number-format="appStore.deformationFormatter"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
               @elementmousemove="onElementHover($event, element)"
@@ -2340,13 +2401,23 @@ defineExpose({ centerContent, fitContent });
               :show-bending-moment="!isZooming && viewerStore.showBendingMoment"
               :show-label="!isZooming && viewerStore.showElementLabels"
               :load-case="viewerLoadCase"
-              :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
-              :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
-              :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
-              :bending-moment-multiplier="projectStore.bendingMomentScale * viewerStore.resultsScalePx_"
+              :deformed-shape-multiplier="
+                projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+              "
+              :normal-force-multiplier="
+                projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+              "
+              :shear-force-multiplier="
+                projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+              "
+              :bending-moment-multiplier="
+                projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+              "
               :result-label-mode="resolvedResultLabelMode"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
+              :convert-length="appStore.convertLength"
+              :deformation-number-format="appStore.deformationFormatter"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
               @elementmousemove="onElementHover($event, element)"
@@ -2370,7 +2441,7 @@ defineExpose({ centerContent, fitContent });
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
               :load-case="viewerLoadCase"
-              :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
+              :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
               @nodemousemove="onNodeHover($event, node)"
@@ -2426,13 +2497,23 @@ defineExpose({ centerContent, fitContent });
               :show-label="!isZooming && viewerStore.showElementLabels"
               show-label-background
               :load-case="viewerLoadCase"
-              :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
-              :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
-              :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
-              :bending-moment-multiplier="projectStore.bendingMomentScale * viewerStore.resultsScalePx_"
+              :deformed-shape-multiplier="
+                projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+              "
+              :normal-force-multiplier="
+                projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+              "
+              :shear-force-multiplier="
+                projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+              "
+              :bending-moment-multiplier="
+                projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+              "
               :result-label-mode="resolvedResultLabelMode"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
+              :convert-length="appStore.convertLength"
+              :deformation-number-format="appStore.deformationFormatter"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
             />
@@ -2452,13 +2533,23 @@ defineExpose({ centerContent, fitContent });
               :show-label="!isZooming && viewerStore.showElementLabels"
               show-label-background
               :load-case="viewerLoadCase"
-              :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
-              :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
-              :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
-              :bending-moment-multiplier="projectStore.bendingMomentScale * viewerStore.resultsScalePx_"
+              :deformed-shape-multiplier="
+                projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+              "
+              :normal-force-multiplier="
+                projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+              "
+              :shear-force-multiplier="
+                projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+              "
+              :bending-moment-multiplier="
+                projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+              "
               :result-label-mode="resolvedResultLabelMode"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
+              :convert-length="appStore.convertLength"
+              :deformation-number-format="appStore.deformationFormatter"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
             />
@@ -2480,13 +2571,23 @@ defineExpose({ centerContent, fitContent });
                 :show-bending-moment="false"
                 :show-label="false"
                 :load-case="viewerLoadCase"
-                :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
-                :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
-                :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
-                :bending-moment-multiplier="projectStore.bendingMomentScale * viewerStore.resultsScalePx_"
+                :deformed-shape-multiplier="
+                  projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+                "
+                :normal-force-multiplier="
+                  projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+                "
+                :shear-force-multiplier="
+                  projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+                "
+                :bending-moment-multiplier="
+                  projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+                "
                 :result-label-mode="resolvedResultLabelMode"
                 :convert-force="appStore.convertForce"
                 :convert-moment="appStore.convertMoment"
+                :convert-length="appStore.convertLength"
+                :deformation-number-format="appStore.deformationFormatter"
                 :font-size="viewerStore.fontSize"
                 :number-format="appStore.numberFormatter"
               />
@@ -2503,7 +2604,9 @@ defineExpose({ centerContent, fitContent });
                 :show-reactions="false"
                 :convert-force="appStore.convertForce"
                 :load-case="viewerLoadCase"
-                :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
+                :multiplier="
+                  projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+                "
                 :font-size="viewerStore.fontSize"
                 :number-format="appStore.numberFormatter"
               />
@@ -2649,6 +2752,22 @@ defineExpose({ centerContent, fitContent });
 </template>
 
 <style lang="scss" scoped>
+/* The scale rows read as the viewer settings do: their label size, not the smaller button one. */
+#resultScales {
+  font-size: 1rem;
+
+  .v-btn {
+    font-size: 1rem;
+    letter-spacing: normal;
+  }
+
+  .scale-step {
+    width: 26px;
+    height: 26px;
+    min-width: 26px;
+  }
+}
+
 .disablePointerEvents {
   pointer-events: none;
 }
@@ -2753,6 +2872,10 @@ defineExpose({ centerContent, fitContent });
     polyline.fibers {
       stroke: #666;
       stroke-width: 1px;
+    }
+
+    text.deflection-label {
+      fill: v-bind('viewerStore.colors.deformedShape');
     }
 
     path.deformedShape {
