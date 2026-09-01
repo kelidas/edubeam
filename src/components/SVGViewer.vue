@@ -4,7 +4,7 @@ import SvgPanZoom from './SVGPanZoom.vue';
 import SvgGrid from './SVGGrid.vue';
 import SvgViewerDefs from './SVGViewerDefs.vue';
 import { useProjectStore } from '../store/project';
-import { ref, onMounted, computed, nextTick, watch, reactive, onUnmounted, provide } from 'vue';
+import { ref, onMounted, onActivated, computed, nextTick, watch, reactive, onUnmounted, provide } from 'vue';
 import { useViewerStore } from '../store/viewer';
 import { useAppStore } from '@/store/app';
 
@@ -261,6 +261,15 @@ onMounted(() => {
   window.setTimeout(() => {
     //fitContent();
   }, 100);
+});
+
+/**
+ * Tabs keep every viewer mounted, and one that has never been shown has never been measured: its
+ * view is empty and its scale meaningless. Fit once it is on screen and has a size to fit into.
+ */
+onActivated(async () => {
+  await nextTick();
+  fitContent();
 });
 
 const setUnsolved = () => {
