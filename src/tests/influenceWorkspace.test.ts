@@ -111,3 +111,20 @@ describe('influence line persistence', () => {
     expect(parsed).not.toHaveProperty('ipd');
   });
 });
+
+describe('before the influence case exists', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('falls back to the first case rather than recursing', () => {
+    const projectStore = buildBeam();
+    const appStore = useAppStore();
+
+    // the influence tab can be read before anything has created its case
+    expect(projectStore.solver.loadCases).toHaveLength(1);
+
+    appStore.tabs.push({ title: 'x', component: {}, props: { id: 'influence' }, closable: false });
+    appStore.tab = appStore.tabs.length - 1;
+
+    expect(projectStore.loadCase).toBe(projectStore.solver.loadCases[0]);
+  });
+});

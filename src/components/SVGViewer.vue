@@ -85,9 +85,12 @@ const props = defineProps<{
  * The case this instance draws and edits: the influence line tab owns the second one, where unit
  * dislocations live so they never combine with the real loads.
  */
-const viewerLoadCase = computed(
-  () => projectStore.solver.loadCases[props.id === 'influence' ? 1 : 0] ?? viewerLoadCase.value
-);
+const viewerLoadCase = computed(() => {
+  const cases = projectStore.solver.loadCases;
+
+  // The influence case is created on demand, so fall back until it exists
+  return cases[props.id === 'influence' ? 1 : 0] ?? cases[0];
+});
 
 let mouseStartX = 0;
 let mouseStartY = 0;
