@@ -44,6 +44,9 @@ import {
   BeamTemperatureLoad,
 } from 'ts-fem';
 import { useMagicKeys } from '@vueuse/core';
+import { BeamConcentratedDeformation } from 'ts-fem';
+import SVGElementConcentratedDeformation from './svg/ElementConcentratedDeformation.vue';
+import EditConcentratedDeformationDialog from './dialogs/EditConcentratedDeformation.vue';
 
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -78,6 +81,14 @@ const props = defineProps<{
   resultLabelMode?: 'axis' | 'horizontal';
 }>();
 
+/**
+ * The case this instance draws and edits: the influence line tab owns the second one, where unit
+ * dislocations live so they never combine with the real loads.
+ */
+const viewerLoadCase = computed(
+  () => projectStore.solver.loadCases[props.id === 'influence' ? 1 : 0] ?? viewerLoadCase.value
+);
+
 let mouseStartX = 0;
 let mouseStartY = 0;
 /** Pointers currently down on the canvas; more than one means a pinch or a two finger pan. */
@@ -99,6 +110,10 @@ const dimlineDist = ref(48); // preview offset
 const appStore = useAppStore();
 const projectStore = useProjectStore();
 const viewerStore = useViewerStore();
+
+/** Tabs keep every instance mounted; only the one on the open tab may answer global events. */
+const isActiveViewer = () => appStore.openedTab?.props?.id === props.id;
+
 const layoutStore = useLayoutStore();
 
 const resolvedResultLabelMode = computed(() => props.resultLabelMode ?? viewerStore.resultLabelMode);
@@ -200,6 +215,8 @@ const hideTooltip = (clearHoverState = true) => {
 };
 
 const zoom = (e: KeyboardEvent) => {
+  if (!isActiveViewer()) return;
+
   if (e.ctrlKey && e.code === 'Equal') {
     panZoom.value?.zoom(svg.value.clientWidth / 2, svg.value.clientHeight / 2, -0.1);
     e.preventDefault();
@@ -217,6 +234,8 @@ const resetAndFit = () => {
 
 /** Answers EventType.REQUEST_VIEWER_SVG so exports can reach the element we own. */
 const provideSvgForExport = (respond: (svg: SVGSVGElement | null) => void) => {
+  if (!isActiveViewer()) return;
+
   respond((svg.value as SVGSVGElement) ?? null);
 };
 
@@ -239,7 +258,7 @@ onMounted(() => {
 });
 
 const setUnsolved = () => {
-  useProjectStore().solver.loadCases[0].solved = false;
+  viewerLoadCase.value.solved = false;
 };
 
 const solve = () => {
@@ -322,6 +341,8 @@ const toggleSnapToGrid = () => {
 };
 
 const isShortcutBlocked = () => {
+  if (!isActiveViewer()) return true;
+
   const activeElement = document.activeElement as HTMLElement | null;
   if (!activeElement) return false;
   if (activeElement === document.body) return false;
@@ -429,7 +450,7 @@ const activeAddMode = computed(() => {
 });
 
 watch(escape, (v) => {
-  if (v) {
+  if (v && isActiveViewer()) {
     cancelActiveMode();
 
     //viewerStore.settingsOpen = false;
@@ -452,7 +473,7 @@ const refreshTooltipContent = () => {
 };
 
 watch(
-  () => projectStore.solver.loadCases[0].solved,
+  () => viewerLoadCase.value.solved,
   (solved) => {
     if (solved) refreshTooltipContent();
   }
@@ -518,6 +539,7 @@ const onElementLoadHover = (e: MouseEvent, el: BeamElementLoad) => {
   if (el instanceof BeamElementTrapezoidalEdgeLoad) lt = 'loadType.trapezoidal';
   else if (el instanceof BeamConcentratedLoad) lt = 'loadType.concentrated';
   else if (el instanceof BeamTemperatureLoad) lt = 'loadType.temperature';
+  else if (el instanceof BeamConcentratedDeformation) lt = 'loadType.concentrated_deformation';
   const ff = isDistributed ? 'f' : 'F';
   // A distributed load is an intensity, a concentrated one a force; both parts of the unit count.
   const convertIntensity = isDistributed ? appStore.convertForceDistance : appStore.convertForce;
@@ -553,6 +575,19 @@ const onElementLoadHover = (e: MouseEvent, el: BeamElementLoad) => {
 
     if (Math.abs(el.values[1]) > 1e-32) {
       tooltipContent.innerHTML += `${ff}<sub>z</sub> = ${convertIntensity(el.values[1])} ${uu}`;
+    }
+  } else if (el instanceof BeamConcentratedDeformation) {
+    // deformations are lengths and rotations, not forces
+    if (Math.abs(el.values[0]) > 1e-32) {
+      tooltipContent.innerHTML += `D<sub>x</sub> = ${appStore.convertLength(el.values[0])} ${appStore.units.Length}<br>`;
+    }
+
+    if (Math.abs(el.values[1]) > 1e-32) {
+      tooltipContent.innerHTML += `D<sub>z</sub> = ${appStore.convertLength(el.values[1])} ${appStore.units.Length}<br>`;
+    }
+
+    if (Math.abs(el.values[2]) > 1e-32) {
+      tooltipContent.innerHTML += `R<sub>y</sub> = ${el.values[2]} ${appStore.units.Angle}`;
     }
   }
 
@@ -625,26 +660,23 @@ const onPrescribedBCHover = (e: MouseEvent, el: PrescribedDisplacement) => {
 const buildNodeTooltipContent = (node: Node) => {
   let content = `<strong>${t('common.node')} ${escapeHtml(node.label)}</strong>`;
 
-  if (
-    projectStore.solver.loadCases[0].solved &&
-    projectStore.beams.some((element) => element.nodes.includes(node.label))
-  ) {
+  if (viewerLoadCase.value.solved && projectStore.beams.some((element) => element.nodes.includes(node.label))) {
     content += '<br>';
     content += `u<sub>x</sub> = ${formatExpValueAsHTML(
       // @ts-expect-error It return value for single Dof
-      node.getUnknowns(projectStore.solver.loadCases[0], [DofID.Dx]),
+      node.getUnknowns(viewerLoadCase.value, [DofID.Dx]),
       4
     )} m`;
     content += '<br>';
     content += `u<sub>z</sub> = ${formatExpValueAsHTML(
       // @ts-expect-error It return value for single Dof
-      node.getUnknowns(projectStore.solver.loadCases[0], [DofID.Dz]),
+      node.getUnknowns(viewerLoadCase.value, [DofID.Dz]),
       4
     )} m`;
     content += '<br>';
     content += `φ<sub>y</sub> = ${formatExpValueAsHTML(
       // @ts-expect-error It return value for single Dof
-      node.getUnknowns(projectStore.solver.loadCases[0], [DofID.Ry]),
+      node.getUnknowns(viewerLoadCase.value, [DofID.Ry]),
       4
     )} rad`;
   }
@@ -1095,7 +1127,7 @@ const mouseMove = (e: PointerEvent) => {
     finalX = mouseXReal.value;
     finalZ = mouseYReal.value;
 
-    //useProjectStore().solver.loadCases[0].solved = false;
+    //viewerLoadCase.value.solved = false;
     solve();
   }
 };
@@ -1148,7 +1180,7 @@ const placeAtPointer = (e: PointerEvent) => {
               color: 'green darken-1',
               action: () => {
                 executeModelMutationWithUndo(() => {
-                  projectStore.solver.loadCases[0].solved = false;
+                  viewerLoadCase.value.solved = false;
                   projectStore.solver.domain.createNode(
                     newNodeId,
                     [mouseXReal.value, 0, mouseYReal.value],
@@ -1216,7 +1248,7 @@ const placeAtPointer = (e: PointerEvent) => {
               color: 'blue darken-1',
               action: () => {
                 executeModelMutationWithUndo(() => {
-                  projectStore.solver.loadCases[0].solved = false;
+                  viewerLoadCase.value.solved = false;
                   projectStore.solver.domain.createNode(
                     newNodeId,
                     [mouseXReal.value, 0, mouseYReal.value],
@@ -1278,7 +1310,7 @@ const placeAtPointer = (e: PointerEvent) => {
 
       startNode.value = { label: intersected.value.index, x: n.coords[0], y: n.coords[2] };
     } else if (intersected.value.type === 'node') {
-      projectStore.solver.loadCases[0].solved = false;
+      viewerLoadCase.value.solved = false;
       let newElId = projectStore.solver.domain.elements.size + 1;
 
       while (projectStore.solver.domain.elements.has(newElId.toString())) {
@@ -1298,7 +1330,7 @@ const placeAtPointer = (e: PointerEvent) => {
       const n = projectStore.solver.domain.nodes.get(intersected.value.index as string)!;
       startNode.value = { label: intersected.value.index, x: n.coords[0], y: n.coords[2] };
     } else {
-      projectStore.solver.loadCases[0].solved = false;
+      viewerLoadCase.value.solved = false;
 
       // No end node selected, just add new
       let newNodeId = projectStore.solver.domain.nodes.size + 1;
@@ -1628,16 +1660,16 @@ const onMouseUp = (e: PointerEvent) => {
         selectedNodes.push(label);
 
         // Also select corresponding nodal load
-        for (let i = 0; i < useProjectStore().solver.loadCases[0].nodalLoadList.length; i++) {
-          const nl = useProjectStore().solver.loadCases[0].nodalLoadList[i];
+        for (let i = 0; i < viewerLoadCase.value.nodalLoadList.length; i++) {
+          const nl = viewerLoadCase.value.nodalLoadList[i];
           if (nl.target === label) {
             selectedNodalLoads.push(i);
           }
         }
 
         // Also select corresponding prescribed BC
-        for (let i = 0; i < useProjectStore().solver.loadCases[0].prescribedBC.length; i++) {
-          const nl = useProjectStore().solver.loadCases[0].prescribedBC[i];
+        for (let i = 0; i < viewerLoadCase.value.prescribedBC.length; i++) {
+          const nl = viewerLoadCase.value.prescribedBC[i];
           if (nl.target === label) {
             selectedPrescribedBC.push(i);
           }
@@ -1670,8 +1702,8 @@ const onMouseUp = (e: PointerEvent) => {
         selectedElements.push(label);
 
         // Select corresponding element loads
-        for (let i = 0; i < useProjectStore().solver.loadCases[0].elementLoadList.length; i++) {
-          const el = useProjectStore().solver.loadCases[0].elementLoadList[i];
+        for (let i = 0; i < viewerLoadCase.value.elementLoadList.length; i++) {
+          const el = viewerLoadCase.value.elementLoadList[i];
           if (el.target === label) {
             selectedElementLoads.push(i);
           }
@@ -2149,7 +2181,7 @@ defineExpose({ centerContent, fitContent });
           </g>
           <g>
             <g v-if="!isZooming && useViewerStore().showLoads" data-fit-ignore="loads">
-              <template v-for="(eload, index) in useProjectStore().solver.loadCases[0].elementLoadList">
+              <template v-for="(eload, index) in viewerLoadCase.elementLoadList">
                 <SVGElementLoad
                   v-if="eload instanceof BeamElementUniformEdgeLoad || eload instanceof BeamElementTrapezoidalEdgeLoad"
                   :key="`element-udl-${index}`"
@@ -2186,6 +2218,24 @@ defineExpose({ centerContent, fitContent });
                     projectStore.clearSelection();
                   "
                 />
+                <SVGElementConcentratedDeformation
+                  v-else-if="eload instanceof BeamConcentratedDeformation"
+                  :key="`element-cd-${index}`"
+                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
+                  :data-element-load-id="index"
+                  :eload="eload"
+                  :scale="scale"
+                  :convert-displacement="appStore.convertLength"
+                  :font-size="viewerStore.fontSize"
+                  :number-format="appStore.deformationFormatter"
+                  @mousemove="onElementLoadHover($event, eload)"
+                  @mouseleave="hideTooltip"
+                  @pointerup="onElementLoadClick($event, index)"
+                  @dblclick="
+                    openModal(EditConcentratedDeformationDialog, { index });
+                    projectStore.clearSelection();
+                  "
+                />
                 <SVGElementConcentratedLoad
                   v-else-if="eload instanceof BeamConcentratedLoad"
                   :key="`element-cl-${index}`"
@@ -2207,7 +2257,7 @@ defineExpose({ centerContent, fitContent });
                 />
               </template>
               <SVGNodalLoad
-                v-for="(nload, index) in useProjectStore().solver.loadCases[0].nodalLoadList"
+                v-for="(nload, index) in viewerLoadCase.nodalLoadList"
                 :key="`nodal-load-${index}`"
                 :class="{ selected: projectStore.selection2.nodalLoads.includes(index) }"
                 :nload="nload"
@@ -2225,7 +2275,7 @@ defineExpose({ centerContent, fitContent });
                 "
               />
               <SVGPrescribedDisplacement
-                v-for="(nload, index) in useProjectStore().solver.loadCases[0].prescribedBC"
+                v-for="(nload, index) in viewerLoadCase.prescribedBC"
                 :key="`prescribed-bc-${index}`"
                 :class="{ selected: projectStore.selection2.prescribedBC.includes(index) }"
                 :nload="nload"
@@ -2258,7 +2308,7 @@ defineExpose({ centerContent, fitContent });
               :show-shear-force="!isZooming && viewerStore.showShearForce"
               :show-bending-moment="!isZooming && viewerStore.showBendingMoment"
               :show-label="!isZooming && viewerStore.showElementLabels"
-              :load-case="projectStore.solver.loadCases[0]"
+              :load-case="viewerLoadCase"
               :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
               :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
               :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
@@ -2289,7 +2339,7 @@ defineExpose({ centerContent, fitContent });
               :show-shear-force="!isZooming && viewerStore.showShearForce"
               :show-bending-moment="!isZooming && viewerStore.showBendingMoment"
               :show-label="!isZooming && viewerStore.showElementLabels"
-              :load-case="projectStore.solver.loadCases[0]"
+              :load-case="viewerLoadCase"
               :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
               :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
               :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
@@ -2319,7 +2369,7 @@ defineExpose({ centerContent, fitContent });
               :show-reactions="!isZooming && viewerStore.showReactions"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
-              :load-case="projectStore.solver.loadCases[0]"
+              :load-case="viewerLoadCase"
               :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
@@ -2375,7 +2425,7 @@ defineExpose({ centerContent, fitContent });
               :show-bending-moment="!isZooming && viewerStore.showBendingMoment"
               :show-label="!isZooming && viewerStore.showElementLabels"
               show-label-background
-              :load-case="projectStore.solver.loadCases[0]"
+              :load-case="viewerLoadCase"
               :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
               :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
               :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
@@ -2401,7 +2451,7 @@ defineExpose({ centerContent, fitContent });
               :show-bending-moment="!isZooming && viewerStore.showBendingMoment"
               :show-label="!isZooming && viewerStore.showElementLabels"
               show-label-background
-              :load-case="projectStore.solver.loadCases[0]"
+              :load-case="viewerLoadCase"
               :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
               :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
               :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
@@ -2429,7 +2479,7 @@ defineExpose({ centerContent, fitContent });
                 :show-shear-force="false"
                 :show-bending-moment="false"
                 :show-label="false"
-                :load-case="projectStore.solver.loadCases[0]"
+                :load-case="viewerLoadCase"
                 :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
                 :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
                 :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
@@ -2452,7 +2502,7 @@ defineExpose({ centerContent, fitContent });
                 :show-deformed-shape="false"
                 :show-reactions="false"
                 :convert-force="appStore.convertForce"
-                :load-case="projectStore.solver.loadCases[0]"
+                :load-case="viewerLoadCase"
                 :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
                 :font-size="viewerStore.fontSize"
                 :number-format="appStore.numberFormatter"
@@ -2798,6 +2848,12 @@ defineExpose({ centerContent, fitContent });
 
       &.decoration.force {
         marker-end: var(--marker-force);
+      }
+
+      /* An imposed deformation carries a dashed shaft, so it does not read as a force */
+      &.decoration.shaft {
+        stroke: v-bind('viewerStore.colors.loads');
+        stroke-width: 1.5px;
       }
 
       &.decoration.moment.cw {

@@ -446,10 +446,7 @@
               >
               </v-btn>
               <div
-                v-if="
-                  useProjectStore().solver.loadCases[0].elementLoadList.filter((nl) => nl.target === item.label)
-                    .length > 0
-                "
+                v-if="useProjectStore().loadCase.elementLoadList.filter((nl) => nl.target === item.label).length > 0"
               >
                 <v-chip-group>
                   <v-chip
@@ -496,6 +493,7 @@
             <v-icon small>mdi-plus</v-icon> {{ $t('loads.addNodalLoad') }}
           </v-btn>
           <v-btn
+            v-if="appStore.workspace !== 'influence'"
             size="small"
             variant="flat"
             color="secondary"
@@ -504,6 +502,17 @@
             @click.stop="if (useProjectStore().solver.domain.elements.size > 0) openModal(AddElementLoad);"
           >
             <v-icon small>mdi-plus</v-icon> {{ $t('loads.addElementLoad') }}
+          </v-btn>
+          <v-btn
+            v-else
+            size="small"
+            variant="flat"
+            color="secondary"
+            style="border-left: 1px solid #ccc"
+            :rounded="0"
+            @click.stop="if (useProjectStore().solver.domain.elements.size > 0) openModal(AddConcentratedDeformation);"
+          >
+            <v-icon small>mdi-plus</v-icon> {{ $t('loadType.concentrated_deformation') }}
           </v-btn>
         </div>
         <v-data-table
@@ -563,6 +572,9 @@
               </template>
               <template v-else-if="loadType(item.ref) === 'temperature'">
                 {{ $t('loadType.temperature') }}
+              </template>
+              <template v-else-if="loadType(item.ref) === 'concentrated_deformation'">
+                {{ $t('loadType.concentrated_deformation') }}
               </template>
             </span>
             <span v-if="item.type === 'prescribed'" class="text-no-wrap">{{ $t('loads.prescribedDisplacement') }}</span>
@@ -692,7 +704,81 @@
               </div>
             </div>
 
-            <div v-if="item.type === 'element'" class="d-flex flex-grow-0 align-content-center">
+            <div v-if="item.type === 'element' && loadType(item.ref) === 'concentrated_deformation'" class="d-flex">
+              <div class="inline-edit-group load mr-2">
+                <span class="input-before" v-html="'&Delta;u'"></span>
+                <input
+                  :value="appStore.convertLength(item.ref.values[0])"
+                  class="inline-edit"
+                  style="width: 60px"
+                  @keydown="checkNumber($event)"
+                  @change="
+                    changeSetArrayItem(
+                      item.ref,
+                      'values',
+                      0,
+                      $event.target as HTMLInputElement,
+                      appStore.convertInverseLength
+                    )
+                  "
+                />
+                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+              </div>
+              <div class="inline-edit-group load mr-2">
+                <span class="input-before" v-html="'&Delta;w'"></span>
+                <input
+                  :value="appStore.convertLength(item.ref.values[1])"
+                  class="inline-edit"
+                  style="width: 60px"
+                  @keydown="checkNumber($event)"
+                  @change="
+                    changeSetArrayItem(
+                      item.ref,
+                      'values',
+                      1,
+                      $event.target as HTMLInputElement,
+                      appStore.convertInverseLength
+                    )
+                  "
+                />
+                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+              </div>
+              <div class="inline-edit-group load mr-2">
+                <span class="input-before" v-html="'&Delta;&phi;'"></span>
+                <input
+                  :value="item.ref.values[2]"
+                  class="inline-edit"
+                  style="width: 60px"
+                  @keydown="checkNumber($event)"
+                  @change="changeSetArrayItem(item.ref, 'values', 2, $event.target as HTMLInputElement, (v) => v)"
+                />
+                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Angle)"></div>
+              </div>
+              <div class="inline-edit-group load">
+                <span class="input-before">x</span>
+                <input
+                  :value="appStore.convertLength(item.ref.values[3])"
+                  class="inline-edit"
+                  style="width: 60px"
+                  @keydown="checkNumber($event)"
+                  @change="
+                    changeSetArrayItem(
+                      item.ref,
+                      'values',
+                      3,
+                      $event.target as HTMLInputElement,
+                      appStore.convertInverseLength
+                    )
+                  "
+                />
+                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+              </div>
+            </div>
+
+            <div
+              v-if="item.type === 'element' && loadType(item.ref) !== 'concentrated_deformation'"
+              class="d-flex flex-grow-0 align-content-center"
+            >
               <template
                 v-if="loadType(item.ref) === 'trapezoidal' && item.ref instanceof BeamElementTrapezoidalEdgeLoad"
               >
@@ -1299,7 +1385,7 @@
             color="secondary"
             style="border-left: 1px solid #ccc"
             :rounded="0"
-            :disabled="!projStore.solver.loadCases[0].solved"
+            :disabled="!projStore.loadCase.solved"
             @click="exportResults"
           >
             <v-icon small>mdi-file-delimited-outline</v-icon> {{ $t('results.exportCsv') }}
@@ -1310,7 +1396,7 @@
             color="secondary"
             style="border-left: 1px solid #ccc"
             :rounded="0"
-            :disabled="!projStore.solver.loadCases[0].solved"
+            :disabled="!projStore.loadCase.solved"
             @click="copyResults"
           >
             <v-icon small>mdi-content-copy</v-icon> {{ $t('common.copy') }}
@@ -1363,13 +1449,13 @@
                     <label class="input-before">D<sub>x</sub></label>
                     <div
                       v-if="
-                        projStore.solver.loadCases[0].solved &&
+                        projStore.loadCase.solved &&
                         projStore.beams.some((element) => element.nodes.includes(item.label))
                       "
                       class="inline-edit fw pl-1"
                       v-html="
                         formatExpValueAsHTML(
-                          appStore.convertLength(item.getUnknowns(useProjectStore().solver.loadCases[0], [DofID.Dx])),
+                          appStore.convertLength(item.getUnknowns(useProjectStore().loadCase, [DofID.Dx])),
                           4
                         )
                       "
@@ -1381,13 +1467,13 @@
                     <label class="input-before">D<sub>z</sub></label>
                     <div
                       v-if="
-                        projStore.solver.loadCases[0].solved &&
+                        projStore.loadCase.solved &&
                         projStore.beams.some((element) => element.nodes.includes(item.label))
                       "
                       class="inline-edit fw pl-1"
                       v-html="
                         formatExpValueAsHTML(
-                          appStore.convertLength(item.getUnknowns(useProjectStore().solver.loadCases[0], [DofID.Dz])),
+                          appStore.convertLength(item.getUnknowns(useProjectStore().loadCase, [DofID.Dz])),
                           4
                         )
                       "
@@ -1399,13 +1485,11 @@
                     <label class="input-before">R<sub>y</sub></label>
                     <div
                       v-if="
-                        projStore.solver.loadCases[0].solved &&
+                        projStore.loadCase.solved &&
                         projStore.beams.some((element) => element.nodes.includes(item.label))
                       "
                       class="inline-edit fw pl-1"
-                      v-html="
-                        formatExpValueAsHTML(item.getUnknowns(useProjectStore().solver.loadCases[0], [DofID.Ry]), 4)
-                      "
+                      v-html="formatExpValueAsHTML(item.getUnknowns(useProjectStore().loadCase, [DofID.Ry]), 4)"
                     />
                     <div v-else class="inline-edit fw pl-1" v-html="formatExpValueAsHTML(0, 4)"></div>
                     <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Angle)"></div>
@@ -1418,7 +1502,7 @@
             <v-data-table
               ref="table-results2"
               :headers="headers.results2"
-              :items="useProjectStore().solver.loadCases[0].solved ? elements : []"
+              :items="useProjectStore().loadCase.solved ? elements : []"
               density="compact"
               :height="props.height - 36 - 30"
               fixed-header
@@ -1461,7 +1545,7 @@
               <template #item.end_forces="{ item }">
                 <div class="d-flex" style="font-variant-numeric: tabular-nums">
                   <div
-                    v-for="(f, i) in item.computeEndForces(useProjectStore().solver.loadCases[0])"
+                    v-for="(f, i) in item.computeEndForces(useProjectStore().loadCase)"
                     :key="i"
                     class="inline-edit-group mr-2"
                   >
@@ -1469,7 +1553,7 @@
                       {{ nameBeamForce(i) }}<sub>{{ i < 3 ? '12' : '21' }}</sub>
                     </label>
                     <div
-                      v-if="projStore.solver.loadCases[0].solved"
+                      v-if="projStore.loadCase.solved"
                       class="inline-edit fw pl-1"
                       v-html="
                         formatExpValueAsHTML(
@@ -1556,6 +1640,7 @@ import type { HelpTopicKey } from '../utils/helpTopics';
 import { openModal } from 'jenesius-vue-modal';
 import AddNodalLoad from './dialogs/AddNodalLoad.vue';
 import AddElementLoad from './dialogs/AddElementLoad.vue';
+import AddConcentratedDeformation from './dialogs/AddConcentratedDeformation.vue';
 import EditNodalLoad from './dialogs/EditNodalLoad.vue';
 import EditElementLoad from './dialogs/EditElementLoad.vue';
 import AddElementDialog from './dialogs/AddElement.vue';
@@ -1647,7 +1732,7 @@ const elements = computed(() => {
 });
 
 const loads = computed(() => {
-  const items = useProjectStore().solver.loadCases.values();
+  const items = [useProjectStore().loadCase];
   const display: {
     target: number;
     type: string;
@@ -1771,7 +1856,7 @@ interface NodeLoadChip {
  * edit dialog, which tells them apart by `type`.
  */
 const nodeLoadChips = (item: Node): NodeLoadChip[] => {
-  const loadCase = useProjectStore().solver.loadCases[0];
+  const loadCase = useProjectStore().loadCase;
   const chips: NodeLoadChip[] = [];
 
   loadCase.nodalLoadList.forEach((nl, index) => {
@@ -1808,7 +1893,7 @@ const nodeLoadChips = (item: Node): NodeLoadChip[] => {
 
 const formatElementLoadsAtElement = (item: Beam2D): [number, string][] => {
   const nls = useProjectStore()
-    .solver.loadCases[0].elementLoadList.map((nl, index) => {
+    .loadCase.elementLoadList.map((nl, index) => {
       return {
         type: loadType(nl),
         index,
@@ -1895,9 +1980,9 @@ const tabs = reactive([
     title: 'tabs.loads',
     icon: 'mdi-arrow-down-thin',
     count: () =>
-      projStore.solver.loadCases[0].nodalLoadList.length +
-      projStore.solver.loadCases[0].elementLoadList.length +
-      projStore.solver.loadCases[0].prescribedBC.length,
+      projStore.loadCase.nodalLoadList.length +
+      projStore.loadCase.elementLoadList.length +
+      projStore.loadCase.prescribedBC.length,
   },
   { id: 'mats', title: 'tabs.materials', icon: 'mdi-texture-box', count: () => projStore.solver.domain.materials.size },
   {

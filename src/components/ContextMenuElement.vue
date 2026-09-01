@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { openModal } from 'jenesius-vue-modal';
 import AddElementLoadDialog from './dialogs/AddElementLoad.vue';
+import AddConcentratedDeformationDialog from './dialogs/AddConcentratedDeformation.vue';
+import { useAppStore } from '@/store/app';
 import { useProjectStore } from '@/store/project';
 import { useLayoutStore } from '@/store/layout';
 import StiffnessMatrix from './StiffnessMatrix.vue';
@@ -136,7 +138,9 @@ watch([n1, n2], () => {
       link
       class="text-body-2"
       @click="
-        openModal(AddElementLoadDialog, { label: projectStore.selection.label });
+        openModal(useAppStore().workspace === 'influence' ? AddConcentratedDeformationDialog : AddElementLoadDialog, {
+          label: projectStore.selection.label,
+        });
         projectStore.selection.type = null;
       "
     >

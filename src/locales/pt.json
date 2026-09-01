@@ -1,5 +1,6 @@
 {
   "tabView": {
+    "influence": "Linhas de influência",
     "viewer": "Estrutura",
     "settings": "Configurações",
     "results": "Resultados"
@@ -313,6 +314,7 @@
   },
   "loadType": {
     "loadType": "Tipo de carga",
+    "concentrated_deformation": "Deformação concentrada",
     "concentrated": "Carga concentrada",
     "trapezoidal": "Carga trapezoidal",
     "udl": "Carga distribuída uniforme",

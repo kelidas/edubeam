@@ -153,6 +153,7 @@
   "tabView": {
     "results": "Výsledky",
     "settings": "Nastavení",
+    "influence": "Příčinkové čáry",
     "viewer": "Konstrukce"
   },
   "sideSettings": {
@@ -369,6 +370,7 @@
     "invalidNumber": "Neplatné číslo"
   },
   "loadType": {
+    "concentrated_deformation": "Osamělé přetvoření",
     "concentrated": "Osamělá síla",
     "udl": "Spojité rovnoměrné zatížení",
     "trapezoidal": "Lineárně proměnné zatížení",

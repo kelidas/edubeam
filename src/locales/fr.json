@@ -1,5 +1,6 @@
 {
   "tabView": {
+    "influence": "Lignes d'influence",
     "viewer": "Structure",
     "settings": "Paramètres",
     "results": "Résultats"
@@ -313,6 +314,7 @@
   },
   "loadType": {
     "loadType": "Type de charge",
+    "concentrated_deformation": "Déformation ponctuelle",
     "concentrated": "Charge ponctuelle",
     "trapezoidal": "Charge trapézoïdale",
     "udl": "Charge uniformément répartie",

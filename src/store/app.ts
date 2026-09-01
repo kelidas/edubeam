@@ -13,6 +13,7 @@ import Qty from 'js-quantities';
 import { isMobile, suggestLanguage } from '@/utils';
 import { customForceConversion, customPressureConversion } from '@/utils/unitConversions';
 import { useProjectStore } from './project';
+import { useClipboardStore } from './clipboard';
 
 export const useAppStore = defineStore(
   'app',
@@ -29,6 +30,9 @@ export const useAppStore = defineStore(
     const numberFormatter = ref(
       new Intl.NumberFormat(locale.value, { minimumFractionDigits: 2, maximumFractionDigits: 2 })
     );
+    // Deformations span orders of magnitude depending on the length unit (0.005 m is 5 mm),
+    // so they are formatted by significant digits instead of a fixed number of decimals.
+    const deformationFormatter = ref(new Intl.NumberFormat(locale.value, { maximumSignificantDigits: 4 }));
 
     // The converter cant handle moment units, so we store them separately and call the converter for length and force separately
     const momentUnits = ref({ force: 'kN', length: 'm' });
@@ -141,6 +145,7 @@ export const useAppStore = defineStore(
     watch(locale, (newLocale) => {
       setLocale(newLocale);
       numberFormatter.value = new Intl.NumberFormat(newLocale, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      deformationFormatter.value = new Intl.NumberFormat(newLocale, { maximumSignificantDigits: 4 });
     });
 
     const dialogs = reactive({
@@ -169,11 +174,36 @@ export const useAppStore = defineStore(
       }[]
     > = ref([
       { title: 'tabView.viewer', component: markRaw(SVGViewer), props: { id: 'viewer' }, closable: false },
+      { title: 'tabView.influence', component: markRaw(SVGViewer), props: { id: 'influence' }, closable: false },
       //{ title: "tabView.results", component: markRaw(Results), props: {}, closable: true },
       { title: 'tabView.settings', component: markRaw(Settings), props: { id: 'settings' }, closable: true },
     ]);
 
     const openedTab = computed(() => tabs.value[tab.value] || null);
+
+    /**
+     * What the app is editing: the real loads, or the unit dislocations whose deflected shape is
+     * an influence line. Everything reading the "current" load case keys off this.
+     */
+    const workspace = computed(() => (openedTab.value?.props?.id === 'influence' ? 'influence' : 'loads'));
+
+    watch(workspace, () => {
+      // The influence case exists from the moment its tab opens, and a re-solve makes the result
+      // scaling follow the case now on screen.
+      useProjectStore().influenceLoadCase();
+      // a selection or a copied load made on the other tab indexes into the other case
+      useProjectStore().clearSelection();
+      useProjectStore().clearSelection2();
+      useClipboardStore().select({
+        nodes: [],
+        elements: [],
+        nodalLoads: [],
+        elementLoads: [],
+        prescribedBC: [],
+        dimensions: [],
+      });
+      useProjectStore().solve();
+    });
 
     const openSettings = () => {
       openModal(SettingsModal);
@@ -203,12 +233,14 @@ export const useAppStore = defineStore(
       bottomBarHeight,
       locale,
       numberFormatter,
+      deformationFormatter,
       units,
       momentUnits,
       dialogs,
       zooming,
       tab,
       openedTab,
+      workspace,
       tabs,
       bottomBarTab,
       mouseMode,

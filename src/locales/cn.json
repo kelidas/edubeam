@@ -1,5 +1,6 @@
 {
   "tabView": {
+    "influence": "影响线",
     "viewer": "视图",
     "settings": "设置",
     "results": "结果"
@@ -313,6 +314,7 @@
   },
   "loadType": {
     "loadType": "荷载类型",
+    "concentrated_deformation": "集中变形",
     "concentrated": "集中荷载",
     "trapezoidal": "梯形分布荷载",
     "udl": "均布荷载",

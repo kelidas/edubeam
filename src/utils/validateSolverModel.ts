@@ -24,7 +24,6 @@ export const validateSolverModel = (solver: LinearStaticSolver): SolveDiagnostic
   };
 
   const domain = solver.domain;
-  const loadCase = solver.loadCases[0];
 
   for (const element of domain.elements.values()) {
     const elementLabel = toLabel((element as { label?: unknown }).label);
@@ -83,56 +82,58 @@ export const validateSolverModel = (solver: LinearStaticSolver): SolveDiagnostic
     }
   }
 
-  for (let i = 0; i < loadCase.nodalLoadList.length; i++) {
-    const load = loadCase.nodalLoadList[i];
+  for (const loadCase of solver.loadCases) {
+    for (let i = 0; i < loadCase.nodalLoadList.length; i++) {
+      const load = loadCase.nodalLoadList[i];
 
-    if (!domain.nodes.has(load.target)) {
-      diagnostics.errors.push({
-        level: 'error',
-        code: 'NODAL_LOAD_MISSING_TARGET',
-        message: `Nodal load #${i + 1} references missing node ${toLabel(load.target)}.`,
-      });
+      if (!domain.nodes.has(load.target)) {
+        diagnostics.errors.push({
+          level: 'error',
+          code: 'NODAL_LOAD_MISSING_TARGET',
+          message: `Nodal load #${i + 1} references missing node ${toLabel(load.target)}.`,
+        });
+      }
+
+      const values = Object.values(load.values);
+      if (values.some((value) => !isFiniteNumber(value))) {
+        diagnostics.warnings.push({
+          level: 'warning',
+          code: 'NODAL_LOAD_NON_FINITE_VALUES',
+          message: `Nodal load #${i + 1} contains invalid values.`,
+        });
+      }
     }
 
-    const values = Object.values(load.values);
-    if (values.some((value) => !isFiniteNumber(value))) {
-      diagnostics.warnings.push({
-        level: 'warning',
-        code: 'NODAL_LOAD_NON_FINITE_VALUES',
-        message: `Nodal load #${i + 1} contains invalid values.`,
-      });
+    for (let i = 0; i < loadCase.prescribedBC.length; i++) {
+      const prescribed = loadCase.prescribedBC[i];
+
+      if (!domain.nodes.has(prescribed.target)) {
+        diagnostics.errors.push({
+          level: 'error',
+          code: 'PRESCRIBED_DISPLACEMENT_MISSING_TARGET',
+          message: `Prescribed displacement #${i + 1} references missing node ${toLabel(prescribed.target)}.`,
+        });
+      }
+
+      if (Object.values(prescribed.prescribedValues).some((value) => !isFiniteNumber(value))) {
+        diagnostics.warnings.push({
+          level: 'warning',
+          code: 'PRESCRIBED_DISPLACEMENT_NON_FINITE_VALUES',
+          message: `Prescribed displacement #${i + 1} contains invalid values.`,
+        });
+      }
     }
-  }
 
-  for (let i = 0; i < loadCase.prescribedBC.length; i++) {
-    const prescribed = loadCase.prescribedBC[i];
+    for (let i = 0; i < loadCase.elementLoadList.length; i++) {
+      const load = loadCase.elementLoadList[i];
 
-    if (!domain.nodes.has(prescribed.target)) {
-      diagnostics.errors.push({
-        level: 'error',
-        code: 'PRESCRIBED_DISPLACEMENT_MISSING_TARGET',
-        message: `Prescribed displacement #${i + 1} references missing node ${toLabel(prescribed.target)}.`,
-      });
-    }
-
-    if (Object.values(prescribed.prescribedValues).some((value) => !isFiniteNumber(value))) {
-      diagnostics.warnings.push({
-        level: 'warning',
-        code: 'PRESCRIBED_DISPLACEMENT_NON_FINITE_VALUES',
-        message: `Prescribed displacement #${i + 1} contains invalid values.`,
-      });
-    }
-  }
-
-  for (let i = 0; i < loadCase.elementLoadList.length; i++) {
-    const load = loadCase.elementLoadList[i];
-
-    if (!domain.elements.has(load.target)) {
-      diagnostics.errors.push({
-        level: 'error',
-        code: 'ELEMENT_LOAD_MISSING_TARGET',
-        message: `Element load #${i + 1} references missing element ${toLabel(load.target)}.`,
-      });
+      if (!domain.elements.has(load.target)) {
+        diagnostics.errors.push({
+          level: 'error',
+          code: 'ELEMENT_LOAD_MISSING_TARGET',
+          message: `Element load #${i + 1} references missing element ${toLabel(load.target)}.`,
+        });
+      }
     }
   }
 
@@ -406,7 +407,20 @@ const DOF_NAMES: Partial<Record<DofID, string>> = {
  * code numbers turns "nothing happened" into the node and direction to fix.
  */
 export const findMechanismIssues = (solver: LinearStaticSolver, limit = MECHANISM_DISPLACEMENT_LIMIT): SolveIssue[] => {
-  const loadCase = solver.loadCases[0];
+  // A mechanism only moves when its case carries a load, so every case is checked
+  for (const loadCase of solver.loadCases) {
+    const issues = findMechanismIssuesInCase(loadCase, solver, limit);
+    if (issues.length > 0) return issues;
+  }
+
+  return [];
+};
+
+const findMechanismIssuesInCase = (
+  loadCase: LinearStaticSolver['loadCases'][number],
+  solver: LinearStaticSolver,
+  limit: number
+): SolveIssue[] => {
   if (!loadCase?.r) return [];
 
   const r = loadCase.r.toArray() as number[];
