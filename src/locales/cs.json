@@ -451,6 +451,7 @@
     "title": "Exportovat obrázek",
     "transparentBackground": "Průhledné pozadí",
     "download": "Stáhnout PNG",
+    "downloadSvg": "Stáhnout SVG",
     "copyToClipboard": "Kopírovat do schránky",
     "copied": "Obrázek zkopírován do schránky",
     "failed": "Obrázek se nepodařilo vykreslit.",

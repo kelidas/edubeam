@@ -459,6 +459,7 @@
     "title": "Export image",
     "transparentBackground": "Transparent background",
     "download": "Download PNG",
+    "downloadSvg": "Download SVG",
     "copyToClipboard": "Copy to clipboard",
     "copied": "Image copied to clipboard",
     "failed": "Could not render the image.",

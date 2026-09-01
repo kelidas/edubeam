@@ -101,11 +101,14 @@
         <v-btn variant="tonal" prepend-icon="mdi-download" :loading="busy" @click="save">
           {{ $t('exportImage.download') }}
         </v-btn>
+        <v-btn variant="tonal" prepend-icon="mdi-vector-square" :loading="busy" @click="saveSvg">
+          {{ $t('exportImage.downloadSvg') }}
+        </v-btn>
         <v-btn v-if="canCopy" variant="text" prepend-icon="mdi-content-copy" :loading="busy" @click="copy">
           {{ $t('exportImage.copyToClipboard') }}
         </v-btn>
         <v-spacer />
-        <span class="text-caption text-medium-emphasis mr-2">{{ fileWidth }} × {{ fileHeight }} px</span>
+        <span class="text-caption text-medium-emphasis mr-2">PNG {{ fileWidth }} × {{ fileHeight }} px</span>
       </v-card-actions>
     </v-card>
 
@@ -130,6 +133,7 @@ import {
   copyBlobToClipboard,
   downloadBlob,
   renderModelPng,
+  renderModelSvg,
 } from '@/utils/exportImage';
 
 const projectStore = useProjectStore();
@@ -387,6 +391,25 @@ const run = async (action: () => Promise<void>) => {
 const save = () =>
   run(async () => {
     downloadBlob(await render(), `edubeam-${fileWidth.value}x${fileHeight.value}.png`);
+    closeModal();
+  });
+
+/**
+ * The vector file, sized in the units the fields are in.
+ *
+ * No `devicePixelRatio` here: that ratio exists to make a *bitmap* match the screen, and
+ * an SVG has no pixels to match with. The chosen canvas size is what frames the drawing,
+ * so it is also what the file is written at — and it stays resizable afterwards anyway.
+ */
+const saveSvg = () =>
+  run(async () => {
+    const blob = await renderModelSvg(SVGElementViewer, viewerProps.value, {
+      width: width.value,
+      height: height.value,
+      background: transparent.value ? null : '#ffffff',
+    });
+
+    downloadBlob(blob, `edubeam-${width.value}x${height.value}.svg`);
     closeModal();
   });
 

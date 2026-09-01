@@ -1,5 +1,5 @@
 /**
- * Draws the model to a PNG people can drop into a report or slide.
+ * Draws the model to a picture people can drop into a report, a slide or a drawing program.
  *
  * A throwaway viewer is mounted off screen at exactly the requested resolution and given
  * the editor's own settings — colours, font size, support size, result diagram height,
@@ -7,9 +7,11 @@
  * the output is a real drawing at that size instead of a rescaled one: stroke widths and
  * type come out at their true pixel sizes, because nothing is stretched afterwards.
  *
- * PNG is the only output format on purpose. Producing a *file* of SVG would mean
- * shipping the flattened styles below to a foreign renderer and hoping; rasterizing
- * keeps the browser as the only renderer involved.
+ * Two formats come off that same drawing. PNG rasterizes it here, so the browser stays the
+ * only renderer involved. SVG hands the flattened document to a foreign renderer — Inkscape,
+ * Illustrator, a LaTeX figure — which is the whole point of it: the drawing stays vector and
+ * its labels stay editable text. The one thing flattening cannot carry across is the web
+ * font, so that is where the two formats part ways.
  */
 import { createApp, nextTick, type Component } from 'vue';
 // Barlow is the app's own typeface. Bundled rather than pulled from the web font CDN,
@@ -50,6 +52,48 @@ const TEXT_PROPERTIES = ['font-family', 'font-size', 'font-weight', 'font-style'
 
 const isTextElement = (element: Element) => element.tagName === 'text' || element.tagName === 'tspan';
 
+/** The paint properties, each with the opacity property that carries its alpha. */
+const PAINT_PROPERTIES: [paint: string, opacity: string][] = [
+  ['fill', 'fill-opacity'],
+  ['stroke', 'stroke-opacity'],
+];
+
+const RGBA = /^rgba?\(\s*([\d.]+)[\s,]+([\d.]+)[\s,]+([\d.]+)(?:[\s,/]+([\d.]+))\s*\)$/;
+
+/**
+ * Rewrites `rgba()` paint as an SVG 1.1 colour plus an opacity.
+ *
+ * `getComputedStyle` reports every paint the CSS way, so `fill="transparent"` comes back
+ * as `rgba(0, 0, 0, 0)` — a value SVG 1.1 has no notion of, since alpha lives in the
+ * separate `fill-opacity` and `stroke-opacity` properties. Browsers take it anyway;
+ * Inkscape and other SVG 1.1 renderers discard the declaration and fall back to the
+ * initial value, which for `fill` is opaque black. That is the difference between an
+ * invisible hit target and a black slab over the drawing.
+ */
+export const splitAlpha = (declarations: Map<string, string>) => {
+  for (const [paint, opacity] of PAINT_PROPERTIES) {
+    const match = RGBA.exec(declarations.get(paint) ?? '');
+    if (!match) continue;
+
+    const [, r, g, b, a] = match;
+    const alpha = Number.parseFloat(a);
+
+    // Fully transparent paint is `none`: nothing to draw, nothing left to misread.
+    if (alpha === 0) {
+      declarations.set(paint, 'none');
+      declarations.delete(opacity);
+      continue;
+    }
+
+    declarations.set(paint, `rgb(${r}, ${g}, ${b})`);
+
+    // The element may already carry an opacity of its own, and the two multiply.
+    const own = Number.parseFloat(declarations.get(opacity) ?? '1');
+
+    declarations.set(opacity, `${(Number.isFinite(own) ? own : 1) * alpha}`);
+  }
+};
+
 /**
  * Copies computed appearance onto the clone, in document order.
  *
@@ -64,7 +108,7 @@ const flattenStyles = (source: Element, clone: Element, strokeScale = 1) => {
     return;
   }
 
-  const declarations: string[] = [];
+  const declarations = new Map<string, string>();
 
   // `non-scaling-stroke` pins the stroke to viewport pixels, so it is the one thing that
   // does *not* grow when the same drawing is rasterized at a higher resolution: geometry,
@@ -80,23 +124,31 @@ const flattenStyles = (source: Element, clone: Element, strokeScale = 1) => {
       const width = Number.parseFloat(value);
 
       if (Number.isFinite(width)) {
-        declarations.push(`stroke-width:${width * strokeScale}px`);
+        declarations.set('stroke-width', `${width * strokeScale}px`);
         continue;
       }
     }
 
-    declarations.push(`${property}:${value}`);
+    declarations.set(property, value);
   }
 
   if (isTextElement(clone)) {
     for (const property of TEXT_PROPERTIES) {
       const value = sourceStyle.getPropertyValue(property);
-      if (value) declarations.push(`${property}:${value}`);
+      if (value) declarations.set(property, value);
     }
   }
 
-  clone.setAttribute('style', declarations.join(';'));
+  splitAlpha(declarations);
+
+  clone.setAttribute('style', Array.from(declarations, ([property, value]) => `${property}:${value}`).join(';'));
   clone.removeAttribute('class');
+
+  // The same properties are usually *also* set as presentation attributes. The style
+  // attribute outranks them, so they change nothing — but they still hold the original
+  // values, `fill="transparent"` among them, and a contradictory pair in the file only
+  // invites an editor to resurrect the losing half.
+  for (const property of declarations.keys()) clone.removeAttribute(property);
 
   const sourceChildren = Array.from(source.children);
   const cloneChildren = Array.from(clone.children);
@@ -126,6 +178,8 @@ let embeddedFont: string | null = null;
  * Rasterizing goes through an `<img>`, which renders the SVG as an isolated document:
  * it cannot reach the page's web fonts, so without this the labels fall back to
  * whatever sans the machine happens to have and the picture stops matching the editor.
+ *
+ * The SVG export leaves it out; see `renderModelSvg` for why.
  */
 const fontFaceCss = async () => {
   if (embeddedFont !== null) return embeddedFont;
@@ -262,6 +316,7 @@ export interface RenderOptions {
   /**
    * Bitmap pixels per layout pixel. The layout is untouched, so this is pure
    * resolution: 2 is the same drawing at print density, 0.25 is a preview thumbnail.
+   * Meaningless for the SVG export, which has no resolution to set.
    */
   scale?: number;
   /** Painted behind the drawing; `null` keeps the PNG transparent. */
@@ -319,23 +374,19 @@ const settleFit = async (host: HTMLElement, instance: FittableViewer, attempts =
   return findDrawing(host);
 };
 
-export const renderModelPng = async (
+/**
+ * Draws the model off screen at `width` × `height` and hands the settled drawing to `use`.
+ *
+ * The drawing lives only for the duration of the callback — the component is unmounted on
+ * the way out — so anything that reads it has to happen inside.
+ */
+const withDrawing = async <T>(
   viewer: Component,
   props: Record<string, unknown>,
-  options: RenderOptions
-): Promise<Blob> => {
-  const width = clampExportSide(options.width);
-  const height = clampExportSide(options.height);
-
-  let scale = options.scale ?? 1;
-
-  // Keep the bitmap within what browsers reliably allocate.
-  const pixels = width * scale * (height * scale);
-  if (pixels > MAX_EXPORT_PIXELS) scale *= Math.sqrt(MAX_EXPORT_PIXELS / pixels);
-
-  const outputWidth = Math.max(1, Math.round(width * scale));
-  const outputHeight = Math.max(1, Math.round(height * scale));
-
+  width: number,
+  height: number,
+  use: (svg: SVGSVGElement) => Promise<T> | T
+): Promise<T> => {
   const host = document.createElement('div');
 
   // Off screen but still laid out: `display: none` would leave every getBBox at zero.
@@ -363,19 +414,72 @@ export const renderModelPng = async (
     const svg = await settleFit(host, instance);
     if (!svg) throw new Error('The off-screen viewer did not render.');
 
-    const markup = svgToString(
-      svg,
-      outputWidth,
-      outputHeight,
-      options.background === undefined ? '#ffffff' : options.background,
-      await fontFaceCss()
-    );
-
-    return await rasterize(markup, outputWidth, outputHeight);
+    return await use(svg);
   } finally {
     app.unmount();
     host.remove();
   }
+};
+
+/** White unless the caller asked for a transparent picture. */
+const backgroundOf = (options: RenderOptions) => (options.background === undefined ? '#ffffff' : options.background);
+
+export const renderModelPng = async (
+  viewer: Component,
+  props: Record<string, unknown>,
+  options: RenderOptions
+): Promise<Blob> => {
+  const width = clampExportSide(options.width);
+  const height = clampExportSide(options.height);
+
+  let scale = options.scale ?? 1;
+
+  // Keep the bitmap within what browsers reliably allocate.
+  const pixels = width * scale * (height * scale);
+  if (pixels > MAX_EXPORT_PIXELS) scale *= Math.sqrt(MAX_EXPORT_PIXELS / pixels);
+
+  const outputWidth = Math.max(1, Math.round(width * scale));
+  const outputHeight = Math.max(1, Math.round(height * scale));
+
+  // Fetched before the viewer is mounted so the drawing is not left waiting on the network.
+  const fontCss = await fontFaceCss();
+
+  return withDrawing(viewer, props, width, height, (svg) =>
+    rasterize(svgToString(svg, outputWidth, outputHeight, backgroundOf(options), fontCss), outputWidth, outputHeight)
+  );
+};
+
+/**
+ * The same drawing as a vector file, for Inkscape, Illustrator or a LaTeX figure.
+ *
+ * `scale` has no meaning here, so the document is written at the canvas size it was laid
+ * out for. That also keeps `non-scaling-stroke` honest for free: nothing is magnified, so
+ * there is no discrepancy for `flattenStyles` to compensate for, and every line is exported
+ * at the width the editor drew it.
+ *
+ * The web font is deliberately left out. Inkscape resolves type through fontconfig and
+ * ignores an embedded `@font-face`, so the base64 payload would be several hundred kilobytes
+ * of dead weight in every file; the flattened `font-family` keeps its `sans-serif` fallback,
+ * and a machine with Barlow installed matches the editor exactly. Either way the labels stay
+ * live text rather than outlines, which is what makes the file worth opening.
+ */
+export const renderModelSvg = async (
+  viewer: Component,
+  props: Record<string, unknown>,
+  options: RenderOptions
+): Promise<Blob> => {
+  const width = clampExportSide(options.width);
+  const height = clampExportSide(options.height);
+
+  return withDrawing(viewer, props, width, height, (svg) => {
+    const markup = svgToString(svg, width, height, backgroundOf(options), '');
+
+    // Standalone file rather than a fragment for an `<img>`, so it gets the declaration
+    // that editors and command line tools expect to find at the top.
+    return new Blob(['<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n', markup], {
+      type: 'image/svg+xml;charset=utf-8',
+    });
+  });
 };
 
 export const canCopyImageToClipboard = () =>
