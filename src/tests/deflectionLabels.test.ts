@@ -31,6 +31,7 @@ const labels = (solver: LinearStaticSolver) => {
       loadCase: solver.loadCases[0],
       deformedShapeMultiplier: 100,
       convertLength: (v: number) => v,
+      showDeflectionLabels: true,
       deformationNumberFormat: new Intl.NumberFormat('en', { maximumSignificantDigits: 4 }),
     },
   });
@@ -49,6 +50,7 @@ const labelPositions = (solver: LinearStaticSolver) => {
       loadCase: solver.loadCases[0],
       deformedShapeMultiplier: 100,
       convertLength: (v: number) => v,
+      showDeflectionLabels: true,
       deformationNumberFormat: new Intl.NumberFormat('en', { maximumSignificantDigits: 4 }),
     },
   });
@@ -90,5 +92,27 @@ describe('deflection labels', () => {
 
     expect(Math.sign(label.z)).toBe(Math.sign(curveZ));
     expect(Math.abs(label.z)).toBeGreaterThan(Math.abs(curveZ));
+  });
+});
+
+describe('deflection labels off the influence workspace', () => {
+  it('draws none, and keeps the smooth curve', () => {
+    const solver = solved(true);
+    const wrapper = mount(SVGElement, {
+      props: {
+        element: solver.domain.getElement(1),
+        scale: 10,
+        showGeometry: false,
+        showResults: true,
+        showDeformedShape: true,
+        loadCase: solver.loadCases[0],
+        deformedShapeMultiplier: 100,
+        convertLength: (v: number) => v,
+      },
+    });
+
+    expect(wrapper.findAll('text.deflection-label')).toHaveLength(0);
+    // a spline, not the straight polyline the influence line needs
+    expect(wrapper.find('path.deformedShape').attributes('d')).toContain('C');
   });
 });

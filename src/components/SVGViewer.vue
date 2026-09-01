@@ -85,6 +85,9 @@ const props = defineProps<{
  * The case this instance draws and edits: the influence line tab owns the second one, where unit
  * dislocations live so they never combine with the real loads.
  */
+/** This instance is the influence line workspace, which reads its curve rather than its forces. */
+const isInfluenceViewer = computed(() => props.id === 'influence');
+
 const viewerLoadCase = computed(() => {
   const cases = projectStore.solver.loadCases;
 
@@ -1829,7 +1832,7 @@ defineExpose({ centerContent, fitContent });
           factor doubles as a reset button.
         -->
         <div
-          v-if="scalableResults.length > 0"
+          v-if="isInfluenceViewer && scalableResults.length > 0"
           id="resultScales"
           class="bg-grey-lighten-5 elevation-1 rounded pa-1 pr-2 d-flex flex-column ga-1"
         >
@@ -2380,6 +2383,8 @@ defineExpose({ centerContent, fitContent });
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
               :deformation-number-format="appStore.deformationFormatter"
+              :show-deflection-labels="isInfluenceViewer"
+              :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
               @elementmousemove="onElementHover($event, element)"
@@ -2421,6 +2426,8 @@ defineExpose({ centerContent, fitContent });
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
               :deformation-number-format="appStore.deformationFormatter"
+              :show-deflection-labels="isInfluenceViewer"
+              :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
               @elementmousemove="onElementHover($event, element)"
@@ -2517,6 +2524,8 @@ defineExpose({ centerContent, fitContent });
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
               :deformation-number-format="appStore.deformationFormatter"
+              :show-deflection-labels="isInfluenceViewer"
+              :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
             />
@@ -2553,6 +2562,8 @@ defineExpose({ centerContent, fitContent });
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
               :deformation-number-format="appStore.deformationFormatter"
+              :show-deflection-labels="isInfluenceViewer"
+              :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
             />
@@ -2591,6 +2602,8 @@ defineExpose({ centerContent, fitContent });
                 :convert-moment="appStore.convertMoment"
                 :convert-length="appStore.convertLength"
                 :deformation-number-format="appStore.deformationFormatter"
+                :show-deflection-labels="isInfluenceViewer"
+                :smooth-deformed-shape="!isInfluenceViewer"
                 :font-size="viewerStore.fontSize"
                 :number-format="appStore.numberFormatter"
               />

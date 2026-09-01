@@ -38,6 +38,13 @@ const props = withDefaults(
     numberFormat?: Intl.NumberFormat;
     /** Deflections span orders of magnitude, so they are formatted by significant digits. */
     deformationNumberFormat?: Intl.NumberFormat;
+    /** Values on the deflected shape: what an influence line is read from, noise on a load case. */
+    showDeflectionLabels?: boolean;
+    /**
+     * A spline reads better for a deflected shape, but rounds off the discontinuity a dislocation
+     * makes, so the influence line workspace draws its curve straight through the sample points.
+     */
+    smoothDeformedShape?: boolean;
     showGeometry?: boolean;
     showResults?: boolean;
   }>(),
@@ -49,6 +56,8 @@ const props = withDefaults(
     resultLabelMode: 'axis',
     numberFormat: () => new Intl.NumberFormat(),
     deformationNumberFormat: () => new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }),
+    showDeflectionLabels: false,
+    smoothDeformedShape: true,
     showGeometry: true,
     showResults: true,
   }
@@ -233,8 +242,7 @@ const results = computed(() => {
     return [xc + def.u * scaleBy, zc + def.w * scaleBy];
   });
 
-  // return smoothPath(result);
-  return straightPath(result);
+  return props.smoothDeformedShape ? smoothPath(result) : straightPath(result);
 });
 
 /**
@@ -242,7 +250,7 @@ const results = computed(() => {
  * points a reader looks up, the way the force diagrams label their own values.
  */
 const deflectionLabels = computed(() => {
-  if (!props.loadCase.solved || !props.showDeformedShape) return [];
+  if (!props.loadCase.solved || !props.showDeformedShape || !props.showDeflectionLabels) return [];
 
   const geo = props.element.computeGeo();
   const n1 = props.element.domain.nodes.get(props.element.nodes[0]) as Node;
