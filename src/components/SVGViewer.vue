@@ -556,7 +556,7 @@ const onElementLoadHover = (e: MouseEvent, el: BeamElementLoad) => {
     }
 
     if (Math.abs(el.values[1]) > 1e-32) {
-      tooltipContent.innerHTML += `${ff}<sub>z</sub> = ${appStore.convertForce(el.values[1])} ${uu}<br>`;
+      tooltipContent.innerHTML += `${ff}<sub>z</sub> = ${convertIntensity(el.values[1])} ${uu}<br>`;
     }
 
     if (el instanceof BeamConcentratedLoad && Math.abs(el.values[2]) > 1e-32) {

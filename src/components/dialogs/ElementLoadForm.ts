@@ -56,8 +56,9 @@ export const LOAD_CONFIG: Record<string, LoadTypeConfig> = {
     momentLabel: 'm',
     getMainUnits: (store) => store.units.ForceDistance,
     getMomentUnits: (store) => `${store.units.Moment}/${store.units.Length}`,
-    toMain: (store, v) => store.convertForce(v),
-    fromMain: (store, v) => store.convertInverseForce(v),
+    // an intensity is a force per length, so both parts of the unit are converted
+    toMain: (store, v) => store.convertForceDistance(v),
+    fromMain: (store, v) => store.convertInverseForceDistance(v),
     toMoment: (store, v) => store.convertMoment(v),
     fromMoment: (store, v) => store.convertInverseMoment(v),
   },
@@ -66,8 +67,9 @@ export const LOAD_CONFIG: Record<string, LoadTypeConfig> = {
     momentLabel: 'm',
     getMainUnits: (store) => store.units.ForceDistance,
     getMomentUnits: (store) => `${store.units.Moment}/${store.units.Length}`,
-    toMain: (store, v) => store.convertForce(v),
-    fromMain: (store, v) => store.convertInverseForce(v),
+    // an intensity is a force per length, so both parts of the unit are converted
+    toMain: (store, v) => store.convertForceDistance(v),
+    fromMain: (store, v) => store.convertInverseForceDistance(v),
     toMoment: (store, v) => store.convertMoment(v),
     fromMoment: (store, v) => store.convertInverseMoment(v),
   },
