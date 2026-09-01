@@ -104,6 +104,15 @@
         <v-btn variant="tonal" prepend-icon="mdi-vector-square" :loading="busy" @click="saveSvg">
           {{ $t('exportImage.downloadSvg') }}
         </v-btn>
+        <v-btn
+          variant="text"
+          prepend-icon="mdi-printer"
+          :loading="busy"
+          :title="$t('exportImage.printPdfHint')"
+          @click="printPdf"
+        >
+          {{ $t('exportImage.printPdf') }}
+        </v-btn>
         <v-btn v-if="canCopy" variant="text" prepend-icon="mdi-content-copy" :loading="busy" @click="copy">
           {{ $t('exportImage.copyToClipboard') }}
         </v-btn>
@@ -132,6 +141,7 @@ import {
   minimumExportSide,
   copyBlobToClipboard,
   downloadBlob,
+  printModel,
   renderModelPng,
   renderModelSvg,
 } from '@/utils/exportImage';
@@ -412,6 +422,21 @@ const saveSvg = () =>
     downloadBlob(blob, `edubeam-${width.value}x${height.value}.svg`);
     closeModal();
   });
+
+/**
+ * PDF by way of the browser's printer.
+ *
+ * The dialog stays open behind the print sheet: the file is saved from there, and coming
+ * back to a dialog that has closed itself would lose the size the print was set up with.
+ */
+const printPdf = () =>
+  run(() =>
+    printModel(SVGElementViewer, viewerProps.value, {
+      width: width.value,
+      height: height.value,
+      background: transparent.value ? null : '#ffffff',
+    })
+  );
 
 const copy = () =>
   run(async () => {

@@ -460,6 +460,8 @@
     "transparentBackground": "Transparent background",
     "download": "Download PNG",
     "downloadSvg": "Download SVG",
+    "printPdf": "Print to PDF",
+    "printPdfHint": "Opens the browser print dialog — choose \"Save as PDF\" for a vector file.",
     "copyToClipboard": "Copy to clipboard",
     "copied": "Image copied to clipboard",
     "failed": "Could not render the image.",

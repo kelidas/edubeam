@@ -452,6 +452,8 @@
     "transparentBackground": "Průhledné pozadí",
     "download": "Stáhnout PNG",
     "downloadSvg": "Stáhnout SVG",
+    "printPdf": "Tisk do PDF",
+    "printPdfHint": "Otevře tiskový dialog prohlížeče — pro vektorový soubor zvolte „Uložit jako PDF“.",
     "copyToClipboard": "Kopírovat do schránky",
     "copied": "Obrázek zkopírován do schránky",
     "failed": "Obrázek se nepodařilo vykreslit.",

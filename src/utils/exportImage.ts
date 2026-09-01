@@ -7,11 +7,12 @@
  * the output is a real drawing at that size instead of a rescaled one: stroke widths and
  * type come out at their true pixel sizes, because nothing is stretched afterwards.
  *
- * Two formats come off that same drawing. PNG rasterizes it here, so the browser stays the
- * only renderer involved. SVG hands the flattened document to a foreign renderer — Inkscape,
- * Illustrator, a LaTeX figure — which is the whole point of it: the drawing stays vector and
- * its labels stay editable text. The one thing flattening cannot carry across is the web
- * font, so that is where the two formats part ways.
+ * Three things come off that same drawing. PNG rasterizes it here and printing hands it to
+ * the browser's printer, so both keep the browser as the only renderer involved. SVG hands
+ * the flattened document to a foreign renderer — Inkscape, Illustrator, a LaTeX figure —
+ * which is the whole point of it: the drawing stays vector and its labels stay editable
+ * text. The one thing flattening cannot carry across is the web font, so that is where SVG
+ * parts ways with the other two.
  */
 import { createApp, nextTick, type Component } from 'vue';
 // Barlow is the app's own typeface. Bundled rather than pulled from the web font CDN,
@@ -480,6 +481,95 @@ export const renderModelSvg = async (
       type: 'image/svg+xml;charset=utf-8',
     });
   });
+};
+
+/**
+ * The drawing wrapped in a printable page, sized so the sheet *is* the figure.
+ *
+ * `@page` takes the canvas size straight from the dialog, so a PDF comes out with no
+ * paper margin around the drawing and nothing scaled to fit a sheet it was never laid
+ * out for — the same framing the PNG and the SVG get.
+ */
+export const printDocument = (markup: string, width: number, height: number) => `<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>edubeam</title>
+<style>
+@page { size: ${width}px ${height}px; margin: 0; }
+html, body { margin: 0; padding: 0; background: transparent; }
+svg { display: block; }
+</style>
+</head>
+<body>${markup}</body>
+</html>`;
+
+/** Long enough to outlast a print dialog someone leaves open, short enough to not leak. */
+const PRINT_CLEANUP_MS = 300_000;
+
+/**
+ * Hands the drawing to the browser's own printer, which is where a PDF comes from.
+ *
+ * Printing is the one route to PDF that keeps the browser as the renderer, and everything
+ * the SVG export has to give up crossing into a foreign one comes back: `non-scaling-stroke`
+ * is honoured, the labels are set in Barlow — embedded below, so it holds offline — and they
+ * arrive as selectable vector text. The cost is the dialog: the file is saved by choosing
+ * "Save as PDF" there rather than by this button.
+ */
+export const printModel = async (
+  viewer: Component,
+  props: Record<string, unknown>,
+  options: RenderOptions
+): Promise<void> => {
+  const width = clampExportSide(options.width);
+  const height = clampExportSide(options.height);
+
+  const fontCss = await fontFaceCss();
+
+  const markup = await withDrawing(viewer, props, width, height, (svg) =>
+    svgToString(svg, width, height, backgroundOf(options), fontCss)
+  );
+
+  const frame = document.createElement('iframe');
+
+  // Present and laid out, but out of the way: printing a frame the browser never
+  // rendered gives a blank sheet.
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;right:0;bottom:0;width:1px;height:1px;border:0;opacity:0';
+
+  document.body.appendChild(frame);
+
+  const view = frame.contentWindow;
+  const printed = frame.contentDocument;
+
+  if (!view || !printed) {
+    frame.remove();
+    throw new Error('Could not open a document to print.');
+  }
+
+  printed.open();
+  printed.write(printDocument(markup, width, height));
+  printed.close();
+
+  await new Promise<void>((resolve) => {
+    if (printed.readyState === 'complete') resolve();
+    else frame.addEventListener('load', () => resolve(), { once: true });
+  });
+
+  // Printing before the embedded face has loaded sets the labels in the fallback.
+  await printed.fonts?.ready;
+
+  // The dialog belongs to whichever frame has focus.
+  view.focus();
+  view.print();
+
+  // Tearing the frame down while the dialog is still open cancels the job, so the
+  // cleanup waits for the print to finish — and for the browsers that never say so,
+  // for the timer.
+  const discard = () => frame.remove();
+
+  view.addEventListener('afterprint', discard, { once: true });
+  setTimeout(discard, PRINT_CLEANUP_MS);
 };
 
 export const canCopyImageToClipboard = () =>
