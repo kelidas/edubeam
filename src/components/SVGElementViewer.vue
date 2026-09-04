@@ -30,6 +30,7 @@ import SVGElementTemperatureLoad from './svg/ElementTemperatureLoad.vue';
 import SVGDimensioning from './svg/Dimensioning.vue';
 import { loadType } from '../utils/loadType';
 import { boundsFromPoints } from '@/utils/fitBounds';
+import { computeReactionThreshold } from '@/utils/reactionThreshold';
 import type { DimensionRenderableNode } from '@/types/dimension';
 
 const props = withDefaults(
@@ -261,6 +262,9 @@ const onUpdate = throttle((zooming: boolean) => {
   if (grid.value) grid.value.refreshGrid(zooming);
 }, 100);
 
+/** Below this, a reaction is float noise rather than a result, so it is left undrawn. */
+const reactionThreshold = computed(() => computeReactionThreshold(props.nodes, props.solver.loadCases[0]));
+
 const dynamicMarker = (label: string) => {
   return `url(#${props.id}-${label})`;
 };
@@ -462,6 +466,7 @@ defineExpose({ centerContent, fitContent });
                 :load-case="props.solver.loadCases[0]"
                 :multiplier="defoScale * props.resultsScalePx"
                 :font-size="props.fontSize"
+                :reaction-threshold="reactionThreshold"
               />
             </g>
           </g>

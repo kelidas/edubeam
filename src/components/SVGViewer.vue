@@ -32,6 +32,7 @@ import { formatExpValueAsHTML } from '../SVGUtils';
 import { executeModelMutationWithUndo, loadType, throttle } from '../utils';
 import { createDimensionId, ensureDimensionId } from '@/utils/id';
 import { boundsFromPoints } from '@/utils/fitBounds';
+import { computeReactionThreshold } from '@/utils/reactionThreshold';
 import {
   Node,
   DofID,
@@ -1728,6 +1729,11 @@ const isPanning = computed(() => {
   return panZoom.value?.panning;
 });
 
+/** Below this, a reaction is float noise rather than a result, so it is left undrawn. */
+const reactionThreshold = computed(() =>
+  computeReactionThreshold(projectStore.solver.domain.nodes.values(), projectStore.solver.loadCases[0])
+);
+
 const dynamicMarker = (label: string) => {
   return `url(#${props.id}-${label})`;
 };
@@ -2323,6 +2329,7 @@ defineExpose({ centerContent, fitContent });
               :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
+              :reaction-threshold="reactionThreshold"
               @nodemousemove="onNodeHover($event, node)"
               @nodedefomousemove="onNodeHover($event, node)"
               @nodepointerdown="onNodeHover($event, node)"
@@ -2456,6 +2463,7 @@ defineExpose({ centerContent, fitContent });
                 :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
                 :font-size="viewerStore.fontSize"
                 :number-format="appStore.numberFormatter"
+                :reaction-threshold="reactionThreshold"
               />
             </g>
           </g>

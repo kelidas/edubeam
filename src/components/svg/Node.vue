@@ -17,10 +17,13 @@ const props = withDefaults(
     multiplier: number;
     fontSize?: number;
     numberFormat?: Intl.NumberFormat;
+    /** Reactions at or below this magnitude are float noise and stay undrawn. */
+    reactionThreshold?: number;
   }>(),
   {
     fontSize: 13,
     numberFormat: new Intl.NumberFormat(),
+    reactionThreshold: 0,
   }
 );
 
@@ -220,6 +223,11 @@ const isSupportedAtAll = computed(() => {
   return props.node.bcs.size > 0;
 });
 
+/** A reaction worth drawing: not an exact zero, and not noise left over from a cancellation. */
+const hasReaction = (node: Node, dof: DofID) => {
+  return Math.abs(getReaction(node, dof)) > Math.max(props.reactionThreshold, 1e-32);
+};
+
 const getReaction = (node: Node, dof: DofID) => {
   const r = node.getReactions(props.loadCase, !node.hasLcs());
   const i = r.dofs.findIndex((e) => e === dof);
@@ -316,7 +324,7 @@ const emit = defineEmits(['nodemousemove', 'nodepointerdown', 'nodepointerup', '
         showReactions &&
         (node.hasLcs() || isSupported(node, DofID.Dz)) &&
         isConnected &&
-        Math.abs(getReaction(node, DofID.Dz)) > 1e-32
+        hasReaction(node, DofID.Dz)
       "
       data-fit-ignore="results"
       points="0,0 0.0001,0.0001"
@@ -332,7 +340,7 @@ const emit = defineEmits(['nodemousemove', 'nodepointerdown', 'nodepointerup', '
         showReactions &&
         (node.hasLcs() || isSupported(node, DofID.Dz)) &&
         isConnected &&
-        Math.abs(getReaction(node, DofID.Dz)) > 1e-32
+        hasReaction(node, DofID.Dz)
       "
       data-fit-ignore="results"
       class="reaction"
@@ -351,7 +359,7 @@ const emit = defineEmits(['nodemousemove', 'nodepointerdown', 'nodepointerup', '
         showReactions &&
         (node.hasLcs() || isSupported(node, DofID.Dx)) &&
         isConnected &&
-        Math.abs(getReaction(node, DofID.Dx)) > 1e-32
+        hasReaction(node, DofID.Dx)
       "
       data-fit-ignore="results"
       points="0,0 0.0001,0.0001"
@@ -367,7 +375,7 @@ const emit = defineEmits(['nodemousemove', 'nodepointerdown', 'nodepointerup', '
         showReactions &&
         (node.hasLcs() || isSupported(node, DofID.Dx)) &&
         isConnected &&
-        Math.abs(getReaction(node, DofID.Dx)) > 1e-32
+        hasReaction(node, DofID.Dx)
       "
       data-fit-ignore="results"
       class="reaction"
@@ -382,11 +390,7 @@ const emit = defineEmits(['nodemousemove', 'nodepointerdown', 'nodepointerup', '
 
     <polyline
       v-if="
-        loadCase.solved &&
-        showReactions &&
-        isSupported(node, DofID.Ry) &&
-        isConnected &&
-        Math.abs(getReaction(node, DofID.Ry)) > 1e-32
+        loadCase.solved && showReactions && isSupported(node, DofID.Ry) && isConnected && hasReaction(node, DofID.Ry)
       "
       data-fit-ignore="results"
       points="0,0 0.0001,0.0001"
@@ -397,11 +401,7 @@ const emit = defineEmits(['nodemousemove', 'nodepointerdown', 'nodepointerup', '
 
     <text
       v-if="
-        loadCase.solved &&
-        showReactions &&
-        isSupported(node, DofID.Ry) &&
-        isConnected &&
-        Math.abs(getReaction(node, DofID.Ry)) > 1e-32
+        loadCase.solved && showReactions && isSupported(node, DofID.Ry) && isConnected && hasReaction(node, DofID.Ry)
       "
       data-fit-ignore="results"
       class="reaction"
