@@ -63,7 +63,9 @@
           </v-btn>
         </div>
         <v-data-table-virtual
-          ref="table-nodes"
+          v-if="appStore.bottomBarTab === 'tab-nodes'"
+          item-height="36"
+          :key="settledHeight"
           class="fixed-left-col"
           :headers="headers.nodes"
           :items="nodes"
@@ -280,6 +282,9 @@
         </div>
 
         <v-data-table-virtual
+          v-if="appStore.bottomBarTab === 'tab-elements'"
+          item-height="36"
+          :key="settledHeight"
           :headers="headers.elements"
           class="fixed-left-col"
           :items="elements"
@@ -503,6 +508,9 @@
           </v-btn>
         </div>
         <v-data-table-virtual
+          v-if="appStore.bottomBarTab === 'tab-loads'"
+          item-height="36"
+          :key="settledHeight"
           :headers="headers.loads"
           :items="loads"
           :row-props="loadRowProps"
@@ -1009,6 +1017,9 @@
         </div>
 
         <v-data-table-virtual
+          v-if="appStore.bottomBarTab === 'tab-mats'"
+          item-height="36"
+          :key="settledHeight"
           :headers="headers.materials"
           class="fixed-left-col"
           :items="materials"
@@ -1142,6 +1153,9 @@
         </div>
 
         <v-data-table-virtual
+          v-if="appStore.bottomBarTab === 'tab-cs'"
+          item-height="36"
+          :key="settledHeight"
           :headers="headers.crossSections"
           class="fixed-left-col"
           :items="crossSections"
@@ -1309,7 +1323,9 @@
         <v-window v-model="layoutStore.bottomBarResultsTab" disabled>
           <v-window-item value="nodes" :transition="false" :reverse-transition="false">
             <v-data-table-virtual
-              ref="table-results"
+              v-if="appStore.bottomBarTab === 'tab-results'"
+              item-height="36"
+              :key="settledHeight"
               :headers="headers.results"
               :items="nodes"
               density="compact"
@@ -1401,7 +1417,9 @@
           </v-window-item>
           <v-window-item value="elements" :transition="false" :reverse-transition="false">
             <v-data-table-virtual
-              ref="table-results2"
+              v-if="appStore.bottomBarTab === 'tab-results'"
+              item-height="36"
+              :key="settledHeight"
               :headers="headers.results2"
               :items="useProjectStore().solver.loadCases[0].solved ? elements : []"
               density="compact"
@@ -1500,7 +1518,7 @@ import {
   NodalLoad,
 } from 'ts-fem';
 
-import { onMounted, computed, markRaw, nextTick, reactive, ref } from 'vue';
+import { onMounted, computed, markRaw, nextTick, reactive, ref, watch } from 'vue';
 import { useProjectStore } from '../store/project';
 import { useAppStore } from '../store/app';
 import { MouseMode } from '../mouse';
@@ -1564,6 +1582,17 @@ const { t } = useI18n();
 const appStore = useAppStore();
 const projStore = useProjectStore();
 const layoutStore = useLayoutStore();
+
+/**
+ * The virtual tables work their visible window out from a height they measure once and then learn
+ * about through a ResizeObserver. Dragging the bar taller does not reliably reach that path, so the
+ * table keeps showing the rows the short bar held. Remounting it on the settled height sidesteps
+ * the whole question: a fresh table measures the size it is actually given.
+ *
+ * Settled, not live: a drag reports continuously, and remounting per pixel would be absurd.
+ */
+const settledHeight = ref(0);
+let settleTimer: ReturnType<typeof setTimeout> | undefined;
 
 const props = defineProps({
   height: {
@@ -1935,6 +1964,15 @@ const tabs = reactive([
     icon: 'mdi-numeric',
   },
 ]);
+
+watch(
+  () => props.height,
+  (height) => {
+    clearTimeout(settleTimer);
+    settleTimer = setTimeout(() => (settledHeight.value = height), 150);
+  },
+  { immediate: true }
+);
 
 const exportFeedbackVisible = ref(false);
 const exportFeedbackType = ref<'success' | 'error'>('success');
