@@ -107,8 +107,15 @@ const orientedNodeCoords = computed(() => {
   const orientBySupportDirection = isOrientedSupport || isMovingCantilever;
   const movingCantileverAngleOffset = isMovingCantileverX.value ? -90 : 0;
 
-  // Rotate support symbols if has lcs
-  if (props.node.hasLcs() && orientBySupportDirection) {
+  /*
+   * A node given its own axes is drawn along them whatever it is held in: the angle is what was
+   * typed, and a fixed support points somewhere just as much as a roller does.
+   *
+   * Reading that from the constrained DOFs left the fixed support out - `isOrientedSupport` wants
+   * Ry free, and `isMovingCantilever` excludes the fully fixed case on purpose - so typing an angle
+   * turned every support symbol except that one, which stayed lined up with its element.
+   */
+  if (props.node.hasLcs() && isSupportedAtAll.value) {
     const angle = getSupportAngle(props.node) + movingCantileverAngleOffset;
     const x = props.node.coords[0] + 1 * Math.cos((angle * Math.PI) / 180);
     const z = props.node.coords[2] + 1 * Math.sin((angle * Math.PI) / 180);
