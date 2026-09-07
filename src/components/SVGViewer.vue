@@ -135,6 +135,12 @@ const appStore = useAppStore();
 const projectStore = useProjectStore();
 const viewerStore = useViewerStore();
 
+/**
+ * The results this viewer shows and how tall, independent of the other viewer's. Resolved once:
+ * a viewer's id does not change under it, and the set it points at is reactive on its own.
+ */
+const results = viewerStore.resultsFor(props.id ?? 'viewer');
+
 /** Tabs keep every instance mounted; only the one on the open tab may answer global events. */
 const isActiveViewer = () => appStore.openedTab?.props?.id === props.id;
 
@@ -409,10 +415,10 @@ const LOAD_DECORATION_PX = 60;
 /** Diagrams whose scale can be adjusted, named as the viewer settings name them. */
 const scalableResults = computed(() =>
   [
-    { key: 'deformedShape' as const, label: 'w', shown: viewerStore.showDeformedShape },
-    { key: 'normalForce' as const, label: 'N&nbsp;(x)', shown: viewerStore.showNormalForce },
-    { key: 'shearForce' as const, label: 'V<sub>z</sub>&nbsp;(x)', shown: viewerStore.showShearForce },
-    { key: 'bendingMoment' as const, label: 'M<sub>y</sub>&nbsp;(x)', shown: viewerStore.showBendingMoment },
+    { key: 'deformedShape' as const, label: 'w', shown: results.showDeformedShape },
+    { key: 'normalForce' as const, label: 'N&nbsp;(x)', shown: results.showNormalForce },
+    { key: 'shearForce' as const, label: 'V<sub>z</sub>&nbsp;(x)', shown: results.showShearForce },
+    { key: 'bendingMoment' as const, label: 'M<sub>y</sub>&nbsp;(x)', shown: results.showBendingMoment },
   ].filter((row) => row.shown)
 );
 
@@ -420,9 +426,9 @@ type ResultScaleKey = 'deformedShape' | 'normalForce' | 'shearForce' | 'bendingM
 
 /** One wheel notch, one button press: a quarter up or down, never past a factor of a thousand. */
 const stepResultScale = (key: ResultScaleKey, direction: number) => {
-  const next = viewerStore.resultScale[key] * (direction > 0 ? 1.25 : 1 / 1.25);
+  const next = results.resultScale[key] * (direction > 0 ? 1.25 : 1 / 1.25);
 
-  viewerStore.resultScale[key] = Math.min(Math.max(next, 1e-3), 1e3);
+  results.resultScale[key] = Math.min(Math.max(next, 1e-3), 1e3);
 };
 
 const fitReserve = computed(() => Math.max(viewerStore.resultsScalePx_, LOAD_DECORATION_PX) + viewerStore.fontSize + 8);
@@ -719,7 +725,6 @@ const buildElementLoadDetails = (el: BeamElementLoad): EntityDetails => {
   else if (el instanceof BeamConcentratedLoad) lt = 'loadType.concentrated';
   else if (el instanceof BeamConcentratedDeformation) lt = 'loadType.concentrated_deformation';
   else if (el instanceof BeamTemperatureLoad) lt = 'loadType.temperature';
-  else if (el instanceof BeamConcentratedDeformation) lt = 'loadType.concentrated_deformation';
   const ff = isDistributed ? 'f' : 'F';
   // A distributed load is an intensity, a concentrated one a force; both parts of the unit count.
   const convertIntensity = isDistributed ? appStore.convertForceDistance : appStore.convertForce;
@@ -768,19 +773,6 @@ const buildElementLoadDetails = (el: BeamElementLoad): EntityDetails => {
 
     if (Math.abs(el.values[2]) > 1e-32) {
       rows.push(`R<sub>y</sub> = ${el.values[2]} ${appStore.units.Angle}`);
-    }
-  } else if (el instanceof BeamConcentratedDeformation) {
-    // deformations are lengths and rotations, not forces
-    if (Math.abs(el.values[0]) > 1e-32) {
-      tooltipContent.innerHTML += `D<sub>x</sub> = ${appStore.convertLength(el.values[0])} ${appStore.units.Length}<br>`;
-    }
-
-    if (Math.abs(el.values[1]) > 1e-32) {
-      tooltipContent.innerHTML += `D<sub>z</sub> = ${appStore.convertLength(el.values[1])} ${appStore.units.Length}<br>`;
-    }
-
-    if (Math.abs(el.values[2]) > 1e-32) {
-      tooltipContent.innerHTML += `R<sub>y</sub> = ${el.values[2]} ${appStore.units.Angle}`;
     }
   }
 
@@ -2296,7 +2288,7 @@ defineExpose({ centerContent, fitContent });
           factor doubles as a reset button.
         -->
         <div
-          v-if="isInfluenceViewer && scalableResults.length > 0"
+          v-if="results.showScalePanel && scalableResults.length > 0"
           id="resultScales"
           class="bg-grey-lighten-5 elevation-1 rounded pa-1 pr-2 d-flex flex-column ga-1"
         >
@@ -2318,9 +2310,9 @@ defineExpose({ centerContent, fitContent });
               variant="text"
               class="px-1"
               style="min-width: 48px"
-              @click="viewerStore.resultScale[row.key] = 1"
+              @click="results.resultScale[row.key] = 1"
             >
-              {{ appStore.numberFormatter.format(viewerStore.resultScale[row.key]) }}&times;
+              {{ appStore.numberFormatter.format(results.resultScale[row.key]) }}&times;
             </v-btn>
             <v-btn icon variant="tonal" class="scale-step" @click="stepResultScale(row.key, 1)">
               <v-icon icon="mdi-plus" size="16" />
@@ -2365,6 +2357,25 @@ defineExpose({ centerContent, fitContent });
               </v-tooltip>
             </v-chip>
           </div>
+          <!--
+            Shows and hides the scale rows above. It sits with the units because both are the same
+            kind of thing: a small standing statement about how the drawing is being read.
+          -->
+          <v-tooltip :text="$t('settings.results_scale')" location="top" :open-on-click="!deviceHasHover">
+            <template #activator="{ props: tooltipProps }">
+              <v-chip
+                v-bind="tooltipProps"
+                density="compact"
+                class="pa-0 justify-center"
+                :class="results.showScalePanel ? 'text-black' : 'text-grey'"
+                style="min-width: 28px"
+                @click="results.showScalePanel = !results.showScalePanel"
+              >
+                <v-icon size="16" icon="mdi-arrow-expand-vertical" />
+              </v-chip>
+            </template>
+          </v-tooltip>
+
           <v-chip class="justify-end" density="compact" @click="appStore.openSettings()">
             <div class="d-flex ga-1">
               <span v-html="formatMeasureAsHTML(appStore.units.Length)"></span>
@@ -2753,7 +2764,7 @@ defineExpose({ centerContent, fitContent });
                   :scale="scale"
                   :convert-displacement="appStore.convertLength"
                   :font-size="viewerStore.fontSize"
-                  :number-format="appStore.deformationFormatter"
+                  :number-format="appStore.resultFormatter"
                   @mousemove="onElementLoadHover($event, eload)"
                   @mouseleave="hideTooltip"
                   @pointerup="onElementLoadClick($event, index)"
@@ -2781,24 +2792,6 @@ defineExpose({ centerContent, fitContent });
                     projectStore.clearSelection();
                   "
                 />
-                <SVGElementConcentratedDeformation
-                  v-else-if="eload instanceof BeamConcentratedDeformation"
-                  :key="`element-cd-${index}`"
-                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
-                  :data-element-load-id="index"
-                  :eload="eload"
-                  :scale="scale"
-                  :convert-displacement="appStore.convertLength"
-                  :font-size="viewerStore.fontSize"
-                  :number-format="appStore.resultFormatter"
-                  @mousemove="onElementLoadHover($event, eload)"
-                  @mouseleave="hideTooltip"
-                  @pointerup="onElementLoadClick($event, index)"
-                  @dblclick="
-                    openModal(EditElementLoadDialog, { index });
-                    projectStore.clearSelection();
-                  "
-                />
               </template>
             </g>
           </g>
@@ -2811,29 +2804,29 @@ defineExpose({ centerContent, fitContent });
               :show-results="false"
               :element="element"
               :scale="scale"
-              :show-deformed-shape="!isZooming && viewerStore.showDeformedShape"
-              :show-normal-force="!isZooming && viewerStore.showNormalForce"
-              :show-shear-force="!isZooming && viewerStore.showShearForce"
-              :show-bending-moment="!isZooming && viewerStore.showBendingMoment"
+              :show-deformed-shape="!isZooming && results.showDeformedShape"
+              :show-normal-force="!isZooming && results.showNormalForce"
+              :show-shear-force="!isZooming && results.showShearForce"
+              :show-bending-moment="!isZooming && results.showBendingMoment"
               :show-label="!isZooming && viewerStore.showElementLabels"
               :load-case="viewerLoadCase"
               :deformed-shape-multiplier="
-                projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+                projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape
               "
               :normal-force-multiplier="
-                projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+                projectStore.normalForceScale * viewerStore.resultsScalePx_ * results.resultScale.normalForce
               "
               :shear-force-multiplier="
-                projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+                projectStore.shearForceScale * viewerStore.resultsScalePx_ * results.resultScale.shearForce
               "
               :bending-moment-multiplier="
-                projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+                projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * results.resultScale.bendingMoment
               "
               :result-label-mode="resolvedResultLabelMode"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
-              :deformation-number-format="appStore.deformationFormatter"
+              :deformation-number-format="appStore.resultFormatter"
               :show-deflection-labels="isInfluenceViewer"
               :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
@@ -2854,29 +2847,29 @@ defineExpose({ centerContent, fitContent });
               :show-results="true"
               :element="element"
               :scale="scale"
-              :show-deformed-shape="!isZooming && viewerStore.showDeformedShape"
-              :show-normal-force="!isZooming && viewerStore.showNormalForce"
-              :show-shear-force="!isZooming && viewerStore.showShearForce"
-              :show-bending-moment="!isZooming && viewerStore.showBendingMoment"
+              :show-deformed-shape="!isZooming && results.showDeformedShape"
+              :show-normal-force="!isZooming && results.showNormalForce"
+              :show-shear-force="!isZooming && results.showShearForce"
+              :show-bending-moment="!isZooming && results.showBendingMoment"
               :show-label="!isZooming && viewerStore.showElementLabels"
               :load-case="viewerLoadCase"
               :deformed-shape-multiplier="
-                projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+                projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape
               "
               :normal-force-multiplier="
-                projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+                projectStore.normalForceScale * viewerStore.resultsScalePx_ * results.resultScale.normalForce
               "
               :shear-force-multiplier="
-                projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+                projectStore.shearForceScale * viewerStore.resultsScalePx_ * results.resultScale.shearForce
               "
               :bending-moment-multiplier="
-                projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+                projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * results.resultScale.bendingMoment
               "
               :result-label-mode="resolvedResultLabelMode"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
-              :deformation-number-format="appStore.deformationFormatter"
+              :deformation-number-format="appStore.resultFormatter"
               :show-deflection-labels="isInfluenceViewer"
               :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
@@ -2919,7 +2912,7 @@ defineExpose({ centerContent, fitContent });
               :nload="nload"
               :scale="scale"
               :convert-length="appStore.convertLength"
-              :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape"
+              :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
               @mousemove="onPrescribedBCHover($event, nload)"
@@ -2940,12 +2933,12 @@ defineExpose({ centerContent, fitContent });
               :scale="scale"
               :show-label="!isZooming && viewerStore.showNodeLabels"
               :show-supports="viewerStore.showSupports"
-              :show-deformed-shape="!isZooming && viewerStore.showDeformedShape"
-              :show-reactions="!isZooming && viewerStore.showReactions"
+              :show-deformed-shape="!isZooming && results.showDeformedShape"
+              :show-reactions="!isZooming && results.showReactions"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
               :load-case="viewerLoadCase"
-              :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape"
+              :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
               @nodemousemove="onNodeHover($event, node)"
@@ -3005,22 +2998,22 @@ defineExpose({ centerContent, fitContent });
                 :show-label="false"
                 :load-case="viewerLoadCase"
                 :deformed-shape-multiplier="
-                  projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+                  projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape
                 "
                 :normal-force-multiplier="
-                  projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+                  projectStore.normalForceScale * viewerStore.resultsScalePx_ * results.resultScale.normalForce
                 "
                 :shear-force-multiplier="
-                  projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+                  projectStore.shearForceScale * viewerStore.resultsScalePx_ * results.resultScale.shearForce
                 "
                 :bending-moment-multiplier="
-                  projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+                  projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * results.resultScale.bendingMoment
                 "
                 :result-label-mode="resolvedResultLabelMode"
                 :convert-force="appStore.convertForce"
                 :convert-moment="appStore.convertMoment"
                 :convert-length="appStore.convertLength"
-                :deformation-number-format="appStore.deformationFormatter"
+                :deformation-number-format="appStore.resultFormatter"
                 :show-deflection-labels="isInfluenceViewer"
                 :smooth-deformed-shape="!isInfluenceViewer"
                 :font-size="viewerStore.fontSize"
@@ -3039,9 +3032,7 @@ defineExpose({ centerContent, fitContent });
                 :show-reactions="false"
                 :convert-force="appStore.convertForce"
                 :load-case="viewerLoadCase"
-                :multiplier="
-                  projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
-                "
+                :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape"
                 :font-size="viewerStore.fontSize"
                 :number-format="appStore.numberFormatter"
               />

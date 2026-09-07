@@ -25,6 +25,9 @@ const projectStore = useProjectStore();
 const viewerStore = useViewerStore();
 const appStore = useAppStore();
 
+/** The set belonging to the viewer this highlight is drawn in. */
+const results = viewerStore.resultsFor(props.isInfluenceViewer ? 'influence' : 'viewer');
+
 const intersected = inject(intersectedKey);
 
 const element = computed(() => {
@@ -47,24 +50,24 @@ const selected = computed(() => !!element.value && projectStore.selection2.eleme
       :show-results="false"
       :element="element"
       :scale="props.scale"
-      :show-deformed-shape="!props.isZooming && viewerStore.showDeformedShape"
-      :show-normal-force="!props.isZooming && viewerStore.showNormalForce"
-      :show-shear-force="!props.isZooming && viewerStore.showShearForce"
-      :show-bending-moment="!props.isZooming && viewerStore.showBendingMoment"
+      :show-deformed-shape="!props.isZooming && results.showDeformedShape"
+      :show-normal-force="!props.isZooming && results.showNormalForce"
+      :show-shear-force="!props.isZooming && results.showShearForce"
+      :show-bending-moment="!props.isZooming && results.showBendingMoment"
       :show-label="!props.isZooming && viewerStore.showElementLabels"
       show-label-background
       :load-case="projectStore.loadCase"
       :deformed-shape-multiplier="
-        projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+        projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape
       "
       :normal-force-multiplier="
-        projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+        projectStore.normalForceScale * viewerStore.resultsScalePx_ * results.resultScale.normalForce
       "
       :shear-force-multiplier="
-        projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+        projectStore.shearForceScale * viewerStore.resultsScalePx_ * results.resultScale.shearForce
       "
       :bending-moment-multiplier="
-        projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+        projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * results.resultScale.bendingMoment
       "
       :result-label-mode="props.resultLabelMode"
       :convert-force="appStore.convertForce"
@@ -84,24 +87,24 @@ const selected = computed(() => !!element.value && projectStore.selection2.eleme
       :show-results="true"
       :element="element"
       :scale="props.scale"
-      :show-deformed-shape="!props.isZooming && viewerStore.showDeformedShape"
-      :show-normal-force="!props.isZooming && viewerStore.showNormalForce"
-      :show-shear-force="!props.isZooming && viewerStore.showShearForce"
-      :show-bending-moment="!props.isZooming && viewerStore.showBendingMoment"
+      :show-deformed-shape="!props.isZooming && results.showDeformedShape"
+      :show-normal-force="!props.isZooming && results.showNormalForce"
+      :show-shear-force="!props.isZooming && results.showShearForce"
+      :show-bending-moment="!props.isZooming && results.showBendingMoment"
       :show-label="!props.isZooming && viewerStore.showElementLabels"
       show-label-background
       :load-case="projectStore.loadCase"
       :deformed-shape-multiplier="
-        projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+        projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape
       "
       :normal-force-multiplier="
-        projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+        projectStore.normalForceScale * viewerStore.resultsScalePx_ * results.resultScale.normalForce
       "
       :shear-force-multiplier="
-        projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+        projectStore.shearForceScale * viewerStore.resultsScalePx_ * results.resultScale.shearForce
       "
       :bending-moment-multiplier="
-        projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+        projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * results.resultScale.bendingMoment
       "
       :result-label-mode="props.resultLabelMode"
       :convert-force="appStore.convertForce"

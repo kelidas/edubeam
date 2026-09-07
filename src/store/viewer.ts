@@ -13,11 +13,37 @@ export const useViewerStore = defineStore(
 
     const showLoads = ref(true);
 
-    const showNormalForce = ref(false);
-    const showShearForce = ref(false);
-    const showBendingMoment = ref(true);
-    const showDeformedShape = ref(true);
-    const showReactions = ref(true);
+    /**
+     * Which results are drawn, and how tall, kept per workspace.
+     *
+     * The two viewers are on screen for different questions - the load case is read for its
+     * moments, the influence line for its deflected shape - and both are mounted at once, so this
+     * cannot be one set of flags with the active workspace deciding. Everything else about the
+     * viewer (colours, type size, grid, labels) stays shared: it is how the drawing looks, not
+     * what it is showing.
+     */
+    const makeResults = () => ({
+      showNormalForce: false,
+      showShearForce: false,
+      showBendingMoment: true,
+      showDeformedShape: true,
+      showReactions: true,
+      // Per quantity multiplier on top of the automatic scale, so a diagram that comes out too
+      // flat or too tall can be adjusted without touching the others.
+      resultScale: { deformedShape: 1, normalForce: 1, shearForce: 1, bendingMoment: 1 },
+      // Whether the scale rows are on screen. Per workspace like the rest of this set, so opening
+      // them where they are wanted does not put them in front of the other viewer as well.
+      showScalePanel: false,
+    });
+
+    const results = reactive({
+      viewer: makeResults(),
+      // The influence line is read from its deflected shape, so that is what it opens showing.
+      influence: { ...makeResults(), showBendingMoment: false, showReactions: false, showScalePanel: true },
+    });
+
+    /** The set belonging to a viewer. Its id is the workspace it draws. */
+    const resultsFor = (workspace: string) => (workspace === 'influence' ? results.influence : results.viewer);
 
     const colors = reactive({
       normalForce: '#2222ff', // used
@@ -35,16 +61,6 @@ export const useViewerStore = defineStore(
     const gridStep = ref(0.1);
     const resultsScalePx_ = ref(48);
 
-    /**
-     * Per quantity multiplier on top of the automatic scale, so a diagram that comes out too flat
-     * or too tall can be adjusted without touching the others.
-     */
-    const resultScale = reactive({
-      deformedShape: 1,
-      normalForce: 1,
-      shearForce: 1,
-      bendingMoment: 1,
-    });
     const supportSize = ref(1);
 
     const fontSize = ref(14);
@@ -59,11 +75,13 @@ export const useViewerStore = defineStore(
 
       showLoads.value = true;
 
-      showNormalForce.value = false;
-      showShearForce.value = false;
-      showBendingMoment.value = true;
-      showDeformedShape.value = true;
-      showReactions.value = true;
+      Object.assign(results.viewer, makeResults());
+      Object.assign(results.influence, {
+        ...makeResults(),
+        showBendingMoment: false,
+        showReactions: false,
+        showScalePanel: true,
+      });
 
       colors.normalForce = '#2222ff';
       colors.shearForce = '#00af00';
@@ -78,10 +96,6 @@ export const useViewerStore = defineStore(
       snapToGrid.value = true;
       gridStep.value = 0.1;
       resultsScalePx_.value = 48;
-      resultScale.deformedShape = 1;
-      resultScale.normalForce = 1;
-      resultScale.shearForce = 1;
-      resultScale.bendingMoment = 1;
       supportSize.value = 1;
 
       fontSize.value = 14;
@@ -120,17 +134,13 @@ export const useViewerStore = defineStore(
       showLoads,
       showElementLabels,
       showSupports,
-      showNormalForce,
-      showShearForce,
-      showBendingMoment,
-      showDeformedShape,
-      showReactions,
+      results,
+      resultsFor,
 
       showGrid,
       snapToGrid,
       gridStep,
       resultsScalePx_: resultsScalePx_,
-      resultScale,
 
       fontSize,
 
