@@ -725,7 +725,6 @@ const buildElementLoadDetails = (el: BeamElementLoad): EntityDetails => {
   else if (el instanceof BeamConcentratedLoad) lt = 'loadType.concentrated';
   else if (el instanceof BeamConcentratedDeformation) lt = 'loadType.concentrated_deformation';
   else if (el instanceof BeamTemperatureLoad) lt = 'loadType.temperature';
-  else if (el instanceof BeamConcentratedDeformation) lt = 'loadType.concentrated_deformation';
   const ff = isDistributed ? 'f' : 'F';
   // A distributed load is an intensity, a concentrated one a force; both parts of the unit count.
   const convertIntensity = isDistributed ? appStore.convertForceDistance : appStore.convertForce;
@@ -774,19 +773,6 @@ const buildElementLoadDetails = (el: BeamElementLoad): EntityDetails => {
 
     if (Math.abs(el.values[2]) > 1e-32) {
       rows.push(`R<sub>y</sub> = ${el.values[2]} ${appStore.units.Angle}`);
-    }
-  } else if (el instanceof BeamConcentratedDeformation) {
-    // deformations are lengths and rotations, not forces
-    if (Math.abs(el.values[0]) > 1e-32) {
-      tooltipContent.innerHTML += `D<sub>x</sub> = ${appStore.convertLength(el.values[0])} ${appStore.units.Length}<br>`;
-    }
-
-    if (Math.abs(el.values[1]) > 1e-32) {
-      tooltipContent.innerHTML += `D<sub>z</sub> = ${appStore.convertLength(el.values[1])} ${appStore.units.Length}<br>`;
-    }
-
-    if (Math.abs(el.values[2]) > 1e-32) {
-      tooltipContent.innerHTML += `R<sub>y</sub> = ${el.values[2]} ${appStore.units.Angle}`;
     }
   }
 
@@ -2302,7 +2288,7 @@ defineExpose({ centerContent, fitContent });
           factor doubles as a reset button.
         -->
         <div
-          v-if="isInfluenceViewer && scalableResults.length > 0"
+          v-if="results.showScalePanel && scalableResults.length > 0"
           id="resultScales"
           class="bg-grey-lighten-5 elevation-1 rounded pa-1 pr-2 d-flex flex-column ga-1"
         >
@@ -2371,6 +2357,25 @@ defineExpose({ centerContent, fitContent });
               </v-tooltip>
             </v-chip>
           </div>
+          <!--
+            Shows and hides the scale rows above. It sits with the units because both are the same
+            kind of thing: a small standing statement about how the drawing is being read.
+          -->
+          <v-tooltip :text="$t('settings.results_scale')" location="top" :open-on-click="!deviceHasHover">
+            <template #activator="{ props: tooltipProps }">
+              <v-chip
+                v-bind="tooltipProps"
+                density="compact"
+                class="pa-0 justify-center"
+                :class="results.showScalePanel ? 'text-black' : 'text-grey'"
+                style="min-width: 28px"
+                @click="results.showScalePanel = !results.showScalePanel"
+              >
+                <v-icon size="16" icon="mdi-arrow-expand-vertical" />
+              </v-chip>
+            </template>
+          </v-tooltip>
+
           <v-chip class="justify-end" density="compact" @click="appStore.openSettings()">
             <div class="d-flex ga-1">
               <span v-html="formatMeasureAsHTML(appStore.units.Length)"></span>
@@ -2759,7 +2764,7 @@ defineExpose({ centerContent, fitContent });
                   :scale="scale"
                   :convert-displacement="appStore.convertLength"
                   :font-size="viewerStore.fontSize"
-                  :number-format="appStore.deformationFormatter"
+                  :number-format="appStore.resultFormatter"
                   @mousemove="onElementLoadHover($event, eload)"
                   @mouseleave="hideTooltip"
                   @pointerup="onElementLoadClick($event, index)"
@@ -2779,24 +2784,6 @@ defineExpose({ centerContent, fitContent });
                   :convert-moment="appStore.convertMoment"
                   :font-size="viewerStore.fontSize"
                   :number-format="appStore.numberFormatter"
-                  @mousemove="onElementLoadHover($event, eload)"
-                  @mouseleave="hideTooltip"
-                  @pointerup="onElementLoadClick($event, index)"
-                  @dblclick="
-                    openModal(EditElementLoadDialog, { index });
-                    projectStore.clearSelection();
-                  "
-                />
-                <SVGElementConcentratedDeformation
-                  v-else-if="eload instanceof BeamConcentratedDeformation"
-                  :key="`element-cd-${index}`"
-                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
-                  :data-element-load-id="index"
-                  :eload="eload"
-                  :scale="scale"
-                  :convert-displacement="appStore.convertLength"
-                  :font-size="viewerStore.fontSize"
-                  :number-format="appStore.resultFormatter"
                   @mousemove="onElementLoadHover($event, eload)"
                   @mouseleave="hideTooltip"
                   @pointerup="onElementLoadClick($event, index)"
@@ -2839,7 +2826,7 @@ defineExpose({ centerContent, fitContent });
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
-              :deformation-number-format="appStore.deformationFormatter"
+              :deformation-number-format="appStore.resultFormatter"
               :show-deflection-labels="isInfluenceViewer"
               :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
@@ -2882,7 +2869,7 @@ defineExpose({ centerContent, fitContent });
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
-              :deformation-number-format="appStore.deformationFormatter"
+              :deformation-number-format="appStore.resultFormatter"
               :show-deflection-labels="isInfluenceViewer"
               :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
@@ -3026,7 +3013,7 @@ defineExpose({ centerContent, fitContent });
                 :convert-force="appStore.convertForce"
                 :convert-moment="appStore.convertMoment"
                 :convert-length="appStore.convertLength"
-                :deformation-number-format="appStore.deformationFormatter"
+                :deformation-number-format="appStore.resultFormatter"
                 :show-deflection-labels="isInfluenceViewer"
                 :smooth-deformed-shape="!isInfluenceViewer"
                 :font-size="viewerStore.fontSize"

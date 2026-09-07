@@ -53,6 +53,25 @@ describe('the result toggles', () => {
     expect(viewer.resultsFor('influence')).not.toBe(viewer.resultsFor('viewer'));
   });
 
+  it('opens the scale rows where they are read, not everywhere', () => {
+    const viewer = useViewerStore();
+
+    // the influence line is read off its curve, so its scales are to hand from the start
+    expect(viewer.resultsFor('influence').showScalePanel).toBe(true);
+    // the load case viewer can have them, but is not given them unasked
+    expect(viewer.resultsFor('loads').showScalePanel).toBe(false);
+  });
+
+  it('shows the scale rows in one workspace without showing them in the other', () => {
+    const viewer = useViewerStore();
+
+    viewer.resultsFor('loads').showScalePanel = true;
+    viewer.resultsFor('influence').showScalePanel = false;
+
+    expect(viewer.resultsFor('loads').showScalePanel).toBe(true);
+    expect(viewer.resultsFor('influence').showScalePanel).toBe(false);
+  });
+
   it('restores both on a settings reset', () => {
     const viewer = useViewerStore();
 
@@ -65,5 +84,6 @@ describe('the result toggles', () => {
     expect(viewer.resultsFor('viewer').showNormalForce).toBe(false);
     expect(viewer.resultsFor('influence').showBendingMoment).toBe(false);
     expect(viewer.resultsFor('influence').resultScale.deformedShape).toBe(1);
+    expect(viewer.resultsFor('influence').showScalePanel).toBe(true);
   });
 });

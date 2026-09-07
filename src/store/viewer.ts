@@ -31,12 +31,15 @@ export const useViewerStore = defineStore(
       // Per quantity multiplier on top of the automatic scale, so a diagram that comes out too
       // flat or too tall can be adjusted without touching the others.
       resultScale: { deformedShape: 1, normalForce: 1, shearForce: 1, bendingMoment: 1 },
+      // Whether the scale rows are on screen. Per workspace like the rest of this set, so opening
+      // them where they are wanted does not put them in front of the other viewer as well.
+      showScalePanel: false,
     });
 
     const results = reactive({
       viewer: makeResults(),
       // The influence line is read from its deflected shape, so that is what it opens showing.
-      influence: { ...makeResults(), showBendingMoment: false, showReactions: false },
+      influence: { ...makeResults(), showBendingMoment: false, showReactions: false, showScalePanel: true },
     });
 
     /** The set belonging to a viewer. Its id is the workspace it draws. */
@@ -73,7 +76,12 @@ export const useViewerStore = defineStore(
       showLoads.value = true;
 
       Object.assign(results.viewer, makeResults());
-      Object.assign(results.influence, { ...makeResults(), showBendingMoment: false, showReactions: false });
+      Object.assign(results.influence, {
+        ...makeResults(),
+        showBendingMoment: false,
+        showReactions: false,
+        showScalePanel: true,
+      });
 
       colors.normalForce = '#2222ff';
       colors.shearForce = '#00af00';
