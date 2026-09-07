@@ -52,10 +52,18 @@ const selected = computed(() => !!element.value && projectStore.selection2.eleme
       :show-label="!props.isZooming && viewerStore.showElementLabels"
       show-label-background
       :load-case="projectStore.solver.loadCases[0]"
-      :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
-      :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
-      :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
-      :bending-moment-multiplier="projectStore.bendingMomentScale * viewerStore.resultsScalePx_"
+      :deformed-shape-multiplier="
+        projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+      "
+      :normal-force-multiplier="
+        projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+      "
+      :shear-force-multiplier="
+        projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+      "
+      :bending-moment-multiplier="
+        projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+      "
       :result-label-mode="props.resultLabelMode"
       :convert-force="appStore.convertForce"
       :convert-moment="appStore.convertMoment"
@@ -77,10 +85,18 @@ const selected = computed(() => !!element.value && projectStore.selection2.eleme
       :show-label="!props.isZooming && viewerStore.showElementLabels"
       show-label-background
       :load-case="projectStore.solver.loadCases[0]"
-      :deformed-shape-multiplier="projectStore.defoScale * viewerStore.resultsScalePx_"
-      :normal-force-multiplier="projectStore.normalForceScale * viewerStore.resultsScalePx_"
-      :shear-force-multiplier="projectStore.shearForceScale * viewerStore.resultsScalePx_"
-      :bending-moment-multiplier="projectStore.bendingMomentScale * viewerStore.resultsScalePx_"
+      :deformed-shape-multiplier="
+        projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
+      "
+      :normal-force-multiplier="
+        projectStore.normalForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.normalForce
+      "
+      :shear-force-multiplier="
+        projectStore.shearForceScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.shearForce
+      "
+      :bending-moment-multiplier="
+        projectStore.bendingMomentScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.bendingMoment
+      "
       :result-label-mode="props.resultLabelMode"
       :convert-force="appStore.convertForce"
       :convert-moment="appStore.convertMoment"

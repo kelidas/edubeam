@@ -2,6 +2,8 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { mount } from '@vue/test-utils';
 import { createVuetify } from 'vuetify';
+// The app gets these from vite-plugin-vuetify's auto-import, which the vitest config does not load.
+import * as directives from 'vuetify/directives';
 import { DofID } from 'ts-fem';
 import { i18n } from '@/plugins/i18n';
 import SVGViewer from '@/components/SVGViewer.vue';
@@ -19,7 +21,7 @@ const mountViewer = () => {
   const wrapper = mount(SVGViewer, {
     props: { id: 'viewer' },
     global: {
-      plugins: [createVuetify(), i18n],
+      plugins: [createVuetify({ directives }), i18n],
       config: {
         errorHandler: (e: unknown) => errors.push(e),
         // Vue reports a bad prop or a missing injection as a warning, not an error. Components the
