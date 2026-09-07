@@ -8,7 +8,7 @@ describe('result scale factors', () => {
   it('starts at one for every quantity', () => {
     const viewerStore = useViewerStore();
 
-    expect(viewerStore.resultScale).toEqual({
+    expect(viewerStore.resultsFor('viewer').resultScale).toEqual({
       deformedShape: 1,
       normalForce: 1,
       shearForce: 1,
@@ -19,9 +19,9 @@ describe('result scale factors', () => {
   it('is restored by a settings reset', () => {
     const viewerStore = useViewerStore();
 
-    viewerStore.resultScale.bendingMoment = 4;
+    viewerStore.resultsFor('viewer').resultScale.bendingMoment = 4;
     viewerStore.reset();
 
-    expect(viewerStore.resultScale.bendingMoment).toBe(1);
+    expect(viewerStore.resultsFor('viewer').resultScale.bendingMoment).toBe(1);
   });
 });

@@ -271,6 +271,8 @@ import {
 
 const projectStore = useProjectStore();
 const viewerStore = useViewerStore();
+/** What the workspace on screen is showing - that is what an export is expected to contain. */
+const results = viewerStore.resultsFor(useAppStore().workspace);
 const appStore = useAppStore();
 
 const open = ref(true);
@@ -300,11 +302,11 @@ const layers = reactive({
   showLoads: viewerStore.showLoads,
   showNodeLabels: viewerStore.showNodeLabels,
   showElementLabels: viewerStore.showElementLabels,
-  showDeformedShape: viewerStore.showDeformedShape,
-  showNormalForce: viewerStore.showNormalForce,
-  showShearForce: viewerStore.showShearForce,
-  showBendingMoment: viewerStore.showBendingMoment,
-  showReactions: viewerStore.showReactions,
+  showDeformedShape: results.showDeformedShape,
+  showNormalForce: results.showNormalForce,
+  showShearForce: results.showShearForce,
+  showBendingMoment: results.showBendingMoment,
+  showReactions: results.showReactions,
 });
 
 /** An eigenvalue run has no loads or internal forces to draw; the viewer greys those out too. */
