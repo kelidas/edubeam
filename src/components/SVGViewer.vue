@@ -3096,14 +3096,14 @@ defineExpose({ centerContent, fitContent });
           style="width: fit-content"
         >
           <v-checkbox
-            v-model="useViewerStore().showDeformedShape"
+            v-model="results.showDeformedShape"
             :label="$t('sideSettings.showDeformedShape')"
             hide-details
             density="compact"
             class="inline-checkbox mr-2 flex-shrink-0 text-no-wrap"
           />
           <v-checkbox
-            v-model="useViewerStore().showNormalForce"
+            v-model="results.showNormalForce"
             label=""
             hide-details
             density="compact"
@@ -3113,7 +3113,7 @@ defineExpose({ centerContent, fitContent });
             <template #label>N (x)</template>
           </v-checkbox>
           <v-checkbox
-            v-model="useViewerStore().showShearForce"
+            v-model="results.showShearForce"
             label="Vz (x)"
             hide-details
             density="compact"
@@ -3123,7 +3123,7 @@ defineExpose({ centerContent, fitContent });
             <template #label>V<sub>z</sub>&nbsp;(x)</template>
           </v-checkbox>
           <v-checkbox
-            v-model="useViewerStore().showBendingMoment"
+            v-model="results.showBendingMoment"
             label="My (x)"
             hide-details
             density="compact"
@@ -3133,7 +3133,7 @@ defineExpose({ centerContent, fitContent });
             <template #label>M<sub>y</sub>&nbsp;(x)</template>
           </v-checkbox>
           <v-checkbox
-            v-model="useViewerStore().showReactions"
+            v-model="results.showReactions"
             :label="$t('sideSettings.showReactions')"
             hide-details
             density="compact"
