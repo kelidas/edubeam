@@ -34,8 +34,9 @@
 
 <script setup lang="ts">
 import HelpTip from '../HelpTip.vue';
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { useProjectStore } from '../../store/project';
+import { useAppStore } from '../../store/app';
 import { closeModal } from 'jenesius-vue-modal';
 import { executeModelMutationWithUndo } from '@/utils';
 import { useI18n } from 'vue-i18n';
@@ -51,15 +52,25 @@ const valid = ref(false);
 const loadType = ref('udl');
 const loadElementId = ref(String(props.label ?? [...projectStore.solver.domain.elements.values()][0].label));
 
+const appStore = useAppStore();
+
 const formRef = ref<InstanceType<typeof ElementLoadFields> | null>(null);
 
-const loadTypes = [
+/**
+ * An imposed deformation exists to solve influence lines and is not a load anyone puts on a
+ * structure, so the load case viewer does not offer it. The influence workspace reaches it through
+ * its own dialog; the list stays conditional rather than trimmed so this one still works if it is
+ * ever opened there.
+ */
+const loadTypes = computed(() => [
   { label: t('loadType.udl'), value: 'udl' },
   { label: t('loadType.trapezoidal'), value: 'trapezoidal' },
   { label: t('loadType.concentrated'), value: 'concentrated' },
-  { label: t('loadType.concentrated_deformation'), value: 'concentrated_deformation' },
+  ...(appStore.workspace === 'influence'
+    ? [{ label: t('loadType.concentrated_deformation'), value: 'concentrated_deformation' }]
+    : []),
   { label: t('loadType.temperature'), value: 'temperature' },
-];
+]);
 
 watch(loadType, (newVal) => {
   if (!formRef.value) return;
