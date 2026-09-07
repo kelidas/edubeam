@@ -313,6 +313,7 @@
   "loadType": {
     "loadType": "ประเภทแรงกระทำ",
     "concentrated": "แรงกระทำเข้มข้น",
+    "concentrated_deformation": "การเสียรูปเข้มข้น",
     "udl": "แรงกระจายสม่ำเสมอ",
     "temperature": "แรงกระทำเนื่องจากอุณหภูมิ"
   },

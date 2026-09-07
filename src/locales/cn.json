@@ -319,6 +319,7 @@
   "loadType": {
     "loadType": "荷载类型",
     "concentrated": "集中荷载",
+    "concentrated_deformation": "集中变形",
     "trapezoidal": "梯形分布荷载",
     "udl": "均布荷载",
     "temperature": "温度荷载"

@@ -14,7 +14,7 @@ const props = withDefaults(
   }>(),
   {
     fontSize: 13,
-    numberFormat: new Intl.NumberFormat(),
+    numberFormat: () => new Intl.NumberFormat(),
   }
 );
 

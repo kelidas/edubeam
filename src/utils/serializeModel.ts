@@ -4,6 +4,7 @@ import {
   Beam2D,
   BeamElementUniformEdgeLoad,
   BeamConcentratedLoad,
+  BeamConcentratedDeformation,
   BeamTemperatureLoad,
   BeamElementTrapezoidalEdgeLoad,
 } from 'ts-fem';
@@ -138,6 +139,7 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
   const etraploads = [];
   const nloads = [];
   const pd = [];
+  const edloads = [];
 
   ls.domain.nodes.forEach((node, id) => {
     _nodes.push([
@@ -175,6 +177,12 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
     });
 
   ls.loadCases[0].elementLoadList
+    .filter((el) => el instanceof BeamConcentratedDeformation)
+    .forEach((load: BeamConcentratedDeformation) => {
+      edloads.push([load.target, load.values, load.lcs]);
+    });
+
+  ls.loadCases[0].elementLoadList
     .filter((el) => el instanceof BeamTemperatureLoad)
     .forEach((load: BeamTemperatureLoad) => {
       etloads.push([load.target, load.values]);
@@ -201,6 +209,7 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
     cs?: unknown[];
     el?: unknown[];
     ecl?: unknown[];
+    edl?: unknown[];
     etl?: unknown[];
     nl?: unknown[];
     pd?: unknown[];
@@ -214,6 +223,7 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
   if (_css.length > 0) obj.cs = _css;
   if (eloads.length > 0) obj.el = eloads;
   if (ecloads.length > 0) obj.ecl = ecloads;
+  if (edloads.length > 0) obj.edl = edloads;
   if (etloads.length > 0) obj.etl = etloads;
   if (etraploads.length > 0) obj.etr = etraploads;
   if (nloads.length > 0) obj.nl = nloads;
@@ -290,6 +300,13 @@ export const deserializeModel = (base64String: string, ls: LinearStaticSolver, d
     for (const e of tmp.ecl) {
       const lcs = e[2] !== undefined ? e[2] : true;
       ls.loadCases[0].createBeamConcentratedLoad(e[0], e[1], lcs);
+    }
+  }
+
+  if ('edl' in tmp) {
+    for (const e of tmp.edl) {
+      const lcs = e[2] !== undefined ? e[2] : true;
+      ls.loadCases[0].createBeamConcentratedDeformation(e[0], e[1], lcs);
     }
   }
 

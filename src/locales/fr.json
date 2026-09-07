@@ -319,6 +319,7 @@
   "loadType": {
     "loadType": "Type de charge",
     "concentrated": "Charge ponctuelle",
+    "concentrated_deformation": "Déformation ponctuelle",
     "trapezoidal": "Charge trapézoïdale",
     "udl": "Charge uniformément répartie",
     "temperature": "Charge thermique"

@@ -319,6 +319,7 @@
   "loadType": {
     "loadType": "Typ obciążenia",
     "concentrated": "Obciążenie skupione",
+    "concentrated_deformation": "Odkształcenie skupione",
     "trapezoidal": "Obciążenie trapezowe",
     "udl": "Obciążenie równomiernie rozłożone",
     "temperature": "Obciążenie termiczne"

@@ -1,6 +1,7 @@
 import {
   Beam2D,
   BeamConcentratedLoad,
+  BeamConcentratedDeformation,
   BeamElementUniformEdgeLoad,
   BeamElementTrapezoidalEdgeLoad,
   BeamTemperatureLoad,

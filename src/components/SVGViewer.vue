@@ -21,6 +21,7 @@ import EditElementLoadDialog from './dialogs/EditElementLoad.vue';
 
 import SVGElementLoad from './svg/ElementLoad.vue';
 import SVGElementConcentratedLoad from './svg/ElementConcentratedLoad.vue';
+import SVGElementConcentratedDeformation from './svg/ElementConcentratedDeformation.vue';
 import SVGNodalLoad from './svg/NodalLoad.vue';
 import SVGPrescribedDisplacement from './svg/PrescribedDisplacement.vue';
 import SVGNode from './svg/Node.vue';
@@ -70,6 +71,7 @@ import ContextMenuElement from './ContextMenuElement.vue';
 import ContextMenuNode from './ContextMenuNode.vue';
 import ContextMenuElementLoad from './ContextMenuElementLoad.vue';
 import ContextMenuNodalLoad from './ContextMenuNodalLoad.vue';
+import ContextMenuPrescribedDisplacement from './ContextMenuPrescribedDisplacement.vue';
 import ContextMenuDimension from './ContextMenuDimension.vue';
 
 import { MouseMode } from '@/mouse';
@@ -80,6 +82,7 @@ import Selection from './Selection.vue';
 import { useLayoutStore } from '@/store/layout';
 import { EventType, eventBus } from '../EventBus';
 import { BeamConcentratedLoad } from 'ts-fem';
+import { BeamConcentratedDeformation } from 'ts-fem';
 import { useClipboardStore } from '../store/clipboard';
 import {
   createDimensionPoint,
@@ -661,6 +664,7 @@ const buildElementLoadDetails = (el: BeamElementLoad): EntityDetails => {
   const isDistributed = el instanceof BeamElementUniformEdgeLoad || el instanceof BeamElementTrapezoidalEdgeLoad;
   if (el instanceof BeamElementTrapezoidalEdgeLoad) lt = 'loadType.trapezoidal';
   else if (el instanceof BeamConcentratedLoad) lt = 'loadType.concentrated';
+  else if (el instanceof BeamConcentratedDeformation) lt = 'loadType.concentrated_deformation';
   else if (el instanceof BeamTemperatureLoad) lt = 'loadType.temperature';
   const ff = isDistributed ? 'f' : 'F';
   // A distributed load is an intensity, a concentrated one a force; both parts of the unit count.
@@ -694,6 +698,23 @@ const buildElementLoadDetails = (el: BeamElementLoad): EntityDetails => {
     if (Math.abs(el.values[0]) > 1e-32) rows.push(`${ff}<sub>x</sub> = ${convertIntensity(el.values[0])} ${uu}`);
 
     if (Math.abs(el.values[1]) > 1e-32) rows.push(`${ff}<sub>z</sub> = ${convertIntensity(el.values[1])} ${uu}`);
+
+    if (el instanceof BeamConcentratedLoad && Math.abs(el.values[2]) > 1e-32) {
+      rows.push(`M<sub>y</sub> = ${appStore.convertMoment(el.values[2])} ${appStore.units.Moment}`);
+    }
+  } else if (el instanceof BeamConcentratedDeformation) {
+    // deformations are lengths and rotations, not forces
+    if (Math.abs(el.values[0]) > 1e-32) {
+      rows.push(`D<sub>x</sub> = ${appStore.convertLength(el.values[0])} ${appStore.units.Length}`);
+    }
+
+    if (Math.abs(el.values[1]) > 1e-32) {
+      rows.push(`D<sub>z</sub> = ${appStore.convertLength(el.values[1])} ${appStore.units.Length}`);
+    }
+
+    if (Math.abs(el.values[2]) > 1e-32) {
+      rows.push(`R<sub>y</sub> = ${el.values[2]} ${appStore.units.Angle}`);
+    }
   }
 
   return { title: t(lt), body: rows.join('<br>') };
@@ -2648,6 +2669,24 @@ defineExpose({ centerContent, fitContent });
                     projectStore.clearSelection();
                   "
                 />
+                <SVGElementConcentratedDeformation
+                  v-else-if="eload instanceof BeamConcentratedDeformation"
+                  :key="`element-cd-${index}`"
+                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
+                  :data-element-load-id="index"
+                  :eload="eload"
+                  :scale="scale"
+                  :convert-displacement="appStore.convertLength"
+                  :font-size="viewerStore.fontSize"
+                  :number-format="appStore.resultFormatter"
+                  @mousemove="onElementLoadHover($event, eload)"
+                  @mouseleave="hideTooltip"
+                  @pointerup="onElementLoadClick($event, index)"
+                  @dblclick="
+                    openModal(EditElementLoadDialog, { index });
+                    projectStore.clearSelection();
+                  "
+                />
               </template>
             </g>
           </g>
@@ -2892,9 +2931,10 @@ defineExpose({ centerContent, fitContent });
         <ContextMenuNode v-if="projectStore.selection.type === 'node'"></ContextMenuNode>
         <ContextMenuElement v-if="projectStore.selection.type === 'element'"></ContextMenuElement>
         <ContextMenuElementLoad v-if="projectStore.selection.type === 'element-load'"></ContextMenuElementLoad>
-        <ContextMenuNodalLoad
-          v-if="['nodal-load', 'prescribedbc-load'].includes(projectStore.selection.type)"
-        ></ContextMenuNodalLoad>
+        <ContextMenuNodalLoad v-if="projectStore.selection.type === 'nodal-load'"></ContextMenuNodalLoad>
+        <ContextMenuPrescribedDisplacement
+          v-if="projectStore.selection.type === 'prescribedbc-load'"
+        ></ContextMenuPrescribedDisplacement>
         <ContextMenuDimension v-if="projectStore.selection.type === 'dimension'"></ContextMenuDimension>
         <!-- <ContextMenuNodalLoad v-if="projectStore.selection.type === 'nodal-load'"></ContextMenuNodalLoad>
         <ContextMenuElementLoad v-if="projectStore.selection.type === 'element-load'"></ContextMenuElementLoad> -->
@@ -3225,6 +3265,12 @@ defineExpose({ centerContent, fitContent });
 
       &.decoration.force {
         marker-end: var(--marker-force);
+      }
+
+      /* An imposed deformation carries a dashed shaft, so it does not read as a force */
+      &.decoration.shaft {
+        stroke: v-bind('viewerStore.colors.loads');
+        stroke-width: 1.5px;
       }
 
       &.decoration.moment.cw {
