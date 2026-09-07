@@ -1,5 +1,6 @@
 {
   "tabView": {
+    "influence": "Linie wpływu",
     "viewer": "Widok",
     "settings": "Ustawienia",
     "results": "Wyniki"
@@ -318,6 +319,7 @@
   },
   "loadType": {
     "loadType": "Typ obciążenia",
+    "concentrated_deformation": "Odkształcenie skupione",
     "concentrated": "Obciążenie skupione",
     "concentrated_deformation": "Odkształcenie skupione",
     "trapezoidal": "Obciążenie trapezowe",

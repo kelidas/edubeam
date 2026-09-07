@@ -3,13 +3,13 @@
     <div class="w-50 overflow-auto">
       <v-data-table :headers="headers" :items="nodes">
         <template #item.solution[0]="{ item }">
-          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.solver.loadCases[0], [DofID.Dx]))"></div>
+          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.loadCase, [DofID.Dx]))"></div>
         </template>
         <template #item.solution[1]="{ item }">
-          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.solver.loadCases[0], [DofID.Dz]))"></div>
+          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.loadCase, [DofID.Dz]))"></div>
         </template>
         <template #item.solution[2]="{ item }">
-          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.solver.loadCases[0], [DofID.Ry]))"></div>
+          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.loadCase, [DofID.Ry]))"></div>
         </template>
       </v-data-table>
     </div>

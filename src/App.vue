@@ -238,10 +238,12 @@ const solve = () => {
 };
 
 const clearMesh = (clearMaterials = false, clearCrossSects = false) => {
-  useProjectStore().solver.loadCases[0].solved = false;
-  useProjectStore().solver.loadCases[0].prescribedBC = [];
-  useProjectStore().solver.loadCases[0].nodalLoadList = [];
-  useProjectStore().solver.loadCases[0].elementLoadList = [];
+  for (const lc of useProjectStore().solver.loadCases) {
+    lc.solved = false;
+    lc.prescribedBC = [];
+    lc.nodalLoadList = [];
+    lc.elementLoadList = [];
+  }
   useProjectStore().solver.domain.elements.clear();
   useProjectStore().solver.domain.nodes.clear();
   useProjectStore().dimensions = [];

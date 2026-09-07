@@ -1,5 +1,6 @@
 {
   "tabView": {
+    "influence": "Лінії впливу",
     "viewer": "Вигляд",
     "settings": "Налаштування",
     "results": "Результати"
@@ -318,6 +319,7 @@
   },
   "loadType": {
     "loadType": "Тип навантаження",
+    "concentrated_deformation": "Зосереджена деформація",
     "concentrated": "Зосереджене навантаження",
     "concentrated_deformation": "Зосереджена деформація",
     "trapezoidal": "Трапецієподібне навантаження",

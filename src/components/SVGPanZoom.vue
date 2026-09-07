@@ -73,6 +73,9 @@ const onWindowResize = (): void => {
 
   if (rootRef.value!.offsetWidth === 0) return;
 
+  // A viewer on a hidden tab has never been sized, so its scale is still meaningless
+  if (!Number.isFinite(scale.value) || scale.value <= 0) scale.value = 1;
+
   const dX = rootRef.value!.offsetWidth - svgRef.value!.getBoundingClientRect().width;
   const dY = rootRef.value!.offsetHeight - svgRef.value!.getBoundingClientRect().height;
 
@@ -90,6 +93,13 @@ const onWindowResize = (): void => {
 
 const updateMatrix = (zooming = false): void => {
   const svgEl = svgRef.value as SVGElement;
+
+  // A degenerate box would be published as a NaN viewBox, and every transform derived from the
+  // scale with it. It happens while a tab is hidden, where nothing can be measured.
+  const usable = Number.isFinite(viewBox.x) && Number.isFinite(viewBox.y) && viewBox.w > 0 && viewBox.h > 0;
+
+  if (!usable) return;
+
   svgEl.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
   props.onUpdate(zooming);
 };
@@ -114,7 +124,7 @@ const zoom = (mx: number, my: number, deltaY: number): void => {
     h: viewBox.h - dh,
   };
 
-  scale.value = svgEl.clientWidth / viewBox.w;
+  if (viewBox.w > 0) scale.value = svgEl.clientWidth / viewBox.w;
 
   updateMatrix(true);
 };

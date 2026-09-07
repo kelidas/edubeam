@@ -88,50 +88,43 @@ export const useClipboardStore = defineStore('clipboard', () => {
       }
 
       for (const load of selection.nodalLoads) {
-        const l = projectStore.solver.loadCases[0].nodalLoadList[load];
-        projectStore.solver.loadCases[0].createNodalLoad(nodeMap.get(l.target)!, cloneClipboardValue(l.values));
+        const l = projectStore.loadCase.nodalLoadList[load];
+        projectStore.loadCase.createNodalLoad(nodeMap.get(l.target)!, cloneClipboardValue(l.values));
       }
 
       for (const load of selection.prescribedBC) {
-        const l = projectStore.solver.loadCases[0].prescribedBC[load];
-        projectStore.solver.loadCases[0].createPrescribedDisplacement(
+        const l = projectStore.loadCase.prescribedBC[load];
+        projectStore.loadCase.createPrescribedDisplacement(
           nodeMap.get(l.target)!,
           cloneClipboardValue(l.prescribedValues)
         );
       }
 
       for (const load of selection.elementLoads) {
-        const l = projectStore.solver.loadCases[0].elementLoadList[load];
+        const l = projectStore.loadCase.elementLoadList[load];
         if (l instanceof BeamConcentratedLoad) {
-          projectStore.solver.loadCases[0].createBeamConcentratedLoad(
-            elMap.get(l.target)!,
-            cloneClipboardValue(l.values),
-            l.lcs
-          );
+          projectStore.loadCase.createBeamConcentratedLoad(elMap.get(l.target)!, cloneClipboardValue(l.values), l.lcs);
         } else if (l instanceof BeamConcentratedDeformation) {
-          projectStore.solver.loadCases[0].createBeamConcentratedDeformation(
+          projectStore.loadCase.createBeamConcentratedDeformation(
             elMap.get(l.target)!,
             cloneClipboardValue(l.values),
             l.lcs
           );
         } else if (l instanceof BeamElementUniformEdgeLoad) {
-          projectStore.solver.loadCases[0].createBeamElementUniformEdgeLoad(
+          projectStore.loadCase.createBeamElementUniformEdgeLoad(
             elMap.get(l.target)!,
             cloneClipboardValue(l.values),
             l.lcs
           );
         } else if (l instanceof BeamElementTrapezoidalEdgeLoad) {
-          projectStore.solver.loadCases[0].createBeamElementTrapezoidalEdgeLoad(
+          projectStore.loadCase.createBeamElementTrapezoidalEdgeLoad(
             elMap.get(l.target)!,
             cloneClipboardValue(l.startValues) as [number, number],
             cloneClipboardValue(l.endValues) as [number, number],
             l.lcs
           );
         } else if (l instanceof BeamTemperatureLoad) {
-          projectStore.solver.loadCases[0].createBeamTemperatureLoad(
-            elMap.get(l.target)!,
-            cloneClipboardValue(l.values)
-          );
+          projectStore.loadCase.createBeamTemperatureLoad(elMap.get(l.target)!, cloneClipboardValue(l.values));
         }
       }
     });

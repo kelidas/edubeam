@@ -30,7 +30,7 @@ const editNodalLoad = () => {
 const removeNodalLoad = () => {
   if (loadIndex.value === null) return;
 
-  const loadCase = projectStore.solver.loadCases[0];
+  const loadCase = projectStore.loadCase;
 
   if (isPrescribed.value) {
     const prescribed = loadCase.prescribedBC[loadIndex.value];

@@ -7,7 +7,14 @@
       </v-card-title>
 
       <div>
-        <v-radio-group v-model="loadType" inline density="compact" class="mx-3">
+        <!-- Influence lines are made of support displacements; a force has no place there -->
+        <v-radio-group
+          v-if="appStore.workspace !== 'influence'"
+          v-model="loadType"
+          inline
+          density="compact"
+          class="mx-3"
+        >
           <v-radio :label="$t('loads.forceMoment')" value="force"></v-radio>
           <v-radio
             :label="$t('loads.prescribedDisplacement')"
@@ -139,7 +146,8 @@ const loadNodeValueFz = ref(`${appStore.convertForce(0)}`);
 const loadNodeValueMy = ref('0');
 
 watch(loadNodeId, () => {
-  if (nodeBcs.value.size === 0) {
+  // ...except in the influence workspace, where a force is not on offer at all
+  if (nodeBcs.value.size === 0 && appStore.workspace !== 'influence') {
     loadType.value = 'force';
   }
 });
@@ -159,7 +167,7 @@ const realDz = computed(() => appStore.convertInverseLength(parseFloat2(loadNode
 const realRy = computed(() => parseFloat2(loadNodeValueMy.value));
 
 onMounted(() => {
-  if (props.type === 'displacement') {
+  if (props.type === 'displacement' || appStore.workspace === 'influence') {
     loadType.value = 'displacement';
   }
 });
@@ -169,7 +177,7 @@ const addNodalLoad = () => {
 
   if (loadType.value !== 'force') {
     // check if the node already has a prescribed displacement
-    for (const load of projectStore.solver.loadCases[0].prescribedBC) {
+    for (const load of projectStore.loadCase.prescribedBC) {
       if (load.target === loadNodeId.value) {
         alert('Prescribed displacement already exists for this node. Please remove it first.');
         closeModal();
@@ -179,16 +187,16 @@ const addNodalLoad = () => {
   }
 
   executeModelMutationWithUndo(() => {
-    useProjectStore().solver.loadCases[0].solved = false;
+    useProjectStore().loadCase.solved = false;
 
     if (loadType.value === 'force') {
-      useProjectStore().solver.loadCases[0].createNodalLoad(loadNodeId.value, {
+      useProjectStore().loadCase.createNodalLoad(loadNodeId.value, {
         [DofID.Dx]: realFx.value,
         [DofID.Dz]: realFz.value,
         [DofID.Ry]: realMy.value,
       });
     } else {
-      useProjectStore().solver.loadCases[0].createPrescribedDisplacement(loadNodeId.value, {
+      useProjectStore().loadCase.createPrescribedDisplacement(loadNodeId.value, {
         [DofID.Dx]: realDx.value,
         [DofID.Dz]: realDz.value,
         [DofID.Ry]: realRy.value,

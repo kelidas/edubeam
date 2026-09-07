@@ -1,5 +1,6 @@
 {
   "tabView": {
+    "influence": "เส้นอิทธิพล",
     "viewer": "โปรแกรมดู",
     "settings": "การตั้งค่า",
     "results": "ผลลัพธ์"
@@ -312,6 +313,7 @@
   },
   "loadType": {
     "loadType": "ประเภทแรงกระทำ",
+    "concentrated_deformation": "การเสียรูปเข้มข้น",
     "concentrated": "แรงกระทำเข้มข้น",
     "concentrated_deformation": "การเสียรูปเข้มข้น",
     "udl": "แรงกระจายสม่ำเสมอ",

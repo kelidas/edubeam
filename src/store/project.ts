@@ -1,6 +1,6 @@
 // Utilities
 import { defineStore } from 'pinia';
-import { LinearStaticSolver, Beam2D } from 'ts-fem';
+import { LinearStaticSolver, LoadCase, Beam2D } from 'ts-fem';
 import { ref, computed, reactive } from 'vue';
 import { max, min } from 'mathjs';
 import {
@@ -12,6 +12,7 @@ import {
   throttle,
 } from '@/utils';
 import { ensureDimensionId } from '@/utils/id';
+import { useAppStore } from '@/store/app';
 import type { DimensionLine } from '@/types/dimension';
 import {
   findMechanismIssues,
@@ -28,6 +29,27 @@ export const useProjectStore = defineStore(
     const solver = ref(new LinearStaticSolver());
 
     const nthEigenVector = ref(1);
+
+    /**
+     * The influence line workspace keeps its unit dislocations and support displacements in a
+     * second load case, so they never combine with the real loads. The solver computes every
+     * case it holds, so both stay solved side by side. Deserialising a file replaces the solver
+     * with a single case one, hence created on demand.
+     */
+    const influenceLoadCase = () => {
+      if (solver.value.loadCases.length < 2) {
+        solver.value.loadCases.push(new LoadCase('influence', solver.value.domain));
+      }
+
+      return solver.value.loadCases[1];
+    };
+
+    /** The load case the app is editing and displaying, decided by the open tab. */
+    const loadCase = computed(() =>
+      useAppStore().workspace === 'influence'
+        ? (solver.value.loadCases[1] ?? solver.value.loadCases[0])
+        : solver.value.loadCases[0]
+    );
 
     const defoScale = ref(1);
     const normalForceScale = ref(1);
@@ -126,13 +148,14 @@ export const useProjectStore = defineStore(
     });
 
     const _solve = () => {
+      influenceLoadCase();
       solver.value.codeNumberGenerated = false;
 
       const diagnostics = validateSolverModel(solver.value);
       solveDiagnostics.value = diagnostics;
 
       if (diagnostics.errors.length > 0) {
-        solver.value.loadCases[0].solved = false;
+        for (const lc of solver.value.loadCases) lc.solved = false;
         return;
       }
 
@@ -143,7 +166,7 @@ export const useProjectStore = defineStore(
           errors: [...diagnostics.errors, ...issues],
           warnings: diagnostics.warnings,
         };
-        solver.value.loadCases[0].solved = false;
+        for (const lc of solver.value.loadCases) lc.solved = false;
       };
 
       try {
@@ -178,11 +201,11 @@ export const useProjectStore = defineStore(
       let maxShearForce = 1e-32;
 
       for (const beam of solver.value.domain.elements.values()) {
-        let def = (beam as Beam2D).computeGlobalDefl(solver.value.loadCases[0], 10);
+        let def = (beam as Beam2D).computeGlobalDefl(loadCase.value, 10);
 
-        const n = (beam as Beam2D).computeNormalForce(solver.value.loadCases[0], 10).N as number[];
-        const v = (beam as Beam2D).computeShearForce(solver.value.loadCases[0], 10).V as number[];
-        const m = (beam as Beam2D).computeBendingMoment(solver.value.loadCases[0], 10).M as number[];
+        const n = (beam as Beam2D).computeNormalForce(loadCase.value, 10).N as number[];
+        const v = (beam as Beam2D).computeShearForce(loadCase.value, 10).V as number[];
+        const m = (beam as Beam2D).computeBendingMoment(loadCase.value, 10).M as number[];
 
         if (model.value === 'LinearStaticSolver') {
           maxDefo = Math.max(
@@ -193,11 +216,7 @@ export const useProjectStore = defineStore(
             Math.abs(min(def.w))
           );
         } else if (model.value === 'EigenValueDynamicSolver') {
-          def = (beam as Beam2D).computeGlobalEigenMode(
-            solver.value.loadCases[0],
-            useProjectStore().nthEigenVector - 1,
-            10
-          );
+          def = (beam as Beam2D).computeGlobalEigenMode(loadCase.value, useProjectStore().nthEigenVector - 1, 10);
 
           maxDefo = Math.max(
             maxDefo,
@@ -215,8 +234,8 @@ export const useProjectStore = defineStore(
         maxShearForce = Math.max(maxShearForce, Math.abs(max(v)), Math.abs(min(v)));
       }
 
-      if (maxDefo === 1e-32 && solver.value.loadCases[0].prescribedBC.length > 0) {
-        for (const bc of solver.value.loadCases[0].prescribedBC) {
+      if (maxDefo === 1e-32 && loadCase.value.prescribedBC.length > 0) {
+        for (const bc of loadCase.value.prescribedBC) {
           const ux = Math.abs(bc.prescribedValues[0]);
           const uz = Math.abs(bc.prescribedValues[2]);
           maxDefo = Math.max(maxDefo, ux, uz);
@@ -250,15 +269,15 @@ export const useProjectStore = defineStore(
         selection2.elements.push(element.label);
       }
 
-      for (let i = 0; i < solver.value.loadCases[0].nodalLoadList.length; i++) {
+      for (let i = 0; i < loadCase.value.nodalLoadList.length; i++) {
         selection2.nodalLoads.push(i);
       }
 
-      for (let i = 0; i < solver.value.loadCases[0].elementLoadList.length; i++) {
+      for (let i = 0; i < loadCase.value.elementLoadList.length; i++) {
         selection2.elementLoads.push(i);
       }
 
-      for (let i = 0; i < solver.value.loadCases[0].prescribedBC.length; i++) {
+      for (let i = 0; i < loadCase.value.prescribedBC.length; i++) {
         selection2.prescribedBC.push(i);
       }
 
@@ -287,26 +306,26 @@ export const useProjectStore = defineStore(
           deleteNode(node, false);
         }
 
-        const loadCase = solver.value.loadCases[0];
+        const activeCase = loadCase.value;
         for (const i of [...selection2.nodalLoads].sort((a, b) => b - a)) {
-          if (loadCase.nodalLoadList[i] === undefined) continue;
+          if (activeCase.nodalLoadList[i] === undefined) continue;
 
-          loadCase.solved = false;
-          loadCase.nodalLoadList.splice(i, 1);
+          activeCase.solved = false;
+          activeCase.nodalLoadList.splice(i, 1);
         }
 
         for (const i of [...selection2.elementLoads].sort((a, b) => b - a)) {
-          if (loadCase.elementLoadList[i] === undefined) continue;
+          if (activeCase.elementLoadList[i] === undefined) continue;
 
-          loadCase.solved = false;
-          loadCase.elementLoadList.splice(i, 1);
+          activeCase.solved = false;
+          activeCase.elementLoadList.splice(i, 1);
         }
 
         for (const i of [...selection2.prescribedBC].sort((a, b) => b - a)) {
-          if (loadCase.prescribedBC[i] === undefined) continue;
+          if (activeCase.prescribedBC[i] === undefined) continue;
 
-          loadCase.solved = false;
-          loadCase.prescribedBC.splice(i, 1);
+          activeCase.solved = false;
+          activeCase.prescribedBC.splice(i, 1);
         }
 
         if (selection2.dimensions.length > 0) {
@@ -322,6 +341,8 @@ export const useProjectStore = defineStore(
     const dimensions = ref<DimensionLine[]>([]);
 
     return {
+      loadCase,
+      influenceLoadCase,
       solve,
       model,
       selection,

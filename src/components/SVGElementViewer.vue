@@ -89,6 +89,8 @@ const props = withDefaults(
     convertForceDistance?: (value: number) => number;
     convertMoment?: (value: number) => number;
     convertLength?: (value: number) => number;
+    /** Deflections span orders of magnitude, so they are formatted by significant digits. */
+    deformationNumberFormat?: Intl.NumberFormat;
     resultLabelMode?: 'axis' | 'horizontal';
     numberFormat?: Intl.NumberFormat;
     /** deformations need more precision than the 2-decimal default format */
@@ -139,6 +141,7 @@ const props = withDefaults(
     convertForceDistance: (v) => v,
     convertMoment: (v) => v,
     convertLength: (v) => v,
+    deformationNumberFormat: () => new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }),
     resultLabelMode: 'axis',
     numberFormat: () => new Intl.NumberFormat(),
     deformationNumberFormat: () => new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }),
@@ -446,6 +449,8 @@ defineExpose({ centerContent, fitContent, setView, update });
               :result-label-mode="props.resultLabelMode"
               :convert-force="props.convertForce"
               :convert-moment="props.convertMoment"
+              :convert-length="props.convertLength"
+              :deformation-number-format="props.deformationNumberFormat"
               :font-size="props.fontSize"
               :number-format="props.numberFormat"
             />
@@ -472,6 +477,8 @@ defineExpose({ centerContent, fitContent, setView, update });
               :result-label-mode="props.resultLabelMode"
               :convert-force="props.convertForce"
               :convert-moment="props.convertMoment"
+              :convert-length="props.convertLength"
+              :deformation-number-format="props.deformationNumberFormat"
               :font-size="props.fontSize"
               :number-format="props.numberFormat"
             />
@@ -703,6 +710,10 @@ defineExpose({ centerContent, fitContent, setView, update });
 
   .prescribed polyline {
     stroke: v-bind('colors.loads');
+  }
+
+  text.deflection-label {
+    fill: v-bind('colors.deformedShape');
   }
 
   .nodal-load {

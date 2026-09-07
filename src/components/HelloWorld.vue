@@ -21,9 +21,14 @@
         </v-tabs>
       </div>
     </div>
+    <!--
+      A window changes its item on a horizontal swipe, and the canvas fills one: panning a drawing
+      or pinching it would leave the tab. Tabs are changed from the tab bar.
+    -->
     <v-window
       v-model="appStore.tab"
       class="fill-height"
+      :touch="false"
       :style="`${projStore.selection.type !== null ? 'overflow: visible !important;' : ''}`"
     >
       <v-window-item
@@ -32,7 +37,6 @@
         class="fill-height overflow-hidden"
         :transition="false"
         :reverse-transition="false"
-        @touchstart.stop
       >
         <keep-alive>
           <component :is="item.component" v-bind="item.props" />

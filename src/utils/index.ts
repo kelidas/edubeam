@@ -362,17 +362,17 @@ export const importJSON = (json: any) => {
   // Parse load cases
   if (jObj.domain.loadCases) {
     for (const loadCase of jObj.domain.loadCases) {
-      useProjectStore().solver.loadCases[0].label = loadCase.label;
+      useProjectStore().loadCase.label = loadCase.label;
 
       for (const nl of loadCase.nodalLoads) {
-        useProjectStore().solver.loadCases[0].createNodalLoad(nl.target, nl.values);
+        useProjectStore().loadCase.createNodalLoad(nl.target, nl.values);
       }
 
       for (const el of loadCase.elementLoads) {
         if (!('type' in el) || el.type === 'udl')
-          useProjectStore().solver.loadCases[0].createBeamElementUniformEdgeLoad(el.target, el.values, el.lcs ?? true);
+          useProjectStore().loadCase.createBeamElementUniformEdgeLoad(el.target, el.values, el.lcs ?? true);
         else if ('type' in el && el.type === 'concentrated')
-          useProjectStore().solver.loadCases[0].createBeamConcentratedLoad(el.target, el.values, el.lcs ?? true);
+          useProjectStore().loadCase.createBeamConcentratedLoad(el.target, el.values, el.lcs ?? true);
         else if ('type' in el && el.type === 'trapezoidal') {
           const startValues = Array.isArray(el.startValues)
             ? el.startValues
@@ -381,18 +381,18 @@ export const importJSON = (json: any) => {
               : [0, 0];
           const endValues = Array.isArray(el.endValues) ? el.endValues : startValues;
 
-          useProjectStore().solver.loadCases[0].createBeamElementTrapezoidalEdgeLoad(
+          useProjectStore().loadCase.createBeamElementTrapezoidalEdgeLoad(
             el.target,
             startValues,
             endValues,
             el.lcs ?? true
           );
         } else if ('type' in el && el.type === 'temperature')
-          useProjectStore().solver.loadCases[0].createBeamTemperatureLoad(el.target, el.values);
+          useProjectStore().loadCase.createBeamTemperatureLoad(el.target, el.values);
       }
 
       for (const pbc of loadCase.prescribedBC) {
-        useProjectStore().solver.loadCases[0].createPrescribedDisplacement(pbc.target, pbc.prescribedValues);
+        useProjectStore().loadCase.createPrescribedDisplacement(pbc.target, pbc.prescribedValues);
       }
     }
   }
@@ -460,7 +460,8 @@ export const parseFloat2 = (s: string | number) => {
 };
 
 export const setUnsolved = () => {
-  useProjectStore().solver.loadCases[0].solved = false;
+  // A model change invalidates every case: the real loads and the influence lines alike
+  for (const lc of useProjectStore().solver.loadCases) lc.solved = false;
 };
 
 export const solve = () => {
@@ -831,7 +832,7 @@ const removeLoadFromList = (list: unknown[], load: unknown) => {
 };
 
 const removeNodalLoadFromModel = (load: NodalLoad) => {
-  removeLoadFromList(useProjectStore().solver.loadCases[0].nodalLoadList, load);
+  removeLoadFromList(useProjectStore().loadCase.nodalLoadList, load);
 };
 
 export const deleteNodalLoad = (load: NodalLoad, _id?: number, trackHistory = true) => {
@@ -844,7 +845,7 @@ export const deleteNodalLoad = (load: NodalLoad, _id?: number, trackHistory = tr
 };
 
 const removeElementLoadFromModel = (load: unknown) => {
-  removeLoadFromList(useProjectStore().solver.loadCases[0].elementLoadList, load);
+  removeLoadFromList(useProjectStore().loadCase.elementLoadList, load);
 };
 
 export const deleteElementLoad = (load: unknown, _id?: number, trackHistory = true) => {
@@ -857,7 +858,7 @@ export const deleteElementLoad = (load: unknown, _id?: number, trackHistory = tr
 };
 
 const removePrescribedDisplacementFromModel = (load: unknown) => {
-  removeLoadFromList(useProjectStore().solver.loadCases[0].prescribedBC, load);
+  removeLoadFromList(useProjectStore().loadCase.prescribedBC, load);
 };
 
 export const deletePrescribedDisplacement = (load: unknown, _id?: number, trackHistory = true) => {

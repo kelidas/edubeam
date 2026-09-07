@@ -36,6 +36,7 @@
 </template>
 
 <script setup lang="ts">
+import { gridStep } from '@/utils/gridStep';
 import { ref } from 'vue';
 
 const props = withDefaults(
@@ -85,12 +86,10 @@ const refreshGrid = (isZooming = false) => {
   const realH = rightBottom.y - leftTop.y;
   const w = svgP2.x - svgP1.x;
   const h = svgP2.y - svgP1.y;
-  const tickCount = Math.floor(realW / 40);
-  const nWpx = w / (tickCount - 1); //(rightBottom.x - leftTop.x) / 20;
-  const x = Math.ceil(Math.log10(nWpx) - 1);
-  const pow10x = Math.pow(10, x);
+  const stepW = gridStep(w, realW);
 
-  const stepW = Math.ceil(nWpx / pow10x) * pow10x;
+  // Nothing to draw on a view that cannot be measured, and nothing that could reach the DOM as NaN
+  if (stepW === null) return;
 
   trueOffsetX.value = Math.floor(svgP1.x / stepW) * stepW;
   trueOffsetY.value = Math.floor(svgP1.y / stepW) * stepW;
@@ -106,6 +105,7 @@ const refreshGrid = (isZooming = false) => {
 
   // const stepPx = stepW * gridZoomW;
 
+  const tickCount = Math.floor(realW / 40);
   const tickCountY = Math.ceil(h / stepW) + 1;
 
   if (!isZooming) return;

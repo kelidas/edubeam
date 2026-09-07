@@ -157,12 +157,12 @@ onMounted(() => {
   }
 
   if (props.type === 'displacement') {
-    const load = useProjectStore().solver.loadCases[0].prescribedBC[props.index];
+    const load = useProjectStore().loadCase.prescribedBC[props.index];
     loadNodeValueFx.value = appStore.convertLength(load.prescribedValues[DofID.Dx]).toString();
     loadNodeValueFz.value = appStore.convertLength(load.prescribedValues[DofID.Dz]).toString();
     loadNodeValueMy.value = load.prescribedValues[DofID.Ry].toString();
   } else {
-    const load = useProjectStore().solver.loadCases[0].nodalLoadList[props.index];
+    const load = useProjectStore().loadCase.nodalLoadList[props.index];
     loadNodeValueFx.value = appStore.convertForce(load.values[DofID.Dx]).toString();
     loadNodeValueFz.value = appStore.convertForce(load.values[DofID.Dz]).toString();
     loadNodeValueMy.value = appStore.convertMoment(load.values[DofID.Ry]).toString();
@@ -174,12 +174,12 @@ const editNodalLoad = () => {
 
   executeModelMutationWithUndo(() => {
     if (props.type === 'displacement') {
-      const load = useProjectStore().solver.loadCases[0].prescribedBC[props.index];
+      const load = useProjectStore().loadCase.prescribedBC[props.index];
       load.prescribedValues[DofID.Dx] = realFx.value;
       load.prescribedValues[DofID.Dz] = realFz.value;
       load.prescribedValues[DofID.Ry] = realMy.value;
     } else {
-      const load = useProjectStore().solver.loadCases[0].nodalLoadList[props.index];
+      const load = useProjectStore().loadCase.nodalLoadList[props.index];
       load.values[DofID.Dx] = realFx.value;
       load.values[DofID.Dz] = realFz.value;
       load.values[DofID.Ry] = realMy.value;
@@ -191,9 +191,9 @@ const editNodalLoad = () => {
 };
 
 const loadNodeId = computed(() => {
-  if (props.type === 'displacement') return useProjectStore().solver.loadCases[0].prescribedBC[props.index].target;
+  if (props.type === 'displacement') return useProjectStore().loadCase.prescribedBC[props.index].target;
 
-  return useProjectStore().solver.loadCases[0].nodalLoadList[props.index].target;
+  return useProjectStore().loadCase.nodalLoadList[props.index].target;
 });
 
 /** DOFs supported (constrained) at the target node - only those can carry a prescribed displacement. */

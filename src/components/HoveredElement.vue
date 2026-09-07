@@ -16,6 +16,8 @@ import { intersectedKey } from '@/types/hover';
 const props = defineProps<{
   scale: number;
   isZooming: boolean;
+  /** True in the influence workspace: a straight curve, and the values read off it labelled. */
+  isInfluenceViewer?: boolean;
   resultLabelMode: 'axis' | 'horizontal';
 }>();
 
@@ -51,7 +53,7 @@ const selected = computed(() => !!element.value && projectStore.selection2.eleme
       :show-bending-moment="!props.isZooming && viewerStore.showBendingMoment"
       :show-label="!props.isZooming && viewerStore.showElementLabels"
       show-label-background
-      :load-case="projectStore.solver.loadCases[0]"
+      :load-case="projectStore.loadCase"
       :deformed-shape-multiplier="
         projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
       "
@@ -67,6 +69,10 @@ const selected = computed(() => !!element.value && projectStore.selection2.eleme
       :result-label-mode="props.resultLabelMode"
       :convert-force="appStore.convertForce"
       :convert-moment="appStore.convertMoment"
+      :convert-length="appStore.convertLength"
+      :deformation-number-format="appStore.resultFormatter"
+      :show-deflection-labels="props.isInfluenceViewer"
+      :smooth-deformed-shape="!props.isInfluenceViewer"
       :font-size="viewerStore.fontSize"
       :number-format="appStore.numberFormatter"
     />
@@ -84,7 +90,7 @@ const selected = computed(() => !!element.value && projectStore.selection2.eleme
       :show-bending-moment="!props.isZooming && viewerStore.showBendingMoment"
       :show-label="!props.isZooming && viewerStore.showElementLabels"
       show-label-background
-      :load-case="projectStore.solver.loadCases[0]"
+      :load-case="projectStore.loadCase"
       :deformed-shape-multiplier="
         projectStore.defoScale * viewerStore.resultsScalePx_ * viewerStore.resultScale.deformedShape
       "
@@ -100,6 +106,10 @@ const selected = computed(() => !!element.value && projectStore.selection2.eleme
       :result-label-mode="props.resultLabelMode"
       :convert-force="appStore.convertForce"
       :convert-moment="appStore.convertMoment"
+      :convert-length="appStore.convertLength"
+      :deformation-number-format="appStore.resultFormatter"
+      :show-deflection-labels="props.isInfluenceViewer"
+      :smooth-deformed-shape="!props.isInfluenceViewer"
       :font-size="viewerStore.fontSize"
       :number-format="appStore.numberFormatter"
     />
