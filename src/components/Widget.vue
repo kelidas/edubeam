@@ -21,15 +21,23 @@ const props = withDefaults(
 </script>
 
 <template>
+  <!--
+    The frame could always be dragged by a corner, but nothing inside followed: the card kept its
+    natural size, so a widget full of numbers could not be made bigger to read them. The card now
+    fills the frame and its content scrolls within it, which is what makes the resize worth having.
+  -->
   <vue-draggable-resizable
     :w="400"
+    :h="320"
+    :min-width="240"
+    :min-height="160"
     :x="props.widget.props.x"
     :y="props.widget.props.y"
     :parent="true"
     drag-handle=".drag-handle"
   >
-    <v-card style="pointer-events: auto">
-      <div class="d-flex drag-handle">
+    <v-card class="d-flex flex-column" style="pointer-events: auto; height: 100%">
+      <div class="d-flex drag-handle flex-grow-0">
         <div class="d-flex align-center flex-grow-1">
           <div v-if="props.widget.props.label" style="width: 64px; height: 48px">
             <SVGElementViewer
@@ -65,7 +73,9 @@ const props = withDefaults(
           />
         </div>
       </div>
-      <component :is="props.widget.component" v-bind="props.widget.props" />
+      <div class="flex-grow-1" style="min-height: 0; overflow: auto">
+        <component :is="props.widget.component" v-bind="props.widget.props" />
+      </div>
     </v-card>
   </vue-draggable-resizable>
 </template>

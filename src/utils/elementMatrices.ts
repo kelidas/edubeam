@@ -88,6 +88,40 @@ export interface EndForces {
 }
 
 /**
+ * The fixed end forces after a release has been condensed out.
+ *
+ * A hinge cannot carry the moment the clamped beam would put there, so it is redistributed into the
+ * degrees of freedom that remain: `f[a] - kab · kbb⁻¹ · f[b]`, with the released ones left at zero.
+ * `computeEndForces` does this to the load vector before adding it to the stiffness part, so the
+ * primary shown here has to be condensed too - otherwise primary plus secondary does not come to
+ * the total, which is the one arithmetic anyone reading these three vectors will check.
+ *
+ * Without a hinge there is nothing to condense and the vector is returned as it came.
+ */
+const condensePrimary = (
+  element: Beam2D,
+  k: ReturnType<Beam2D['computeLocalStiffnessMtrx']>,
+  raw: math.Matrix
+): math.Matrix => {
+  if (!element.hasHinges() || !('kaa' in k) || k.kaa === undefined) return raw;
+
+  const kept = k.a as number[];
+  const released = k.b as number[];
+  const redistribute = toGrid(math.multiply(k.kab as never, math.inv(k.kbb as never) as never));
+  const atReleased = released.map((dof) => (raw.get([dof]) as number) ?? 0);
+
+  const condensed = math.zeros(6) as math.Matrix;
+
+  kept.forEach((dof, row) => {
+    const carried = redistribute[row].reduce((sum, factor, j) => sum + factor * atReleased[j], 0);
+
+    condensed.set([dof], (raw.get([dof]) as number) - carried);
+  });
+
+  return condensed;
+};
+
+/**
  * End force vectors in the local system.
  *
  * Primary is the load vector for a clamped beam, summed over the loads on the element. Secondary is
@@ -106,7 +140,7 @@ export const endForcesLocal = (element: Beam2D, loadCase: LoadCase): EndForces =
     primaryVector = math.add(primaryVector, math.matrix(load.getLoadVectorForClampedBeam())) as math.Matrix;
   }
 
-  const primary = column(primaryVector);
+  const primary = column(condensePrimary(element, k, primaryVector));
   const total = column(element.computeEndForces(loadCase));
 
   return { primary, secondary, total };

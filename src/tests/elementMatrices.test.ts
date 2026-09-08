@@ -141,6 +141,25 @@ describe('the end force vectors', () => {
     }
   });
 
+  it('adds up with a hinge too, once the release is condensed out', () => {
+    const store = loaded([false, true]);
+    const { primary, secondary, total } = endForcesLocal(beam(store), store.solver.loadCases[0]);
+
+    for (let i = 0; i < 6; i++) {
+      expect(primary[i][0] + secondary[i][0], `row ${i}`).toBeCloseTo(total[i][0], 6);
+    }
+  });
+
+  it('carries no fixed end moment at a released end', () => {
+    const store = loaded([false, true]);
+    const { primary } = endForcesLocal(beam(store), store.solver.loadCases[0]);
+
+    // the clamped beam would put ql²/12 there; the hinge cannot hold it
+    expect(primary[5][0]).toBeCloseTo(0, 6);
+    // and it lands on the end that can: ql²/8
+    near(Math.abs(primary[2][0]), (Q * L * L) / 8);
+  });
+
   it('moves the fixed end moment to ql²/8 when the far end is released', () => {
     const store = loaded([false, true]);
     const { total } = endForcesLocal(beam(store), store.solver.loadCases[0]);
