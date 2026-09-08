@@ -34,6 +34,8 @@ const props = withDefaults(
     :x="props.widget.props.x"
     :y="props.widget.props.y"
     :parent="true"
+    :active="true"
+    :prevent-deactivation="true"
     drag-handle=".drag-handle"
   >
     <v-card class="d-flex flex-column" style="pointer-events: auto; height: 100%">
@@ -79,3 +81,20 @@ const props = withDefaults(
     </v-card>
   </vue-draggable-resizable>
 </template>
+
+<style scoped>
+/*
+ * Two things kept the corner from being grabbed.
+ *
+ * The widgets sit in a full screen layer that lets pointer events through to the drawing, and only
+ * the card takes them back. The resize handles are siblings of that card inside the frame, so they
+ * inherited the layer's `pointer-events: none` and could be aimed at but never hit.
+ *
+ * The other half - the handles being hidden until the widget is "active", which it becomes only
+ * when a press lands on the title bar - is settled on the frame itself with `active` and
+ * `prevent-deactivation`, rather than by overriding the library's own display rule.
+ */
+:deep(.handle) {
+  pointer-events: auto;
+}
+</style>
