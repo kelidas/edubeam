@@ -30,6 +30,7 @@
     "copy": "คัดลอก",
     "delete": "ลบ",
     "stiffnessMatrix": "เมทริกซ์ความแข็ง",
+    "elementMatrices": "เมทริกซ์และเวกเตอร์",
     "normalForce": "แรงปกติ",
     "shearForce": "แรงเฉือน",
     "bendingMoment": "โมเมนต์ดัด",

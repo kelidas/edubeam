@@ -30,6 +30,7 @@
     "copy": "Copy",
     "delete": "Delete",
     "stiffnessMatrix": "Stiffness matrix",
+    "elementMatrices": "Matrices and vectors",
     "normalForce": "Normal force",
     "shearForce": "Shear force",
     "bendingMoment": "Bending moment",

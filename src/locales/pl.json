@@ -30,6 +30,7 @@
     "copy": "Kopiuj",
     "delete": "Usuń",
     "stiffnessMatrix": "Macierz sztywności",
+    "elementMatrices": "Macierze i wektory",
     "normalForce": "Siła normalna",
     "shearForce": "Siła tnąca",
     "bendingMoment": "Moment zginający",

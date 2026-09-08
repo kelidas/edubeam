@@ -30,6 +30,7 @@
     "copy": "Копировать",
     "delete": "Удалить",
     "stiffnessMatrix": "Матрица жёсткости",
+    "elementMatrices": "Матрицы и векторы",
     "normalForce": "Продольная сила",
     "shearForce": "Поперечная сила",
     "bendingMoment": "Изгибающий момент",

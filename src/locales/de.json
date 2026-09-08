@@ -30,6 +30,7 @@
     "copy": "Kopieren",
     "delete": "Löschen",
     "stiffnessMatrix": "Steifigkeitsmatrix",
+    "elementMatrices": "Matrizen und Vektoren",
     "normalForce": "Normalkraft",
     "shearForce": "Querkraft",
     "bendingMoment": "Biegemoment",

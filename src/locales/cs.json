@@ -23,6 +23,7 @@
     "copy": "Kopírovat",
     "edit": "Upravit",
     "stiffnessMatrix": "Matice tuhosti",
+    "elementMatrices": "Matice a vektory",
     "addUsingDialog": "Přidat dialogem",
     "addUsingMouse": "Přidat myší",
     "elements": "Prvky",

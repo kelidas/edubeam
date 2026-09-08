@@ -30,6 +30,7 @@
     "copy": "Копіювати",
     "delete": "Видалити",
     "stiffnessMatrix": "Матриця жорсткості",
+    "elementMatrices": "Матриці та вектори",
     "normalForce": "Поздовжня сила",
     "shearForce": "Поперечна сила",
     "bendingMoment": "Згинальний момент",

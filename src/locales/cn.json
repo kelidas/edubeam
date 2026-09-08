@@ -30,6 +30,7 @@
     "copy": "复制",
     "delete": "删除",
     "stiffnessMatrix": "刚度矩阵",
+    "elementMatrices": "矩阵与向量",
     "normalForce": "轴力",
     "shearForce": "剪力",
     "bendingMoment": "弯矩",

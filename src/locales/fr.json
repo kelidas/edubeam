@@ -30,6 +30,7 @@
     "copy": "Copier",
     "delete": "Supprimer",
     "stiffnessMatrix": "Matrice de rigidité",
+    "elementMatrices": "Matrices et vecteurs",
     "normalForce": "Effort normal",
     "shearForce": "Effort tranchant",
     "bendingMoment": "Moment fléchissant",
