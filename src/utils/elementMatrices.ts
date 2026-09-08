@@ -18,19 +18,27 @@ export const ELEMENT_DOFS = ['u₁', 'w₁', 'φ₁', 'u₂', 'w₂', 'φ₂'] a
 
 export type Grid = number[][];
 
-const toGrid = (m: math.MathCollection | math.Matrix): Grid => {
-  const array = (math.isMatrix(m) ? m.toArray() : m) as number | number[] | number[][];
+/**
+ * Anything mathjs hands back, as plain rows.
+ *
+ * Typed loosely on purpose: ts-fem carries its own copy of the mathjs types, so a `Matrix` from the
+ * library and a `Matrix` from the app's mathjs are two unrelated types to the compiler even though
+ * they are the same object at runtime. Narrowing here rather than at every call keeps that in one
+ * place.
+ */
+const toGrid = (m: unknown): Grid => {
+  const value = m as { toArray?: () => unknown };
+  const array = (typeof value?.toArray === 'function' ? value.toArray() : m) as number | number[] | number[][];
 
   if (typeof array === 'number') return [[array]];
 
   return (Array.isArray(array[0]) ? array : [array as unknown as number[]]) as Grid;
 };
 
-const column = (m: math.Matrix | number[]): Grid => {
-  const flat = (Array.isArray(m) ? m : (m.toArray() as number[])).flat() as number[];
-
-  return flat.map((v) => [v]);
-};
+const column = (m: unknown): Grid =>
+  toGrid(m)
+    .flat()
+    .map((v) => [v]);
 
 /**
  * The element's local stiffness matrix, before any release is condensed out.
@@ -90,7 +98,8 @@ export const endForcesLocal = (element: Beam2D, loadCase: LoadCase): EndForces =
   const displacement = element.computeEndDisplacement(loadCase);
   const k = element.computeLocalStiffnessMtrx(true);
 
-  const secondary = column(math.multiply(k.answer as math.Matrix, displacement) as math.Matrix);
+  // both operands come from ts-fem's mathjs, which the app's copy does not recognise as its own
+  const secondary = column(math.multiply(k.answer as never, displacement as never));
 
   let primaryVector = math.zeros(6) as math.Matrix;
   for (const load of loadCase.getElementLoadsOnElement(element.label)) {
@@ -129,6 +138,38 @@ export const systemStiffness = (solver: Solver, reduced: boolean): Grid => {
   if (!reduced) return full;
 
   return full.slice(0, solver.neq).map((row) => row.slice(0, solver.neq));
+};
+
+/**
+ * The structure matrix assembled from a few elements rather than all of them.
+ *
+ * Each element contributes its 6x6 global matrix into the rows and columns its own degrees of
+ * freedom occupy - `getLocationArray()` says which - and that scattering is the whole of assembly.
+ * Seeing one element's contribution sitting in the big matrix is the point: it is where the two
+ * pictures, the element and the structure, meet.
+ *
+ * The result keeps the structure's size and numbering, so it can be read against the full matrix
+ * position for position.
+ */
+export const assembleFrom = (solver: Solver, elements: Beam2D[], reduced: boolean): Grid => {
+  const size = solver.neq + solver.pneq;
+  const grid: Grid = Array.from({ length: size }, () => Array.from({ length: size }, () => 0));
+
+  for (const element of elements) {
+    const location = element.getLocationArray();
+    const k = toGrid(element.computeStiffness());
+
+    location.forEach((row, i) =>
+      location.forEach((col, j) => {
+        // a code number outside the structure means a degree of freedom this element does not share
+        if (row >= 0 && col >= 0 && row < size && col < size) grid[row][col] += k[i][j];
+      })
+    );
+  }
+
+  if (!reduced) return grid;
+
+  return grid.slice(0, solver.neq).map((row) => row.slice(0, solver.neq));
 };
 
 /** Whether the structure has been assembled and solved, so there is anything to read. */

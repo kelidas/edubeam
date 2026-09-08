@@ -3,6 +3,7 @@ import { createPinia, setActivePinia } from 'pinia';
 import { DofID } from 'ts-fem';
 import { useProjectStore } from '@/store/project';
 import {
+  assembleFrom,
   ELEMENT_DOFS,
   endForcesGlobal,
   endForcesLocal,
@@ -157,6 +158,65 @@ describe('the end force vectors', () => {
     for (let i = 0; i < 6; i++) {
       expect(global.total[i][0], `row ${i}`).toBeCloseTo(local.total[i][0], 6);
     }
+  });
+});
+
+describe('assembling from chosen elements', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  /** Two beams in a row, so each has a share of the matrix and they overlap at the middle node. */
+  const twoSpan = () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createNode('2', [L, 0, 0], []);
+    domain.createNode('3', [2 * L, 0, 0], [DofID.Dz]);
+    domain.createBeam2D('a', ['1', '2'], 'm', 'cs');
+    domain.createBeam2D('b', ['2', '3'], 'm', 'cs');
+    store.solve();
+
+    return store;
+  };
+
+  const beams = (store: ReturnType<typeof useProjectStore>) =>
+    ['a', 'b'].map((l) => store.solver.domain.getElement(l)) as never[];
+
+  it('every element together is the assembled structure matrix', () => {
+    const store = twoSpan();
+    const assembled = assembleFrom(store.solver, beams(store), false);
+    const solverMatrix = systemStiffness(store.solver, false);
+
+    for (let i = 0; i < solverMatrix.length; i++) {
+      for (let j = 0; j < solverMatrix.length; j++) {
+        near(assembled[i][j], solverMatrix[i][j], 1e-9);
+      }
+    }
+  });
+
+  it('one element fills only the rows its own degrees of freedom occupy', () => {
+    const store = twoSpan();
+    const [first] = beams(store);
+    const only = assembleFrom(store.solver, [first], false);
+    const touched = (first as unknown as { getLocationArray: () => number[] }).getLocationArray();
+
+    for (let i = 0; i < only.length; i++) {
+      if (touched.includes(i)) continue;
+      // a row no chosen element reaches stays empty
+      expect(
+        only[i].every((v) => v === 0),
+        `row ${i}`
+      ).toBe(true);
+    }
+  });
+
+  it('keeps the structure size, so it reads against the full matrix', () => {
+    const store = twoSpan();
+
+    expect(assembleFrom(store.solver, beams(store), false)).toHaveLength(store.solver.neq + store.solver.pneq);
+    expect(assembleFrom(store.solver, beams(store), true)).toHaveLength(store.solver.neq);
   });
 });
 

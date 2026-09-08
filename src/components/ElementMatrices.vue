@@ -5,6 +5,7 @@ import { useProjectStore } from '../store/project';
 import { useAppStore } from '../store/app';
 import { formatResultAsText } from '../utils/numberDisplay';
 import {
+  assembleFrom,
   ELEMENT_DOFS,
   endForcesGlobal,
   endForcesLocal,
@@ -20,23 +21,38 @@ const projectStore = useProjectStore();
 const appStore = useAppStore();
 
 const props = defineProps<{
-  label: string;
+  /** Without one the widget is about the structure alone, and opens on that tab. */
+  label?: string;
 }>();
+
+const tab = ref(props.label ? 'kloc' : 'system');
 
 /**
  * Condensation is the interesting part of a released element, so it is a switch rather than a
- * decision made here: the uncondensed matrix is the beam anyone would write down, and the condensed
- * one is what the structure is actually solved with.
+ * decision made here: the uncondensed matrix is the beam anyone would write down, the condensed one
+ * is what the structure is solved with.
  */
 const condensed = ref(true);
-/** The assembled structure, rather than this element. Reduced means the free block alone. */
+/** The assembled structure, or only the free block it is solved on. */
 const reduced = ref(true);
 
 const element = computed(() => {
+  if (!props.label) return null;
+
   const found = projectStore.solver.domain.elements.get(props.label);
 
   return found instanceof Beam2D ? found : null;
 });
+
+/** Elements picked in the drawing, whose contribution alone can be assembled. */
+const selected = computed(() =>
+  projectStore.selection2.elements
+    .map((label) => projectStore.solver.domain.elements.get(label))
+    .filter((el): el is Beam2D => el instanceof Beam2D)
+);
+
+/** The structure as assembled from everything, or only from what is picked in the drawing. */
+const selectionOnly = ref(false);
 
 const usable = computed(() => {
   const el = element.value;
@@ -56,117 +72,151 @@ const solved = computed(() => loadCase.value?.solved === true);
 
 const hinged = computed(() => element.value?.hasHinges() === true);
 
-interface Block {
-  title: string;
-  grid: Grid;
-  /** Names down the side, and across the top when it is a matrix rather than a vector. */
-  labels?: readonly string[];
-}
+/**
+ * All six end force vectors side by side rather than one under another.
+ *
+ * Reading down a column is one vector; reading across a row is the same degree of freedom in both
+ * frames. And primary plus secondary is total, which is far easier to see when the three stand next
+ * to each other than when they are three separate tables.
+ */
+const END_FORCE_COLUMNS = ['prim loc', 'sec loc', 'tot loc', 'prim glob', 'sec glob', 'tot glob'];
 
-const elementBlocks = computed<Block[]>(() => {
+const endForces = computed<Grid>(() => {
   const el = element.value;
 
-  if (!el || !usable.value) return [];
+  if (!el || !usable.value || !solved.value) return [];
 
-  const blocks: Block[] = [
-    {
-      title: `Local stiffness — ${condensed.value ? 'condensed' : 'uncondensed'}`,
-      grid: localStiffness(el, condensed.value),
-      labels: ELEMENT_DOFS,
-    },
-    { title: 'Global stiffness', grid: globalStiffness(el), labels: ELEMENT_DOFS },
-    { title: 'Transformation T — global to local', grid: transformation(el), labels: ELEMENT_DOFS },
-  ];
+  const local = endForcesLocal(el, loadCase.value);
+  const global = endForcesGlobal(el, loadCase.value);
 
-  if (!solved.value) return blocks;
-
-  const lc = loadCase.value;
-  const local = endForcesLocal(el, lc);
-  const global = endForcesGlobal(el, lc);
-
-  return [
-    ...blocks,
-    { title: 'End forces, local — primary', grid: local.primary, labels: ELEMENT_DOFS },
-    { title: 'End forces, local — secondary', grid: local.secondary, labels: ELEMENT_DOFS },
-    { title: 'End forces, local — total', grid: local.total, labels: ELEMENT_DOFS },
-    { title: 'End forces, global — primary', grid: global.primary, labels: ELEMENT_DOFS },
-    { title: 'End forces, global — secondary', grid: global.secondary, labels: ELEMENT_DOFS },
-    { title: 'End forces, global — total', grid: global.total, labels: ELEMENT_DOFS },
-  ];
+  return ELEMENT_DOFS.map((_, i) => [
+    local.primary[i][0],
+    local.secondary[i][0],
+    local.total[i][0],
+    global.primary[i][0],
+    global.secondary[i][0],
+    global.total[i][0],
+  ]);
 });
 
-const systemBlock = computed<Block | null>(() => {
-  if (!hasSystemMatrix(projectStore.solver)) return null;
+/** What the open tab puts in the one table below: its numbers, and the names around them. */
+const view = computed(() => {
+  const el = element.value;
 
-  const grid = systemStiffness(projectStore.solver, reduced.value);
+  const nothing = { grid: [] as Grid, rows: [] as readonly string[], cols: [] as readonly string[] };
 
-  return {
-    title: `Structure stiffness — ${reduced.value ? `free block, ${grid.length} equations` : `assembled, ${grid.length} equations`}`,
-    grid,
-  };
+  if (tab.value !== 'system' && (!el || !usable.value)) return nothing;
+
+  if (tab.value === 'kglob') {
+    return { grid: globalStiffness(el!), rows: ELEMENT_DOFS, cols: ELEMENT_DOFS };
+  }
+
+  if (tab.value === 't') {
+    // T maps global to local, so its rows and its columns are not the same frame
+    return { grid: transformation(el!), rows: ELEMENT_DOFS, cols: ELEMENT_DOFS };
+  }
+
+  if (tab.value === 'forces') {
+    return { grid: endForces.value, rows: ELEMENT_DOFS, cols: END_FORCE_COLUMNS };
+  }
+
+  if (tab.value === 'system') {
+    const grid = !hasSystemMatrix(projectStore.solver)
+      ? []
+      : selectionOnly.value
+        ? assembleFrom(projectStore.solver, selected.value, reduced.value)
+        : systemStiffness(projectStore.solver, reduced.value);
+    const numbers = grid.map((_, i) => String(i + 1));
+
+    return { grid, rows: numbers, cols: numbers };
+  }
+
+  return { grid: localStiffness(el!, condensed.value), rows: ELEMENT_DOFS, cols: ELEMENT_DOFS };
 });
+
+/** A square matrix gets its leading diagonal marked; a set of vectors has no diagonal to mark. */
+const square = computed(() => tab.value !== 'forces');
+
+const empty = computed(() => view.value.grid.length === 0);
 
 /**
  * Always engineering, whatever the app is set to: an exponent that is a multiple of three reads as
- * a unit prefix, which is how these magnitudes are spoken about. The formatter still comes from the
+ * a unit prefix, which is how these magnitudes are spoken about. The formatter comes from the
  * store, so the decimal separator follows the language.
+ *
+ * Negative zero is written as zero. A transformation matrix is full of it - the sine of an element
+ * lying along x - and "-0" reads as a value rather than as the absence of one.
  */
-const show = (value: number) => formatResultAsText(value, 'engineering', appStore.resultFormatter);
-
-const isVector = (grid: Grid) => grid.every((row) => row.length === 1);
+const show = (value: number) =>
+  formatResultAsText(Object.is(value, -0) ? 0 : value, 'engineering', appStore.resultFormatter);
 </script>
 
 <template>
-  <div class="fill-height pa-2" style="overflow: auto">
-    <template v-if="usable">
-      <div class="d-flex align-center ga-4 mb-2 text-caption">
-        <v-checkbox-btn
-          v-model="condensed"
-          :disabled="!hinged"
-          density="compact"
-          hide-details
-          :label="hinged ? 'Condensed' : 'Condensed (no hinge)'"
-        />
-        <v-checkbox-btn v-model="reduced" density="compact" hide-details label="Structure: free block only" />
-        <span class="text-medium-emphasis ml-auto">SI units, engineering notation</span>
-      </div>
+  <div class="fill-height d-flex flex-column">
+    <!-- Opened on the structure rather than on an element, only the structure has anything to say. -->
+    <template v-if="usable || !props.label">
+      <v-tabs v-model="tab" density="compact" class="flex-grow-0 border-b">
+        <template v-if="usable">
+          <v-tab value="kloc" class="text-none px-3">K loc</v-tab>
+          <v-tab value="kglob" class="text-none px-3">K glob</v-tab>
+          <v-tab value="t" class="text-none px-3">T</v-tab>
+          <v-tab value="forces" class="text-none px-3">{{ $t('common.endForces') }}</v-tab>
+        </template>
+        <v-tab value="system" class="text-none px-3">{{ $t('common.structure') }}</v-tab>
+      </v-tabs>
 
-      <div v-if="!solved" class="text-caption text-medium-emphasis mb-2">
-        The structure is not solved, so only the matrices are shown.
-      </div>
+      <div class="flex-grow-1 pa-2" style="overflow: auto">
+        <div class="d-flex align-center ga-3 mb-2 text-caption">
+          <v-checkbox-btn
+            v-if="tab === 'kloc'"
+            v-model="condensed"
+            :disabled="!hinged"
+            density="compact"
+            hide-details
+            :label="hinged ? $t('common.condensed') : $t('common.condensedNoHinge')"
+          />
+          <v-checkbox-btn
+            v-if="tab === 'system'"
+            v-model="reduced"
+            density="compact"
+            hide-details
+            :label="$t('common.freeBlockOnly')"
+          />
+          <!--
+            One element's contribution sitting in the structure's own numbering is where the two
+            pictures meet, so it is worth being able to see it on its own.
+          -->
+          <v-checkbox-btn
+            v-if="tab === 'system'"
+            v-model="selectionOnly"
+            :disabled="selected.length === 0"
+            density="compact"
+            hide-details
+            :label="`${$t('common.selectedElementsOnly')} (${selected.length})`"
+          />
+          <span v-if="tab === 't'" class="text-medium-emphasis">{{ $t('common.transformationHint') }}</span>
+          <span class="text-medium-emphasis ml-auto">SI</span>
+        </div>
 
-      <template v-for="block in elementBlocks" :key="block.title">
-        <div class="text-caption font-weight-medium mt-3 mb-1">{{ block.title }}</div>
-        <v-table class="border text-right" density="compact">
+        <div v-if="empty" class="text-caption text-medium-emphasis">{{ $t('common.notSolved') }}</div>
+
+        <v-table v-else class="border text-right" density="compact" style="white-space: nowrap">
+          <thead>
+            <tr>
+              <th></th>
+              <th v-for="(name, j) in view.cols" :key="j" class="text-right px-2 font-weight-regular">{{ name }}</th>
+            </tr>
+          </thead>
           <tbody>
-            <tr v-for="(row, i) in block.grid" :key="i">
-              <th class="text-left px-2 text-medium-emphasis font-weight-regular">{{ block.labels?.[i] }}</th>
-              <td
-                v-for="(value, j) in row"
-                :key="j"
-                class="px-2"
-                :class="{ 'bg-grey-lighten-4': !isVector(block.grid) && i === j }"
-              >
+            <tr v-for="(row, i) in view.grid" :key="i">
+              <th class="text-left px-2 text-medium-emphasis font-weight-regular">{{ view.rows[i] }}</th>
+              <td v-for="(value, j) in row" :key="j" class="px-2" :class="{ 'bg-grey-lighten-4': square && i === j }">
                 {{ show(value) }}
               </td>
             </tr>
           </tbody>
         </v-table>
-      </template>
-
-      <template v-if="systemBlock">
-        <div class="text-caption font-weight-medium mt-4 mb-1">{{ systemBlock.title }}</div>
-        <v-table class="border text-right" density="compact">
-          <tbody>
-            <tr v-for="(row, i) in systemBlock.grid" :key="i">
-              <th class="text-left px-2 text-medium-emphasis font-weight-regular">{{ i + 1 }}</th>
-              <td v-for="(value, j) in row" :key="j" class="px-2" :class="{ 'bg-grey-lighten-4': i === j }">
-                {{ show(value) }}
-              </td>
-            </tr>
-          </tbody>
-        </v-table>
-      </template>
+      </div>
     </template>
 
     <div v-else class="pa-3">Element does not specify material or cross section.</div>
@@ -175,7 +225,8 @@ const isVector = (grid: Grid) => grid.every((row) => row.length === 1);
 
 <style scoped>
 table td + td,
-table th + td {
+table th + td,
+thead th + th {
   border-left: 1px solid #dddddd;
 }
 </style>
