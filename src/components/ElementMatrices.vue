@@ -6,7 +6,11 @@ import { useAppStore } from '../store/app';
 import { formatResultAsText } from '../utils/numberDisplay';
 import {
   assembleFrom,
+  elementDofNames,
   ELEMENT_DOFS,
+  occupied,
+  only,
+  structureDofNames,
   endForcesGlobal,
   endForcesLocal,
   globalStiffness,
@@ -35,6 +39,15 @@ const tab = ref(props.label ? 'kloc' : 'system');
 const condensed = ref(true);
 /** The assembled structure, or only the free block it is solved on. */
 const reduced = ref(true);
+
+/**
+ * Whether rows and columns carrying nothing are left out.
+ *
+ * Assembling from a few chosen elements leaves the rest of the structure empty, and there are
+ * usually far more of those rows than of the ones being looked at. Their names are kept with them,
+ * so what remains still says which equation each row is.
+ */
+const hideEmpty = ref(true);
 
 const element = computed(() => {
   if (!props.label) return null;
@@ -82,6 +95,9 @@ const hinged = computed(() => element.value?.hasHinges() === true);
  */
 const END_FORCE_COLUMNS = ['prim loc', 'sec loc', 'tot loc', 'prim glob', 'sec glob', 'tot glob'];
 
+/** The six degrees of freedom of the open element, named by the nodes they belong to. */
+const dofNames = computed(() => (element.value ? elementDofNames(element.value) : [...ELEMENT_DOFS]));
+
 const endForces = computed<Grid>(() => {
   const el = element.value;
 
@@ -109,16 +125,16 @@ const view = computed(() => {
   if (tab.value !== 'system' && (!el || !usable.value)) return nothing;
 
   if (tab.value === 'kglob') {
-    return { grid: globalStiffness(el!), rows: ELEMENT_DOFS, cols: ELEMENT_DOFS };
+    return { grid: globalStiffness(el!), rows: dofNames.value, cols: dofNames.value };
   }
 
   if (tab.value === 't') {
     // T maps global to local, so its rows and its columns are not the same frame
-    return { grid: transformation(el!), rows: ELEMENT_DOFS, cols: ELEMENT_DOFS };
+    return { grid: transformation(el!), rows: dofNames.value, cols: dofNames.value };
   }
 
   if (tab.value === 'forces') {
-    return { grid: endForces.value, rows: ELEMENT_DOFS, cols: END_FORCE_COLUMNS };
+    return { grid: endForces.value, rows: dofNames.value, cols: END_FORCE_COLUMNS };
   }
 
   if (tab.value === 'system') {
@@ -127,12 +143,25 @@ const view = computed(() => {
       : selectionOnly.value
         ? assembleFrom(projectStore.solver, selected.value, reduced.value)
         : systemStiffness(projectStore.solver, reduced.value);
-    const numbers = grid.map((_, i) => String(i + 1));
+    // the same names as an element's own, so one element's 6x6 can be found inside the assembled one
+    const names = grid.length ? structureDofNames(projectStore.solver) : [];
+    const kept = hideEmpty.value ? occupied(grid) : grid.map((_, i) => i);
 
-    return { grid, rows: numbers, cols: numbers };
+    return { grid: only(grid, kept), rows: kept.map((i) => names[i]), cols: kept.map((i) => names[i]) };
   }
 
-  return { grid: localStiffness(el!, condensed.value), rows: ELEMENT_DOFS, cols: ELEMENT_DOFS };
+  return { grid: localStiffness(el!, condensed.value), rows: dofNames.value, cols: dofNames.value };
+});
+
+/** How many rows the structure matrix is not showing, which is worth saying rather than hiding. */
+const dropped = computed(() => {
+  if (tab.value !== 'system' || !hideEmpty.value || !hasSystemMatrix(projectStore.solver)) return 0;
+
+  const size = selectionOnly.value
+    ? assembleFrom(projectStore.solver, selected.value, reduced.value).length
+    : systemStiffness(projectStore.solver, reduced.value).length;
+
+  return size - view.value.grid.length;
 });
 
 /** A square matrix gets its leading diagonal marked; a set of vectors has no diagonal to mark. */
@@ -150,6 +179,14 @@ const empty = computed(() => view.value.grid.length === 0);
  */
 const show = (value: number) =>
   formatResultAsText(Object.is(value, -0) ? 0 : value, 'engineering', appStore.resultFormatter);
+
+/** What is on show, tab separated with its names, so it can go straight into a spreadsheet. */
+const copy = () => {
+  const header = ['', ...view.value.cols].join('\t');
+  const rows = view.value.grid.map((row, i) => [view.value.rows[i], ...row].join('\t'));
+
+  navigator.clipboard?.writeText([header, ...rows].join('\n'));
+};
 </script>
 
 <template>
@@ -195,11 +232,30 @@ const show = (value: number) =>
             hide-details
             :label="`${$t('common.selectedElementsOnly')} (${selected.length})`"
           />
+          <v-checkbox-btn
+            v-if="tab === 'system'"
+            v-model="hideEmpty"
+            density="compact"
+            hide-details
+            :label="$t('common.hideEmptyRows')"
+          />
           <span v-if="tab === 't'" class="text-medium-emphasis">{{ $t('common.transformationHint') }}</span>
+          <span v-if="dropped > 0" class="text-medium-emphasis">{{
+            $t('common.emptyRowsHidden', { n: dropped })
+          }}</span>
           <v-chip v-if="tab === 'forces' && appStore.workspace === 'influence'" size="x-small" color="primary" label>
             {{ $t('tabView.influence') }}
           </v-chip>
           <span class="text-medium-emphasis ml-auto">SI</span>
+          <v-btn
+            icon="mdi-content-copy"
+            size="small"
+            density="comfortable"
+            variant="text"
+            :disabled="empty"
+            :title="$t('common.copy')"
+            @click="copy"
+          />
         </div>
 
         <div v-if="empty" class="text-caption text-medium-emphasis">{{ $t('common.notSolved') }}</div>

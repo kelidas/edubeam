@@ -53,7 +53,9 @@
     "divisions": "Dílky",
     "atPosition": "V řezu",
     "extremeShownHint": "Tučně je největší hodnota každé veličiny ze zobrazených řezů.",
-    "pointAlongHint": "Ukažte na prut a čtěte řez"
+    "pointAlongHint": "Ukažte na prut a čtěte řez",
+    "hideEmptyRows": "Skrýt prázdné řádky",
+    "emptyRowsHidden": "skryto prázdných: {n}"
   },
   "tabs": {
     "nodes": "Uzly",

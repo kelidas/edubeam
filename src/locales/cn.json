@@ -59,7 +59,9 @@
     "divisions": "分段数",
     "atPosition": "位置",
     "extremeShownHint": "粗体为所示各截面中每个量的最大值。",
-    "pointAlongHint": "指向杆件以读取截面"
+    "pointAlongHint": "指向杆件以读取截面",
+    "hideEmptyRows": "隐藏空行",
+    "emptyRowsHidden": "已隐藏 {n} 个空行"
   },
   "nodes": {
     "addNode": "添加节点",

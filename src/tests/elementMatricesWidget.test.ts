@@ -81,3 +81,45 @@ describe('the matrices widget', () => {
     expect(wrapper.text()).not.toContain('-0 ');
   });
 });
+
+describe('what the matrices are indexed by', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const rowLabels = (wrapper: ReturnType<typeof open>) => wrapper.findAll('tbody th').map((th) => th.text());
+
+  const openTab = async (wrapper: ReturnType<typeof open>, title: string) => {
+    await wrapper
+      .findAll('.v-tab')
+      .find((t) => t.text() === title)!
+      .trigger('click');
+    await nextTick();
+  };
+
+  it('names the rows by the nodes rather than by the element ends', () => {
+    build();
+
+    // element 'b' runs between nodes 2 and 3
+    expect(rowLabels(open({ label: 'b' }))).toEqual(['u (2)', 'w (2)', 'φ (2)', 'u (3)', 'w (3)', 'φ (3)']);
+  });
+
+  it('indexes the structure the same way, so an element can be found inside it', async () => {
+    build();
+    const wrapper = open({ label: 'b' });
+
+    await openTab(wrapper, 'Structure');
+    const labels = rowLabels(wrapper);
+
+    expect(labels.length).toBeGreaterThan(0);
+    expect(labels.every((l) => /^[uwφ] \(/.test(l))).toBe(true);
+  });
+
+  it('leaves the full structure matrix whole', async () => {
+    const store = build();
+    const wrapper = open({ label: 'b' });
+
+    await openTab(wrapper, 'Structure');
+
+    // nothing in an assembled structure is empty, so hiding empties changes nothing
+    expect(rowLabels(wrapper)).toHaveLength(store.solver.neq);
+  });
+});

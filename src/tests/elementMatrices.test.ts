@@ -2,9 +2,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { DofID } from 'ts-fem';
 import { useProjectStore } from '@/store/project';
+import { changeLabel } from '@/utils';
 import {
   assembleFrom,
+  elementDofNames,
   ELEMENT_DOFS,
+  occupied,
+  only,
+  structureDofNames,
   endForcesGlobal,
   endForcesLocal,
   globalStiffness,
@@ -265,5 +270,105 @@ describe('the system matrix', () => {
         expect(k[i][j], `${i},${j}`).toBeCloseTo(k[j][i], 6);
       }
     }
+  });
+});
+
+describe('naming the degrees of freedom', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('names an element’s six by the nodes they belong to', () => {
+    const names = elementDofNames(beam(build()));
+
+    expect(names).toEqual(['u (1)', 'w (1)', 'φ (1)', 'u (2)', 'w (2)', 'φ (2)']);
+  });
+
+  it('follows a node that has been renamed', () => {
+    const store = build();
+
+    // as the app renames one: the element's reference is re-pointed with it
+    changeLabel('nodes', store.solver.domain.nodes.get('1')!, { value: 'left' } as HTMLInputElement);
+
+    expect(elementDofNames(beam(store))[0]).toBe('u (left)');
+  });
+
+  it('names every equation of the structure the same way', () => {
+    const store = build();
+    store.solve();
+
+    const names = structureDofNames(store.solver);
+
+    expect(names).toHaveLength(store.solver.neq + store.solver.pneq);
+    // both nodes are clamped here, so every equation belongs to one of them
+    expect(names.every((n) => n.includes('(1)') || n.includes('(2)'))).toBe(true);
+    expect(names.filter((n) => n.startsWith('φ'))).toHaveLength(2);
+  });
+
+  it('puts a name against the equation the solver actually used', () => {
+    const store = build();
+    store.solve();
+
+    const names = structureDofNames(store.solver);
+    const element = beam(store) as unknown as { getLocationArray: () => number[] };
+    const where = element.getLocationArray();
+
+    // the element's own six line up with the same six equations of the structure
+    expect(where.map((eq) => names[eq])).toEqual(elementDofNames(beam(store)));
+  });
+});
+
+describe('dropping what is empty', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('keeps only the rows and columns that carry something', () => {
+    const grid = [
+      [1, 0, 2],
+      [0, 0, 0],
+      [2, 0, 3],
+    ];
+
+    expect(occupied(grid)).toEqual([0, 2]);
+    expect(only(grid, occupied(grid))).toEqual([
+      [1, 2],
+      [2, 3],
+    ]);
+  });
+
+  it('keeps a row that is empty but whose column is not', () => {
+    // an unsymmetric matrix should not lose the term that is there
+    const grid = [
+      [0, 0],
+      [5, 0],
+    ];
+
+    expect(occupied(grid)).toEqual([0, 1]);
+  });
+
+  it('leaves a full matrix alone', () => {
+    const store = build();
+    store.solve();
+
+    const k = systemStiffness(store.solver, true);
+
+    expect(occupied(k)).toHaveLength(k.length);
+  });
+
+  it('cuts an assembly from one element down to that element', () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createNode('2', [L, 0, 0], []);
+    domain.createNode('3', [2 * L, 0, 0], [DofID.Dz]);
+    domain.createBeam2D('a', ['1', '2'], 'm', 'cs');
+    domain.createBeam2D('b', ['2', '3'], 'm', 'cs');
+    store.solve();
+
+    const first = store.solver.domain.getElement('a') as never;
+    const assembled = assembleFrom(store.solver, [first], false);
+
+    // one beam reaches six equations, whatever the structure around it has
+    expect(occupied(assembled)).toHaveLength(6);
   });
 });

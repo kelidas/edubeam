@@ -59,7 +59,9 @@
     "divisions": "Podziały",
     "atPosition": "W",
     "extremeShownHint": "Pogrubiona jest największa wartość każdej wielkości spośród pokazanych przekrojów.",
-    "pointAlongHint": "Wskaż pręt, aby odczytać przekrój"
+    "pointAlongHint": "Wskaż pręt, aby odczytać przekrój",
+    "hideEmptyRows": "Ukryj puste wiersze",
+    "emptyRowsHidden": "ukryto pustych: {n}"
   },
   "nodes": {
     "addNode": "Dodaj węzeł",

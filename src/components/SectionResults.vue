@@ -95,6 +95,15 @@ const quantities = computed<Quantity[]>(() => [
 const quantityOf = (key: SectionQuantity) => quantities.value.find((q) => q.key === key)!;
 
 /**
+ * The nodes at the two ends, named.
+ *
+ * The element is drawn straight here whatever its angle, so which end is which is not something the
+ * picture can say on its own - and x is measured from the first of them, which is the one fact the
+ * whole table rests on.
+ */
+const ends = computed(() => (element.value ? element.value.nodes : ['', '']));
+
+/**
  * Numerical noise written as zero.
  *
  * A quantity that is zero at a section comes back from the solve as something like 9·10⁻¹⁶ - the
@@ -352,9 +361,10 @@ const copy = () => {
             <!-- an ordinate at every section the table lists, as if each were a node of its own -->
             <g v-for="(mark, i) in marks" :key="i">
               <line :x1="mark.x" :y1="axis.y" :x2="mark.x" :y2="mark.y" stroke="#1976d2" stroke-width="0.75" />
-              <circle :cx="mark.x" :cy="mark.y" r="1.8" fill="#1976d2" />
+              <circle class="ordinate" :cx="mark.x" :cy="mark.y" r="1.8" fill="#1976d2" />
               <text
                 v-if="labelled"
+                class="ordinate"
                 :x="mark.x"
                 :y="mark.y + (mark.value >= 0 ? 10 : -5)"
                 text-anchor="middle"
@@ -365,10 +375,22 @@ const copy = () => {
               </text>
             </g>
 
-            <!-- the element itself, drawn straight whatever its angle, with a node at each end -->
+            <!-- the element itself, drawn straight whatever its angle, with a named node at each end -->
             <line :x1="atX(0)" :y1="axis.y" :x2="atX(length)" :y2="axis.y" stroke="#000000" stroke-width="1.5" />
-            <rect :x="atX(0) - 3" :y="axis.y - 3" width="6" height="6" fill="#ffffff" stroke="#000000" />
-            <rect :x="atX(length) - 3" :y="axis.y - 3" width="6" height="6" fill="#ffffff" stroke="#000000" />
+            <g v-for="(node, i) in ends" :key="i">
+              <rect :x="atX(i * length) - 3" :y="axis.y - 3" width="6" height="6" fill="#ffffff" stroke="#000000" />
+              <circle class="node" :cx="atX(i * length)" :cy="axis.y - 14" r="7.5" fill="#ffffff" stroke="#000000" />
+              <text
+                class="node"
+                :x="atX(i * length)"
+                :y="axis.y - 11"
+                text-anchor="middle"
+                font-size="9"
+                fill="#000000"
+              >
+                {{ node }}
+              </text>
+            </g>
 
             <g v-if="asked">
               <line

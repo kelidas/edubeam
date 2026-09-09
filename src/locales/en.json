@@ -59,7 +59,9 @@
     "divisions": "Divisions",
     "atPosition": "At",
     "extremeShownHint": "The largest value of each quantity among the sections shown is in bold.",
-    "pointAlongHint": "Point along the beam to read a section"
+    "pointAlongHint": "Point along the beam to read a section",
+    "hideEmptyRows": "Hide empty rows",
+    "emptyRowsHidden": "{n} empty hidden"
   },
   "nodes": {
     "addNode": "Add node",
