@@ -57,7 +57,8 @@
     "sectionResults": "Resultados nas seções",
     "divisions": "Divisões",
     "atPosition": "Em",
-    "extremeShownHint": "Em negrito, o maior valor de cada grandeza entre as seções mostradas."
+    "extremeShownHint": "Em negrito, o maior valor de cada grandeza entre as seções mostradas.",
+    "pointAlongHint": "Aponte a barra para ler uma seção"
   },
   "nodes": {
     "addNode": "Adicionar nó",

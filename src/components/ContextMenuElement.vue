@@ -180,7 +180,11 @@ watch([n1, n2], () => {
       link
       class="text-body-2"
       @click="
-        layoutStore.openWidget($t('common.sectionResults'), SectionResults, { label: projectStore.selection.label });
+        layoutStore.openWidget($t('common.sectionResults'), SectionResults, {
+          label: projectStore.selection.label,
+          w: 620,
+          h: 520,
+        });
         projectStore.selection.type = null;
       "
     >

@@ -56,12 +56,14 @@ describe('the section results widget', () => {
       .findAll('thead th')
       .map((th) => th.text());
 
-    expect(headers).toHaveLength(6);
+    expect(headers).toHaveLength(7);
     expect(headers[0]).toContain('[m]');
-    // force, force, moment, length, length, in the units the app is set to
+    // force, force, moment, length, length, rotation, in the units the app is set to
     expect(headers[1]).toContain('[kN]');
     expect(headers[3]).toContain('[kNm]');
     expect(headers[5]).toContain('[m]');
+    // a rotation has no unit the app converts
+    expect(headers[6]).toContain('[rad]');
   });
 
   it('marks the largest moment in the middle of the span', () => {
@@ -110,5 +112,47 @@ describe('the section results widget', () => {
     store.solver.loadCases[0].solved = false;
 
     expect(widget().text()).toContain('common.notSolved');
+  });
+});
+
+describe('what the widget draws', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('plots a curve of its own, far finer than the table it sits above', () => {
+    build();
+    const points = widget().find('polyline').attributes('points')!.split(' ');
+
+    // the shape between the sections, not a chord through them: a table of four would otherwise
+    // draw a parabola as four straight pieces
+    expect(points.length).toBeGreaterThan(50);
+  });
+
+  it('marks every section the table lists, and labels it', () => {
+    build();
+    const w = widget();
+
+    // nine sections, each with an ordinate and a dot
+    expect(w.findAll('svg circle')).toHaveLength(9);
+    expect(w.findAll('svg text').length).toBeGreaterThanOrEqual(9);
+  });
+
+  it('drops the labels once they would sit on top of one another', async () => {
+    build();
+    const w = widget();
+
+    await w.findComponent({ name: 'VTextField' }).setValue(40);
+
+    expect(w.findAll('svg circle')).toHaveLength(41);
+    expect(w.findAll('svg text')).toHaveLength(0);
+  });
+
+  it('writes a value that is only numerical noise as zero', () => {
+    build();
+    const w = widget();
+    const ends = w.findAll('svg text').map((t) => t.text());
+
+    // the moment at both ends of a simply supported beam, which the solve leaves at about 1e-16
+    expect(ends[0]).toBe('0');
+    expect(ends[ends.length - 1]).toBe('0');
   });
 });

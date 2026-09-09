@@ -126,3 +126,37 @@ describe('results along the element', () => {
     expect(extremes.n).toBe(-1);
   });
 });
+
+describe('the rotation', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('gives ql³/24EI at the ends, equal and opposite', () => {
+    const store = simplySupported();
+    const start = resultsAt(beam(store), lc(store), 0);
+    const end = resultsAt(beam(store), lc(store), L);
+
+    near(Math.abs(start.phi), (Q * L ** 3) / (24 * E * I), 1e-3);
+    near(start.phi, -end.phi, 1e-3);
+  });
+
+  it('vanishes at midspan, where the deflection peaks', () => {
+    const store = simplySupported();
+
+    expect(Math.abs(resultsAt(beam(store), lc(store), L / 2).phi)).toBeLessThan(1e-9);
+  });
+
+  /**
+   * The one quantity that is differenced rather than read from the library, so it is held against
+   * the rotations the solver itself found - which the element carries at its ends.
+   */
+  it('agrees at the ends with the rotation the solver found', () => {
+    const store = simplySupported();
+    const element = beam(store) as unknown as {
+      computeEndDisplacement: (lc: unknown) => { get: (i: number[]) => number };
+    };
+    const ends = element.computeEndDisplacement(lc(store));
+
+    near(resultsAt(beam(store), lc(store), 0).phi, ends.get([2]), 1e-5);
+    near(resultsAt(beam(store), lc(store), L).phi, ends.get([5]), 1e-5);
+  });
+});

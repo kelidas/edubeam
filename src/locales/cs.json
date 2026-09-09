@@ -52,7 +52,8 @@
     "sectionResults": "Výsledky v řezech",
     "divisions": "Dílky",
     "atPosition": "V řezu",
-    "extremeShownHint": "Tučně je největší hodnota každé veličiny ze zobrazených řezů."
+    "extremeShownHint": "Tučně je největší hodnota každé veličiny ze zobrazených řezů.",
+    "pointAlongHint": "Ukažte na prut a čtěte řez"
   },
   "tabs": {
     "nodes": "Uzly",

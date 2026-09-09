@@ -57,7 +57,8 @@
     "sectionResults": "Section results",
     "divisions": "Divisions",
     "atPosition": "At",
-    "extremeShownHint": "The largest value of each quantity among the sections shown is in bold."
+    "extremeShownHint": "The largest value of each quantity among the sections shown is in bold.",
+    "pointAlongHint": "Point along the beam to read a section"
   },
   "nodes": {
     "addNode": "Add node",

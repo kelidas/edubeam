@@ -57,7 +57,8 @@
     "sectionResults": "Schnittgrößen",
     "divisions": "Teilungen",
     "atPosition": "Bei",
-    "extremeShownHint": "Fett ist der größte Wert jeder Größe unter den gezeigten Schnitten."
+    "extremeShownHint": "Fett ist der größte Wert jeder Größe unter den gezeigten Schnitten.",
+    "pointAlongHint": "Auf den Stab zeigen, um einen Schnitt zu lesen"
   },
   "nodes": {
     "addNode": "Knoten hinzufügen",

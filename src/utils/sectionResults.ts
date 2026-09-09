@@ -25,9 +25,37 @@ export interface SectionResult {
   u: number;
   /** Deflection across the element, in its own axes. */
   w: number;
+  /** Rotation of the cross section, in radians. */
+  phi: number;
 }
 
 export const elementLength = (element: Beam2D) => element.computeGeo().l;
+
+/**
+ * The rotation of the cross section, as the slope of the deflection curve.
+ *
+ * ts-fem evaluates the deflection but not its derivative, so this is the one quantity here that is
+ * not read straight out of the library. It is differenced rather than re-derived: the deflection
+ * curve is Hermite - a cubic in the end displacements plus each load's own contribution - and
+ * writing its derivative out by hand would mean copying that formulation and then having to keep
+ * the copy in step with it.
+ *
+ * The sign follows from the same Hermite form, in which the end rotation multiplies -ξ + 2ξ² - ξ³:
+ * the rotation is minus the slope, so at the ends this gives back exactly the nodal rotations the
+ * solver found, which is what the tests hold it to.
+ */
+const rotationAt = (element: Beam2D, loadCase: LoadCase, x: number, length: number): number => {
+  const w = (at: number) => element.computeLocalDeflAt(loadCase, at).w;
+  const h = Math.max(length * 1e-4, 1e-9);
+
+  // a centred difference wherever the element is wide enough for one on both sides
+  if (x - h >= 0 && x + h <= length) return -(w(x + h) - w(x - h)) / (2 * h);
+
+  // and at an end, three points reaching inwards, which is as accurate as the centred one
+  const inwards = x - h < 0 ? 1 : -1;
+
+  return (-inwards * (-3 * w(x) + 4 * w(x + inwards * h) - w(x + 2 * inwards * h))) / (2 * h);
+};
 
 /** Everything at one section. Positions outside the element are pulled back onto it. */
 export const resultsAt = (element: Beam2D, loadCase: LoadCase, x: number): SectionResult => {
@@ -42,6 +70,7 @@ export const resultsAt = (element: Beam2D, loadCase: LoadCase, x: number): Secti
     my: element.computeBendingMomentAt(loadCase, at),
     u: deflection.u,
     w: deflection.w,
+    phi: rotationAt(element, loadCase, at, length),
   };
 };
 
@@ -58,7 +87,7 @@ export const resultsAlong = (element: Beam2D, loadCase: LoadCase, divisions: num
   return Array.from({ length: steps + 1 }, (_, i) => resultsAt(element, loadCase, (length * i) / steps));
 };
 
-export type SectionQuantity = 'n' | 'vz' | 'my' | 'u' | 'w';
+export type SectionQuantity = 'n' | 'vz' | 'my' | 'u' | 'w' | 'phi';
 
 /**
  * Where each quantity reaches furthest from zero, by index into the sections given.
@@ -69,7 +98,7 @@ export type SectionQuantity = 'n' | 'vz' | 'my' | 'u' | 'w';
  * gets finer as the divisions do, and never claims more than the table can support.
  */
 export const extremesOf = (sections: SectionResult[]): Record<SectionQuantity, number> => {
-  const quantities: SectionQuantity[] = ['n', 'vz', 'my', 'u', 'w'];
+  const quantities: SectionQuantity[] = ['n', 'vz', 'my', 'u', 'w', 'phi'];
   const found = {} as Record<SectionQuantity, number>;
 
   for (const quantity of quantities) {

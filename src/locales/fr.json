@@ -57,7 +57,8 @@
     "sectionResults": "Résultats aux sections",
     "divisions": "Divisions",
     "atPosition": "À",
-    "extremeShownHint": "En gras, la plus grande valeur de chaque grandeur parmi les sections affichées."
+    "extremeShownHint": "En gras, la plus grande valeur de chaque grandeur parmi les sections affichées.",
+    "pointAlongHint": "Pointez la barre pour lire une section"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",

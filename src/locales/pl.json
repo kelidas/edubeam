@@ -57,7 +57,8 @@
     "sectionResults": "Wyniki w przekrojach",
     "divisions": "Podziały",
     "atPosition": "W",
-    "extremeShownHint": "Pogrubiona jest największa wartość każdej wielkości spośród pokazanych przekrojów."
+    "extremeShownHint": "Pogrubiona jest największa wartość każdej wielkości spośród pokazanych przekrojów.",
+    "pointAlongHint": "Wskaż pręt, aby odczytać przekrój"
   },
   "nodes": {
     "addNode": "Dodaj węzeł",
