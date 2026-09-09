@@ -57,7 +57,9 @@
     "divisions": "จำนวนช่วง",
     "atPosition": "ที่",
     "extremeShownHint": "ตัวหนาคือค่าที่มากที่สุดของแต่ละปริมาณจากหน้าตัดที่แสดง",
-    "pointAlongHint": "ชี้ที่คานเพื่ออ่านหน้าตัด"
+    "pointAlongHint": "ชี้ที่คานเพื่ออ่านหน้าตัด",
+    "hideEmptyRows": "ซ่อนแถวว่าง",
+    "emptyRowsHidden": "ซ่อนแถวว่าง {n} แถว"
   },
   "nodes": {
     "addNode": "เพิ่มโหนด",

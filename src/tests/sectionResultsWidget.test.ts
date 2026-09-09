@@ -128,13 +128,22 @@ describe('what the widget draws', () => {
     expect(points.length).toBeGreaterThan(50);
   });
 
+  it('names the node at each end, which is where x is measured from', () => {
+    build();
+    const names = widget()
+      .findAll('svg text.node')
+      .map((t) => t.text());
+
+    expect(names).toEqual(['1', '2']);
+  });
+
   it('marks every section the table lists, and labels it', () => {
     build();
     const w = widget();
 
     // nine sections, each with an ordinate and a dot
-    expect(w.findAll('svg circle')).toHaveLength(9);
-    expect(w.findAll('svg text').length).toBeGreaterThanOrEqual(9);
+    expect(w.findAll('svg circle.ordinate')).toHaveLength(9);
+    expect(w.findAll('svg text.ordinate')).toHaveLength(9);
   });
 
   it('drops the labels once they would sit on top of one another', async () => {
@@ -143,14 +152,14 @@ describe('what the widget draws', () => {
 
     await w.findComponent({ name: 'VTextField' }).setValue(40);
 
-    expect(w.findAll('svg circle')).toHaveLength(41);
-    expect(w.findAll('svg text')).toHaveLength(0);
+    expect(w.findAll('svg circle.ordinate')).toHaveLength(41);
+    expect(w.findAll('svg text.ordinate')).toHaveLength(0);
   });
 
   it('writes a value that is only numerical noise as zero', () => {
     build();
     const w = widget();
-    const ends = w.findAll('svg text').map((t) => t.text());
+    const ends = w.findAll('svg text.ordinate').map((t) => t.text());
 
     // the moment at both ends of a simply supported beam, which the solve leaves at about 1e-16
     expect(ends[0]).toBe('0');

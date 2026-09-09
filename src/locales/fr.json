@@ -58,7 +58,9 @@
     "divisions": "Divisions",
     "atPosition": "À",
     "extremeShownHint": "En gras, la plus grande valeur de chaque grandeur parmi les sections affichées.",
-    "pointAlongHint": "Pointez la barre pour lire une section"
+    "pointAlongHint": "Pointez la barre pour lire une section",
+    "hideEmptyRows": "Masquer les lignes vides",
+    "emptyRowsHidden": "{n} vides masquées"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",

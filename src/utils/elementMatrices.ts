@@ -1,5 +1,5 @@
 import * as math from 'mathjs';
-import { Beam2D, type LoadCase, type Solver } from 'ts-fem';
+import { Beam2D, DofID, type LabelType, type LoadCase, type Solver } from 'ts-fem';
 
 /**
  * The matrices and vectors behind a solved element, for reading rather than for solving.
@@ -15,6 +15,68 @@ import { Beam2D, type LoadCase, type Solver } from 'ts-fem';
 
 /** The six element degrees of freedom, in the order the matrices use. */
 export const ELEMENT_DOFS = ['u₁', 'w₁', 'φ₁', 'u₂', 'w₂', 'φ₂'] as const;
+
+/** What each degree of freedom is, in the order a node contributes them to the matrices. */
+const DOF_SYMBOLS: Partial<Record<DofID, string>> = {
+  [DofID.Dx]: 'u',
+  [DofID.Dz]: 'w',
+  [DofID.Ry]: 'φ',
+};
+
+const name = (dof: DofID, node: LabelType) => `${DOF_SYMBOLS[dof] ?? `d${dof}`} (${node})`;
+
+/**
+ * The element's six degrees of freedom named by the nodes they belong to, rather than by which end
+ * of the element they are.
+ *
+ * `u₁` says where in the matrix a term sits but not what it is a term of, and the node is the thing
+ * a reader is looking for - it is what the structure matrix and the drawing are indexed by, and
+ * what makes one element's 6x6 recognisable inside the assembled one.
+ */
+export const elementDofNames = (element: Beam2D): string[] =>
+  element.nodes.flatMap((node) => element.getNodeDofs(node).map((dof) => name(dof, node)));
+
+/**
+ * Every equation of the structure named the same way.
+ *
+ * The solver numbers the equations and says nothing about what they are; the mapping back is held
+ * by the nodes, each of which knows which equation each of its degrees of freedom ended up as. An
+ * equation no element reaches keeps its number, which is the honest thing to show for it.
+ */
+export const structureDofNames = (solver: Solver): string[] => {
+  const names = Array.from({ length: solver.neq + solver.pneq }, (_, i) => String(i + 1));
+
+  for (const element of solver.domain.elements.values()) {
+    if (!(element instanceof Beam2D)) continue;
+
+    for (const label of element.nodes) {
+      const node = solver.domain.nodes.get(label);
+
+      if (!node) continue;
+
+      const dofs = element.getNodeDofs(label);
+
+      node.getLocationArray(dofs).forEach((equation: number, i: number) => {
+        if (equation >= 0 && equation < names.length) names[equation] = name(dofs[i], label);
+      });
+    }
+  }
+
+  return names;
+};
+
+/**
+ * Which rows and columns of a matrix carry anything at all.
+ *
+ * Assembling from a few chosen elements leaves the rest of the structure as empty rows and columns,
+ * and there can be far more of those than of the ones being looked at. Dropping them keeps what
+ * remains readable; the names go with them, so the numbering still says where each row came from.
+ */
+export const occupied = (grid: Grid): number[] =>
+  grid.map((_, i) => i).filter((i) => grid[i].some((v) => v !== 0) || grid.some((row) => row[i] !== 0));
+
+/** A matrix reduced to those rows and columns. */
+export const only = (grid: Grid, indices: number[]): Grid => indices.map((i) => indices.map((j) => grid[i][j]));
 
 export type Grid = number[][];
 

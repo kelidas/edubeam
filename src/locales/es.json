@@ -58,7 +58,9 @@
     "divisions": "Divisiones",
     "atPosition": "En",
     "extremeShownHint": "En negrita, el mayor valor de cada magnitud entre las secciones mostradas.",
-    "pointAlongHint": "Señale la barra para leer una sección"
+    "pointAlongHint": "Señale la barra para leer una sección",
+    "hideEmptyRows": "Ocultar filas vacías",
+    "emptyRowsHidden": "{n} vacías ocultas"
   },
   "nodes": {
     "addNode": "Añadir nodo",

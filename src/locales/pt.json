@@ -58,7 +58,9 @@
     "divisions": "Divisões",
     "atPosition": "Em",
     "extremeShownHint": "Em negrito, o maior valor de cada grandeza entre as seções mostradas.",
-    "pointAlongHint": "Aponte a barra para ler uma seção"
+    "pointAlongHint": "Aponte a barra para ler uma seção",
+    "hideEmptyRows": "Ocultar linhas vazias",
+    "emptyRowsHidden": "{n} vazias ocultas"
   },
   "nodes": {
     "addNode": "Adicionar nó",
