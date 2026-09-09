@@ -53,7 +53,11 @@
     "paste": "Paste",
     "addNew": "Add new",
     "whatisnew": "What’s New?",
-    "reverse_orientation": "Flip dimension"
+    "reverse_orientation": "Flip dimension",
+    "sectionResults": "Section results",
+    "divisions": "Divisions",
+    "atPosition": "At",
+    "extremeShownHint": "The largest value of each quantity among the sections shown is in bold."
   },
   "nodes": {
     "addNode": "Add node",

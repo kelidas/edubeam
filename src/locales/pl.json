@@ -53,7 +53,11 @@
     "paste": "Wklej",
     "addNew": "Dodaj nowy",
     "whatisnew": "Co nowego?",
-    "reverse_orientation": "Odwróć wymiar"
+    "reverse_orientation": "Odwróć wymiar",
+    "sectionResults": "Wyniki w przekrojach",
+    "divisions": "Podziały",
+    "atPosition": "W",
+    "extremeShownHint": "Pogrubiona jest największa wartość każdej wielkości spośród pokazanych przekrojów."
   },
   "nodes": {
     "addNode": "Dodaj węzeł",

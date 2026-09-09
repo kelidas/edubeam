@@ -52,7 +52,11 @@
     "lcs": "ระบบพิกัดท้องถิ่น",
     "paste": "วาง",
     "addNew": "เพิ่มใหม่",
-    "reverse_orientation": "พลิกมิติ"
+    "reverse_orientation": "พลิกมิติ",
+    "sectionResults": "ผลลัพธ์ที่หน้าตัด",
+    "divisions": "จำนวนช่วง",
+    "atPosition": "ที่",
+    "extremeShownHint": "ตัวหนาคือค่าที่มากที่สุดของแต่ละปริมาณจากหน้าตัดที่แสดง"
   },
   "nodes": {
     "addNode": "เพิ่มโหนด",

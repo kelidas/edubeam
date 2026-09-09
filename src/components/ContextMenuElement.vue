@@ -5,6 +5,7 @@ import { useProjectStore } from '@/store/project';
 import { useLayoutStore } from '@/store/layout';
 import StiffnessMatrix from './StiffnessMatrix.vue';
 import ElementMatrices from './ElementMatrices.vue';
+import SectionResults from './SectionResults.vue';
 import SectionThumbnail from './SectionThumbnail.vue';
 import '@/types/crossSection';
 import { ref, computed, onMounted, watch } from 'vue';
@@ -172,6 +173,20 @@ watch([n1, n2], () => {
       {{ $t('common.elementMatrices') }}
       <template #prepend>
         <div class="pr-2"><v-icon size="16" icon="mdi-table-large" /></div>
+      </template>
+    </v-list-item>
+    <v-list-item
+      v-if="projectStore.selection.type === 'element'"
+      link
+      class="text-body-2"
+      @click="
+        layoutStore.openWidget($t('common.sectionResults'), SectionResults, { label: projectStore.selection.label });
+        projectStore.selection.type = null;
+      "
+    >
+      {{ $t('common.sectionResults') }}
+      <template #prepend>
+        <div class="pr-2"><v-icon size="16" icon="mdi-table-column" /></div>
       </template>
     </v-list-item>
     <v-divider v-if="projectStore.selection.type === 'element'" />

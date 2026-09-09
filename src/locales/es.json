@@ -53,7 +53,11 @@
     "paste": "Pegar",
     "addNew": "Añadir",
     "whatisnew": "¿Qué hay de nuevo?",
-    "reverse_orientation": "Invertir cota"
+    "reverse_orientation": "Invertir cota",
+    "sectionResults": "Resultados en secciones",
+    "divisions": "Divisiones",
+    "atPosition": "En",
+    "extremeShownHint": "En negrita, el mayor valor de cada magnitud entre las secciones mostradas."
   },
   "nodes": {
     "addNode": "Añadir nodo",

@@ -53,7 +53,11 @@
     "paste": "Einfügen",
     "addNew": "Neu hinzufügen",
     "whatisnew": "Was gibt's Neues?",
-    "reverse_orientation": "Bemaßung umkehren"
+    "reverse_orientation": "Bemaßung umkehren",
+    "sectionResults": "Schnittgrößen",
+    "divisions": "Teilungen",
+    "atPosition": "Bei",
+    "extremeShownHint": "Fett ist der größte Wert jeder Größe unter den gezeigten Schnitten."
   },
   "nodes": {
     "addNode": "Knoten hinzufügen",

@@ -53,7 +53,11 @@
     "paste": "Colar",
     "addNew": "Adicionar",
     "whatisnew": "O que há de novo?",
-    "reverse_orientation": "Inverter cota"
+    "reverse_orientation": "Inverter cota",
+    "sectionResults": "Resultados nas seções",
+    "divisions": "Divisões",
+    "atPosition": "Em",
+    "extremeShownHint": "Em negrito, o maior valor de cada grandeza entre as seções mostradas."
   },
   "nodes": {
     "addNode": "Adicionar nó",

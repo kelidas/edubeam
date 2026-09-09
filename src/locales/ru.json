@@ -53,7 +53,11 @@
     "paste": "Вставить",
     "addNew": "Добавить",
     "whatisnew": "Что нового?",
-    "reverse_orientation": "Развернуть размер"
+    "reverse_orientation": "Развернуть размер",
+    "sectionResults": "Результаты в сечениях",
+    "divisions": "Деления",
+    "atPosition": "В",
+    "extremeShownHint": "Жирным выделено наибольшее значение каждой величины среди показанных сечений."
   },
   "nodes": {
     "addNode": "Добавить узел",

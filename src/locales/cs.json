@@ -48,7 +48,11 @@
     "paste": "Vložit",
     "addNew": "Přidat",
     "whatisnew": "Co je nového?",
-    "reverse_orientation": "Převrátit kótu"
+    "reverse_orientation": "Převrátit kótu",
+    "sectionResults": "Výsledky v řezech",
+    "divisions": "Dílky",
+    "atPosition": "V řezu",
+    "extremeShownHint": "Tučně je největší hodnota každé veličiny ze zobrazených řezů."
   },
   "tabs": {
     "nodes": "Uzly",

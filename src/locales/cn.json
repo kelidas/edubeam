@@ -53,7 +53,11 @@
     "paste": "粘贴",
     "addNew": "新增",
     "whatisnew": "更新内容",
-    "reverse_orientation": "翻转标注"
+    "reverse_orientation": "翻转标注",
+    "sectionResults": "截面结果",
+    "divisions": "分段数",
+    "atPosition": "位置",
+    "extremeShownHint": "粗体为所示各截面中每个量的最大值。"
   },
   "nodes": {
     "addNode": "添加节点",
