@@ -47,10 +47,12 @@ const usable = computed(() => {
 });
 
 /**
- * The case being read. There is one today; the influence line work adds a second and exposes the
- * active one as `projectStore.loadCase`, which is what this should follow once that lands.
+ * The case being read, which is the one the open tab is about: the real loads in the viewer, the
+ * unit dislocations in the influence line workspace. The widget floats above both tabs and stays
+ * open across them, so it follows whichever is on screen - and says which, since otherwise the
+ * numbers would change under the reader with nothing to explain it.
  */
-const loadCase = computed(() => projectStore.solver.loadCases[0]);
+const loadCase = computed(() => projectStore.loadCase);
 
 const solved = computed(() => usable.value && loadCase.value?.solved === true);
 
@@ -307,6 +309,9 @@ const copy = () => {
         <span class="text-caption text-medium-emphasis"
           >L = {{ showLength(appStore.convertLength(length)) }} {{ appStore.units.Length }}</span
         >
+        <v-chip v-if="appStore.workspace === 'influence'" size="x-small" color="primary" label>
+          {{ $t('tabView.influence') }}
+        </v-chip>
         <v-btn
           icon="mdi-content-copy"
           size="small"
