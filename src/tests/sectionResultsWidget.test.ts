@@ -143,7 +143,9 @@ describe('what the widget draws', () => {
 
     // nine sections, each with an ordinate and a dot
     expect(w.findAll('svg circle.ordinate')).toHaveLength(9);
-    expect(w.findAll('svg text.ordinate')).toHaveLength(9);
+    // the one at midspan gives its label up to the peak, which lands all but on top of it
+    expect(w.findAll('svg text.ordinate')).toHaveLength(8);
+    expect(w.findAll('svg text.turn')).toHaveLength(1);
   });
 
   it('drops the labels once they would sit on top of one another', async () => {
@@ -284,5 +286,48 @@ describe('where the pointer may stop', () => {
 
     // the step is for the pointer; a number written by hand is a number meant exactly
     expect(bodyRows(w)[0].find('th').text()).toContain('1.2345');
+  });
+});
+
+describe('where the drawn quantity turns', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const fields = (w: ReturnType<typeof widget>) => w.findAllComponents({ name: 'VTextField' });
+
+  const pointAt = async (w: ReturnType<typeof widget>, fraction: number) => {
+    const svg = w.find('svg');
+
+    svg.element.getBoundingClientRect = () => ({ left: 0, width: 320 }) as DOMRect;
+    await svg.trigger('pointermove', { clientX: 10 + (320 - 20) * fraction });
+
+    return Number(fields(w)[1].props('modelValue'));
+  };
+
+  it('marks the peak of the moment', () => {
+    build();
+
+    // one peak on a simply supported beam under a uniform load
+    expect(widget().findAll('svg circle.turn')).toHaveLength(1);
+  });
+
+  it('stops there, even when no division lands on it', async () => {
+    build();
+    const w = widget();
+
+    // five pieces of a six metre beam: 1.2, 2.4, 3.6, 4.8 - and the peak is at 3
+    await fields(w)[0].setValue(5);
+
+    expect(await pointAt(w, 0.503)).toBeCloseTo(3, 6);
+  });
+
+  it('marks nothing where the quantity does not turn', async () => {
+    build();
+    const w = widget();
+    const toggle = w.findAll('.v-btn-toggle button');
+
+    // the shear steps with the load; it has no stationary point in between
+    await toggle.find((b) => b.text() === 'V')!.trigger('click');
+
+    expect(w.findAll('svg circle.turn')).toHaveLength(0);
   });
 });
