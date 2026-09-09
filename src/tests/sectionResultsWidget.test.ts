@@ -6,6 +6,7 @@ import * as components from 'vuetify/components';
 import * as directives from 'vuetify/directives';
 import { DofID } from 'ts-fem';
 import { useProjectStore } from '@/store/project';
+import { useAppStore } from '@/store/app';
 import SectionResults from '@/components/SectionResults.vue';
 
 /**
@@ -154,5 +155,53 @@ describe('what the widget draws', () => {
     // the moment at both ends of a simply supported beam, which the solve leaves at about 1e-16
     expect(ends[0]).toBe('0');
     expect(ends[ends.length - 1]).toBe('0');
+  });
+});
+
+/**
+ * The widget floats above both tabs rather than living in one, so which results it reads has to
+ * follow the workspace on screen: the real loads in the viewer, the unit dislocations whose
+ * deflected shape is an influence line in the other.
+ */
+describe('which load case the widget reads', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const momentColumn = (w: ReturnType<typeof widget>) => bodyRows(w).map((row) => row.findAll('td')[2].text());
+
+  it('reads the influence case in the influence workspace', async () => {
+    const store = build();
+    const app = useAppStore();
+    const influence = store.influenceLoadCase();
+
+    // a unit dislocation on the element, which is what an influence line is read from
+    influence.createBeamConcentratedDeformation('b', [0, 1, 0], L / 2, true);
+    store.solve();
+
+    const w = widget();
+    const loads = momentColumn(w);
+
+    app.tab = app.tabs.findIndex((t) => t.props?.id === 'influence');
+    await w.vm.$nextTick();
+
+    expect(app.workspace).toBe('influence');
+    expect(momentColumn(w)).not.toEqual(loads);
+  });
+
+  it('goes back to the loads when that tab is open', async () => {
+    const store = build();
+    const app = useAppStore();
+
+    store.influenceLoadCase();
+    store.solve();
+
+    const w = widget();
+    const loads = momentColumn(w);
+
+    app.tab = app.tabs.findIndex((t) => t.props?.id === 'influence');
+    await w.vm.$nextTick();
+    app.tab = app.tabs.findIndex((t) => t.props?.id === 'viewer');
+    await w.vm.$nextTick();
+
+    expect(momentColumn(w)).toEqual(loads);
   });
 });
