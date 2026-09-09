@@ -9,6 +9,7 @@ import {
   extremesOf,
   resultsAlong,
   resultsAt,
+  stationaryPoints,
   type SectionQuantity,
   type SectionResult,
 } from '../utils/sectionResults';
@@ -274,16 +275,61 @@ const marks = computed(() =>
   }))
 );
 
+/**
+ * Where the drawn quantity turns, solved against its own slope rather than read off the table.
+ *
+ * The peak of a moment almost never falls on a regular division, and it is usually the one place on
+ * the beam anyone wants a number from. Marking it is only half of it - the pointer stops there too,
+ * so the exact value can be read in the row above.
+ */
+const turns = computed(() => (solved.value ? stationaryPoints(element.value!, loadCase.value, drawn.value) : []));
+
+const turningMarks = computed(() =>
+  turns.value.map((x) => {
+    const section = resultsAt(element.value!, loadCase.value, x);
+
+    return {
+      x: atX(x),
+      y: atY(section[drawn.value]),
+      value: section[drawn.value],
+      text: showBriefly(quantityOf(drawn.value).convert(section[drawn.value]), drawn.value),
+    };
+  })
+);
+
+/**
+ * Whether a section's own label would be written on top of a turning point's.
+ *
+ * A peak often falls all but on a division - the middle of a beam under a uniform load - and then
+ * two numbers a hair apart sit in the same place. The turning one is the one solved for, so it is
+ * the one that stays; the section keeps its dot and its row in the table.
+ */
+const crowded = (x: number) => turningMarks.value.some((turn) => Math.abs(turn.x - x) < 14);
+
 /** Beyond a dozen the numbers would sit on top of one another, so only the ordinates are drawn. */
 const labelled = computed(() => marks.value.length <= 13);
 
 /**
+ * How near the pointer has to come to a section for it to be taken as meant.
+ *
+ * Half a step is right for a grid the reader can aim at, but the peak of a moment is not on any
+ * grid: at a centimetre step that would be about one pixel wide, so the one place on the beam worth
+ * stopping at would be the hardest to hit. Magnetism is a matter of pointing, so its reach is set
+ * in pointing terms - a few pixels of the diagram - and the step only governs the space between.
+ */
+const reach = computed(() => {
+  const perPixel = length.value ? length.value / (axis.value.right - axis.value.left) : 0;
+
+  return Math.max(stepInMetres.value / 2, perPixel * 4);
+});
+
+/**
  * The nearest section the pointer is allowed to stop on.
  *
- * A step alone cannot always reach the sections the table lists - an eighth of a three metre beam
- * is 37.5 cm, which no whole centimetre lands on - and those, with the two ends, are exactly the
- * places someone points at. So they pull the pointer onto them from within half a step; everywhere
- * else it is the step.
+ * A step alone cannot always reach what a reader is after - an eighth of a three metre beam is
+ * 37.5 cm, which no whole centimetre lands on, and a moment peaks wherever the shear happens to
+ * cross zero. Those, with the two ends, are exactly the places someone points at, so they pull the
+ * pointer onto them; everywhere else it is the step.
  *
  * Only the pointer is held to this. A distance typed into the field is taken as it is written.
  */
@@ -293,12 +339,13 @@ const snap = (metres: number) => {
 
   if (!(size > 0)) return at;
 
-  const nearest = sections.value.reduce(
-    (best, section) => (Math.abs(section.x - at) < Math.abs(best - at) ? section.x : best),
+  // the sections the table lists, the two ends, and wherever the drawn quantity turns
+  const nearest = [...sections.value.map((section) => section.x), ...turns.value].reduce(
+    (best, candidate) => (Math.abs(candidate - at) < Math.abs(best - at) ? candidate : best),
     Infinity
   );
 
-  if (Math.abs(nearest - at) <= size / 2) return nearest;
+  if (Math.abs(nearest - at) <= reach.value) return nearest;
 
   // a step of 0.01 gives 0.37000000000000005 at the thirty-seventh of them
   return Number(Math.min(Math.max(Math.round(at / size) * size, 0), length.value).toPrecision(12));
@@ -415,13 +462,38 @@ const copy = () => {
               <line :x1="mark.x" :y1="axis.y" :x2="mark.x" :y2="mark.y" stroke="#1976d2" stroke-width="0.75" />
               <circle class="ordinate" :cx="mark.x" :cy="mark.y" r="1.8" fill="#1976d2" />
               <text
-                v-if="labelled"
+                v-if="labelled && !crowded(mark.x)"
                 class="ordinate"
                 :x="mark.x"
                 :y="mark.y + (mark.value >= 0 ? 10 : -5)"
                 text-anchor="middle"
                 font-size="9"
                 fill="#1976d2"
+              >
+                {{ mark.text }}
+              </text>
+            </g>
+
+            <!-- where the quantity turns: solved for, so it need not be one of the sections above -->
+            <g v-for="(mark, i) in turningMarks" :key="`turn-${i}`">
+              <line
+                :x1="mark.x"
+                :y1="axis.y"
+                :x2="mark.x"
+                :y2="mark.y"
+                stroke="#ef6c00"
+                stroke-width="1"
+                stroke-dasharray="2 2"
+              />
+              <circle class="turn" :cx="mark.x" :cy="mark.y" r="3" fill="#ffffff" stroke="#ef6c00" stroke-width="1.5" />
+              <text
+                class="turn"
+                :x="mark.x"
+                :y="mark.y + (mark.value >= 0 ? 19 : -13)"
+                text-anchor="middle"
+                font-size="9"
+                font-weight="600"
+                fill="#ef6c00"
               >
                 {{ mark.text }}
               </text>

@@ -90,6 +90,121 @@ export const resultsAlong = (element: Beam2D, loadCase: LoadCase, divisions: num
 export type SectionQuantity = 'n' | 'vz' | 'my' | 'u' | 'w' | 'phi';
 
 /**
+ * What each quantity's own rate of change along the element is, where the structure gives it.
+ *
+ * These are the relations the whole subject rests on: the shear is the slope of the moment, the
+ * curvature - and so the moment - is the slope of the rotation, the rotation is the slope of the
+ * deflection, and the normal force is the slope of the axial displacement. So a quantity is
+ * stationary exactly where the one paired with it passes through zero, and that can be solved for
+ * rather than looked for.
+ *
+ * The shear and the normal force are missing on purpose: their own rates of change are the loads,
+ * which are constant along a stretch and jump at a point load. They have no stationary point
+ * inside a stretch - their extremes sit at the ends and either side of a jump.
+ */
+const SLOPE_OF: Partial<Record<SectionQuantity, SectionQuantity>> = {
+  my: 'vz',
+  phi: 'my',
+  w: 'phi',
+  u: 'n',
+};
+
+const valueAt = (element: Beam2D, loadCase: LoadCase, quantity: SectionQuantity, x: number): number => {
+  if (quantity === 'n') return element.computeNormalForceAt(loadCase, x);
+  if (quantity === 'vz') return element.computeShearForceAt(loadCase, x);
+  if (quantity === 'my') return element.computeBendingMomentAt(loadCase, x);
+  if (quantity === 'phi') return rotationAt(element, loadCase, x, elementLength(element));
+
+  return element.computeLocalDeflAt(loadCase, x)[quantity];
+};
+
+/**
+ * Where a quantity turns, inside the element rather than at its ends.
+ *
+ * Read against the exact relation above rather than off the sections on show: the peak of a moment
+ * almost never falls on a regular division, and it is usually the one place on the beam anyone
+ * actually wants a number from. The bracket is found by sampling and then closed by halving, so
+ * what comes back is the root itself and not the finest sample.
+ *
+ * Only a strict change of sign counts as a bracket. A stretch where the shear is exactly zero is a
+ * stretch where the moment is constant - every point of it is stationary, and none of them is the
+ * peak - so it is passed over rather than reported as a root.
+ */
+export const stationaryPoints = (
+  element: Beam2D,
+  loadCase: LoadCase,
+  quantity: SectionQuantity,
+  samples = 200
+): number[] => {
+  const slope = SLOPE_OF[quantity];
+
+  if (!slope) return [];
+
+  const length = elementLength(element);
+  const at = (x: number) => valueAt(element, loadCase, slope, x);
+  const tolerance = length * 1e-9;
+
+  const xs = Array.from({ length: samples + 1 }, (_, i) => (length * i) / samples);
+  const values = xs.map(at);
+  const peak = values.reduce((max, value) => (Number.isFinite(value) ? Math.max(max, Math.abs(value)) : max), 0);
+
+  // nothing to cross zero: the quantity does not change along the element at all
+  if (peak === 0) return [];
+
+  const negligible = peak * 1e-9;
+  const roots: number[] = [];
+
+  for (let i = 0; i < samples; i++) {
+    const [a, b] = [values[i], values[i + 1]];
+
+    // a load the model cannot evaluate would otherwise be reported as a root at every sample
+    if (!Number.isFinite(a) || !Number.isFinite(b)) continue;
+
+    // a plateau of zeros is a stretch where the quantity is constant - every point of it is
+    // stationary and none of them is the peak - and so is a pair too small to be anything but the
+    // residue of the solve
+    if (Math.abs(a) + Math.abs(b) < negligible) continue;
+    if (a * b > 0) continue;
+
+    let root: number;
+
+    if (a === 0) {
+      root = xs[i];
+    } else if (b === 0) {
+      root = xs[i + 1];
+    } else {
+      // closed by halving, so what comes back is the root and not the finest sample
+      let low = xs[i];
+      let high = xs[i + 1];
+      let lowValue = a;
+
+      while (high - low > tolerance) {
+        const middle = (low + high) / 2;
+        const value = at(middle);
+
+        if (lowValue * value <= 0) {
+          high = middle;
+        } else {
+          low = middle;
+          lowValue = value;
+        }
+      }
+
+      root = (low + high) / 2;
+    }
+
+    // the ends are already places the reader can reach, and a root landing on a sample is found
+    // twice - once from either side
+    if (root <= tolerance || root >= length - tolerance) continue;
+    if (roots.some((found) => Math.abs(found - root) <= length * 1e-6)) continue;
+
+    roots.push(root);
+  }
+
+  return roots;
+};
+
+/**
  * Where each quantity reaches furthest from zero, by index into the sections given.
  *
  * Read off the same sections the table shows rather than solved for: a true extreme sits wherever

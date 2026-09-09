@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { DofID } from 'ts-fem';
 import { useProjectStore } from '@/store/project';
-import { elementLength, extremesOf, resultsAlong, resultsAt } from '@/utils/sectionResults';
+import { elementLength, extremesOf, resultsAlong, resultsAt, stationaryPoints } from '@/utils/sectionResults';
 
 /**
  * A simply supported beam under a uniform load, which anyone can check: the moment is a parabola
@@ -29,6 +29,22 @@ const simplySupported = () => {
   domain.createNode('2', [L, 0, 0], [DofID.Dz]);
   domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
   store.solver.loadCases[0].createBeamElementUniformEdgeLoad('b', [0, Q], true);
+  store.solve();
+
+  return store;
+};
+
+/** The same beam with a single point load, whose moment peaks under the load wherever it is put. */
+const withPointLoad = (at: number) => {
+  const store = useProjectStore();
+  const domain = store.solver.domain;
+
+  domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+  domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+  domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz]);
+  domain.createNode('2', [L, 0, 0], [DofID.Dz]);
+  domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+  store.solver.loadCases[0].createBeamConcentratedLoad('b', [0, 5000, 0, at], true);
   store.solve();
 
   return store;
@@ -158,5 +174,71 @@ describe('the rotation', () => {
 
     near(resultsAt(beam(store), lc(store), 0).phi, ends.get([2]), 1e-5);
     near(resultsAt(beam(store), lc(store), L).phi, ends.get([5]), 1e-5);
+  });
+});
+
+/**
+ * The peak of a moment almost never falls on a regular division, and it is usually the one place
+ * on the beam anyone wants a number from - so it is solved for, against the relation between the
+ * moment and the shear, rather than picked out of the sections on show.
+ */
+describe('where a quantity turns', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('puts the moment’s peak at midspan under a uniform load', () => {
+    const store = simplySupported();
+    const turns = stationaryPoints(beam(store), lc(store), 'my');
+
+    expect(turns).toHaveLength(1);
+    near(turns[0], L / 2, 1e-6);
+  });
+
+  it('finds it to far better than the sections could', () => {
+    const store = simplySupported();
+    const [peak] = stationaryPoints(beam(store), lc(store), 'my');
+
+    // eight divisions of this beam land every 0.75 m; the root is exact to a nanometre
+    expect(Math.abs(peak - L / 2)).toBeLessThan(1e-9);
+    near(Math.abs(resultsAt(beam(store), lc(store), peak).my), (Q * L * L) / 8);
+  });
+
+  it('puts the deflection’s peak there too, where the rotation passes through zero', () => {
+    const store = simplySupported();
+    const turns = stationaryPoints(beam(store), lc(store), 'w');
+
+    expect(turns).toHaveLength(1);
+    near(turns[0], L / 2, 1e-5);
+  });
+
+  it('follows the load rather than the middle', () => {
+    const store = withPointLoad(1.5);
+    const turns = stationaryPoints(beam(store), lc(store), 'my');
+
+    // under a single point load the moment peaks at the load, wherever it is put
+    expect(turns).toHaveLength(1);
+    near(turns[0], 1.5, 1e-3);
+  });
+
+  it('says nothing about a quantity whose slope is the load itself', () => {
+    const store = simplySupported();
+
+    // the shear steps with the load and jumps at a point load; it does not turn in between
+    expect(stationaryPoints(beam(store), lc(store), 'vz')).toEqual([]);
+    expect(stationaryPoints(beam(store), lc(store), 'n')).toEqual([]);
+  });
+
+  it('passes over a stretch that is flat rather than calling all of it a peak', () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createNode('2', [L, 0, 0], [DofID.Dz]);
+    domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+    store.solve();
+
+    // nothing on the beam at all: the moment is zero everywhere, so no point of it is the peak
+    expect(stationaryPoints(beam(store), lc(store), 'my')).toEqual([]);
   });
 });
