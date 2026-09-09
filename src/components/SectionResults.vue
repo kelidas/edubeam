@@ -29,6 +29,24 @@ const divisions = ref(8);
 /** A section the reader asks for by hand or points at in the diagram, in the length unit on show. */
 const position = ref<number | null>(null);
 
+/**
+ * How far apart the sections the pointer can land on are. Held in metres so it survives a change of
+ * unit, and a centimetre to begin with, which is finer than anyone reads a beam to and about one
+ * pixel of the diagram at a usual span.
+ *
+ * Without one the step was a pixel of the diagram - so it changed with the width of the window and
+ * with the length of the beam, and gave positions like 0.98252 m, which is a reading of the screen
+ * rather than of the structure.
+ */
+const stepInMetres = ref(0.01);
+
+const step = computed({
+  get: () => appStore.convertLength(stepInMetres.value),
+  set: (value: number) => {
+    if (Number.isFinite(value) && value > 0) stepInMetres.value = appStore.convertInverseLength(value);
+  },
+});
+
 /** Which quantity the diagram draws. The table shows them all regardless. */
 const drawn = ref<SectionQuantity>('my');
 
@@ -259,6 +277,33 @@ const marks = computed(() =>
 /** Beyond a dozen the numbers would sit on top of one another, so only the ordinates are drawn. */
 const labelled = computed(() => marks.value.length <= 13);
 
+/**
+ * The nearest section the pointer is allowed to stop on.
+ *
+ * A step alone cannot always reach the sections the table lists - an eighth of a three metre beam
+ * is 37.5 cm, which no whole centimetre lands on - and those, with the two ends, are exactly the
+ * places someone points at. So they pull the pointer onto them from within half a step; everywhere
+ * else it is the step.
+ *
+ * Only the pointer is held to this. A distance typed into the field is taken as it is written.
+ */
+const snap = (metres: number) => {
+  const at = Math.min(Math.max(metres, 0), length.value);
+  const size = stepInMetres.value;
+
+  if (!(size > 0)) return at;
+
+  const nearest = sections.value.reduce(
+    (best, section) => (Math.abs(section.x - at) < Math.abs(best - at) ? section.x : best),
+    Infinity
+  );
+
+  if (Math.abs(nearest - at) <= size / 2) return nearest;
+
+  // a step of 0.01 gives 0.37000000000000005 at the thirty-seventh of them
+  return Number(Math.min(Math.max(Math.round(at / size) * size, 0), length.value).toPrecision(12));
+};
+
 const track = (event: PointerEvent) => {
   const box = plot.value?.getBoundingClientRect();
 
@@ -266,11 +311,7 @@ const track = (event: PointerEvent) => {
 
   const along = ((event.clientX - box.left - axis.value.left) / (axis.value.right - axis.value.left)) * length.value;
 
-  // to the precision the results are written with: a section pointed at is not a measurement to
-  // fifteen figures, and the field below is meant to be readable and editable by hand
-  const at = appStore.convertLength(Math.min(Math.max(along, 0), length.value));
-
-  position.value = Number(at.toPrecision(5));
+  position.value = Number(appStore.convertLength(snap(along)).toPrecision(12));
 };
 
 /** Everything on show, tab separated, so it can go straight into a spreadsheet. */
@@ -308,12 +349,23 @@ const copy = () => {
           type="number"
           :min="0"
           :max="appStore.convertLength(length)"
+          :step="step"
           density="compact"
           variant="outlined"
           hide-details
           clearable
-          style="max-width: 160px"
+          style="max-width: 150px"
           :label="`${$t('common.atPosition')} [${appStore.units.Length}]`"
+        />
+        <v-text-field
+          v-model.number="step"
+          type="number"
+          :min="0"
+          density="compact"
+          variant="outlined"
+          hide-details
+          style="max-width: 110px"
+          :label="$t('common.step')"
         />
         <span class="text-caption text-medium-emphasis"
           >L = {{ showLength(appStore.convertLength(length)) }} {{ appStore.units.Length }}</span

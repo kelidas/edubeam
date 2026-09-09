@@ -55,7 +55,8 @@
     "extremeShownHint": "Tučně je největší hodnota každé veličiny ze zobrazených řezů.",
     "pointAlongHint": "Ukažte na prut a čtěte řez",
     "hideEmptyRows": "Skrýt prázdné řádky",
-    "emptyRowsHidden": "skryto prázdných: {n}"
+    "emptyRowsHidden": "skryto prázdných: {n}",
+    "step": "Krok"
   },
   "tabs": {
     "nodes": "Uzly",

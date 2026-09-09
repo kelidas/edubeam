@@ -60,7 +60,8 @@
     "extremeShownHint": "En gras, la plus grande valeur de chaque grandeur parmi les sections affichées.",
     "pointAlongHint": "Pointez la barre pour lire une section",
     "hideEmptyRows": "Masquer les lignes vides",
-    "emptyRowsHidden": "{n} vides masquées"
+    "emptyRowsHidden": "{n} vides masquées",
+    "step": "Pas"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",

@@ -60,7 +60,8 @@
     "extremeShownHint": "The largest value of each quantity among the sections shown is in bold.",
     "pointAlongHint": "Point along the beam to read a section",
     "hideEmptyRows": "Hide empty rows",
-    "emptyRowsHidden": "{n} empty hidden"
+    "emptyRowsHidden": "{n} empty hidden",
+    "step": "Step"
   },
   "nodes": {
     "addNode": "Add node",
