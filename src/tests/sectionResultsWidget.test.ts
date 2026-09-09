@@ -214,3 +214,75 @@ describe('which load case the widget reads', () => {
     expect(momentColumn(w)).toEqual(loads);
   });
 });
+
+/**
+ * Without a step the pointer moved by a pixel of the diagram, so how finely a beam could be read
+ * depended on how wide the window was - and the positions it gave were readings of the screen.
+ */
+describe('where the pointer may stop', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const fields = (w: ReturnType<typeof widget>) => w.findAllComponents({ name: 'VTextField' });
+
+  const pointAt = async (w: ReturnType<typeof widget>, fraction: number) => {
+    const svg = w.find('svg');
+
+    // happy-dom lays nothing out, so the diagram's own box is what the reading is taken from
+    svg.element.getBoundingClientRect = () => ({ left: 0, width: 320 }) as DOMRect;
+    await svg.trigger('pointermove', { clientX: 10 + (320 - 20) * fraction });
+
+    return Number(fields(w)[1].props('modelValue'));
+  };
+
+  it('stops on whole steps', async () => {
+    build();
+    const w = widget();
+
+    // one piece, so the ends are the only sections and none of them is near the middle of the beam
+    await fields(w)[0].setValue(1);
+    const at = await pointAt(w, 0.37);
+
+    // 2.22 m of this six metre beam: a centimetre to begin with
+    expect(at).toBeCloseTo(2.22, 9);
+  });
+
+  it('follows the step it is given', async () => {
+    build();
+    const w = widget();
+
+    await fields(w)[0].setValue(1);
+    await fields(w)[2].setValue(0.5);
+    const at = await pointAt(w, 0.37);
+
+    // the same place, now to the nearest half metre
+    expect(at).toBeCloseTo(2, 9);
+  });
+
+  it('lands on the sections the table lists, which no whole step need reach', async () => {
+    build();
+    const w = widget();
+
+    // an eighth of this six metre beam is 0.75 m, and a third of the span is nearest to 2.25
+    const at = await pointAt(w, 0.375);
+
+    expect(at).toBeCloseTo(2.25, 9);
+  });
+
+  it('reaches both ends exactly', async () => {
+    build();
+    const w = widget();
+
+    expect(await pointAt(w, -0.4)).toBe(0);
+    expect(await pointAt(w, 1.4)).toBe(L);
+  });
+
+  it('takes a distance typed in as it is written', async () => {
+    build();
+    const w = widget();
+
+    await fields(w)[1].setValue(1.2345);
+
+    // the step is for the pointer; a number written by hand is a number meant exactly
+    expect(bodyRows(w)[0].find('th').text()).toContain('1.2345');
+  });
+});

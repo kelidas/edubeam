@@ -61,7 +61,8 @@
     "extremeShownHint": "Em negrito, o maior valor de cada grandeza entre as seções mostradas.",
     "pointAlongHint": "Aponte a barra para ler uma seção",
     "hideEmptyRows": "Ocultar linhas vazias",
-    "emptyRowsHidden": "{n} vazias ocultas"
+    "emptyRowsHidden": "{n} vazias ocultas",
+    "step": "Passo"
   },
   "nodes": {
     "addNode": "Adicionar nó",

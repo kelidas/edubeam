@@ -61,7 +61,8 @@
     "extremeShownHint": "Fett ist der größte Wert jeder Größe unter den gezeigten Schnitten.",
     "pointAlongHint": "Auf den Stab zeigen, um einen Schnitt zu lesen",
     "hideEmptyRows": "Leere Zeilen ausblenden",
-    "emptyRowsHidden": "{n} leere ausgeblendet"
+    "emptyRowsHidden": "{n} leere ausgeblendet",
+    "step": "Schritt"
   },
   "nodes": {
     "addNode": "Knoten hinzufügen",
