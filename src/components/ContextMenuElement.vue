@@ -5,7 +5,6 @@ import AddConcentratedDeformationDialog from './dialogs/AddConcentratedDeformati
 import { useAppStore } from '@/store/app';
 import { useProjectStore } from '@/store/project';
 import { useLayoutStore } from '@/store/layout';
-import StiffnessMatrix from './StiffnessMatrix.vue';
 import ElementMatrices from './ElementMatrices.vue';
 import SectionResults from './SectionResults.vue';
 import SectionThumbnail from './SectionThumbnail.vue';
@@ -150,20 +149,6 @@ watch([n1, n2], () => {
         <div class="pr-2"><v-icon size="16" icon="mdi-arrow-down-thin" /></div>
       </template>
       {{ $t('loads.addLoad') }}
-    </v-list-item>
-    <v-list-item
-      v-if="projectStore.selection.type === 'element'"
-      link
-      class="text-body-2"
-      @click="
-        layoutStore.openWidget($t('common.stiffnessMatrix'), StiffnessMatrix, { label: projectStore.selection.label });
-        projectStore.selection.type = null;
-      "
-    >
-      {{ $t('common.stiffnessMatrix') }}
-      <template #prepend>
-        <div class="pr-2"><v-icon size="16" icon="mdi-matrix" /></div>
-      </template>
     </v-list-item>
     <v-list-item
       v-if="projectStore.selection.type === 'element'"
