@@ -469,7 +469,7 @@
                 density="compact"
                 variant="text"
                 icon="mdi-matrix"
-                @click="layoutStore.openWidget($t('common.stiffnessMatrix'), StiffnessMatrix, { label: item.label })"
+                @click="layoutStore.openWidget($t('common.elementMatrices'), ElementMatrices, { label: item.label })"
               ></v-btn>
               <v-btn density="compact" variant="text" icon="mdi-close" @click="deleteElement(item.label)"></v-btn>
             </div>
@@ -1659,7 +1659,7 @@ import '@/types/crossSection';
 import EditNode from './dialogs/EditNode.vue';
 
 import { useLayoutStore } from '@/store/layout';
-import StiffnessMatrix from '@/components/StiffnessMatrix.vue';
+import ElementMatrices from '@/components/ElementMatrices.vue';
 import { float2String } from '../utils/index';
 import { LOAD_CONFIG } from './dialogs/ElementLoadForm';
 
