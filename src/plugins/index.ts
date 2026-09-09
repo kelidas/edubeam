@@ -10,6 +10,9 @@ import vuetify from './vuetify';
 import pinia from '../store';
 import { i18n } from './i18n';
 import VueDraggableResizable from 'vue-draggable-resizable';
+// Without it the resize handles have no size, position or cursor: they are rendered, but there is
+// nothing at the corner to take hold of.
+import 'vue-draggable-resizable/style.css';
 
 import '@imengyu/vue3-context-menu/lib/vue3-context-menu.css';
 import ContextMenu from '@imengyu/vue3-context-menu';

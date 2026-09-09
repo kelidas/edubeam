@@ -21,15 +21,25 @@ const props = withDefaults(
 </script>
 
 <template>
+  <!--
+    The frame could always be dragged by a corner, but nothing inside followed: the card kept its
+    natural size, so a widget full of numbers could not be made bigger to read them. The card now
+    fills the frame and its content scrolls within it, which is what makes the resize worth having.
+  -->
   <vue-draggable-resizable
-    :w="400"
+    :w="props.widget.props.w ?? 400"
+    :h="props.widget.props.h ?? 320"
+    :min-width="240"
+    :min-height="160"
     :x="props.widget.props.x"
     :y="props.widget.props.y"
     :parent="true"
+    :active="true"
+    :prevent-deactivation="true"
     drag-handle=".drag-handle"
   >
-    <v-card style="pointer-events: auto">
-      <div class="d-flex drag-handle">
+    <v-card class="d-flex flex-column" style="pointer-events: auto; height: 100%">
+      <div class="d-flex drag-handle flex-grow-0">
         <div class="d-flex align-center flex-grow-1">
           <div v-if="props.widget.props.label" style="width: 64px; height: 48px">
             <SVGElementViewer
@@ -65,7 +75,26 @@ const props = withDefaults(
           />
         </div>
       </div>
-      <component :is="props.widget.component" v-bind="props.widget.props" />
+      <div class="flex-grow-1" style="min-height: 0; overflow: auto">
+        <component :is="props.widget.component" v-bind="props.widget.props" />
+      </div>
     </v-card>
   </vue-draggable-resizable>
 </template>
+
+<style scoped>
+/*
+ * Two things kept the corner from being grabbed.
+ *
+ * The widgets sit in a full screen layer that lets pointer events through to the drawing, and only
+ * the card takes them back. The resize handles are siblings of that card inside the frame, so they
+ * inherited the layer's `pointer-events: none` and could be aimed at but never hit.
+ *
+ * The other half - the handles being hidden until the widget is "active", which it becomes only
+ * when a press lands on the title bar - is settled on the frame itself with `active` and
+ * `prevent-deactivation`, rather than by overriding the library's own display rule.
+ */
+:deep(.handle) {
+  pointer-events: auto;
+}
+</style>

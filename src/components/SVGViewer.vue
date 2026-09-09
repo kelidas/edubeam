@@ -32,6 +32,7 @@ import SelectionBox from './SelectionBox.vue';
 import WindowPickRect from './WindowPickRect.vue';
 import { windowDragKey, windowPickBox, type WindowDrag } from '@/types/windowPick';
 import HoveredElement from './HoveredElement.vue';
+import ElementMatrices from './ElementMatrices.vue';
 import { intersectedKey } from '@/types/hover';
 import PlacingPreview from './PlacingPreview.vue';
 import { placingKey } from '@/types/placing';
@@ -2550,6 +2551,15 @@ defineExpose({ centerContent, fitContent });
         </template>
       </context-menu-item>
       <context-menu-sperator />
+      <!-- The structure matrix belongs to the structure, so it does not wait for an element. -->
+      <context-menu-item
+        :label="$t('common.structureMatrix')"
+        @click="layoutStore.openWidget($t('common.structureMatrix'), ElementMatrices, {})"
+      >
+        <template #icon>
+          <v-icon size="x-small">mdi-table-large</v-icon>
+        </template>
+      </context-menu-item>
       <context-menu-item
         :label="$t('common.edit')"
         :disabled="!projectStore.isAnythingSelected2()"
