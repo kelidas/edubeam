@@ -7,6 +7,7 @@ import { formatResultAsText } from '../utils/numberDisplay';
 import {
   elementLength,
   extremesOf,
+  jumpsOf,
   resultsAlong,
   resultsAt,
   stationaryPoints,
@@ -270,6 +271,7 @@ const filled = computed(() => {
 const marks = computed(() =>
   sections.value.map((section) => ({
     x: atX(section.x),
+    at: section.x,
     y: atY(section[drawn.value]),
     value: section[drawn.value],
     side: section.side,
@@ -301,6 +303,16 @@ const turningMarks = computed(() =>
 
 /** Beyond a dozen the numbers would sit on top of one another, so only the ordinates are drawn. */
 const labelled = computed(() => marks.value.length <= 13);
+
+/**
+ * Where the quantity on show steps, which is not everywhere a section is read either side.
+ *
+ * A prescribed deformation steps the deflection and leaves the internal forces whole, so on a
+ * moment diagram its distance is an ordinary place on the beam - and writing two numbers there,
+ * ahead of everything else and at the cost of a neighbour, says a jump is there when none is.
+ */
+const stepsHere = (at: number) =>
+  solved.value && jumpsOf(element.value!, loadCase.value, drawn.value).some((jump) => Math.abs(jump - at) < 1e-6);
 
 /**
  * Everything written on the diagram, in the order it earns its place.
@@ -358,7 +370,7 @@ const labels = computed<DiagramLabel[]>(() => {
   }
 
   for (const mark of marks.value) {
-    if (mark.side) {
+    if (mark.side && stepsHere(mark.at)) {
       wanted.push({
         x: mark.x + mark.side * 3,
         y: mark.y + (mark.side === -1 ? -5 : 12),
@@ -371,7 +383,10 @@ const labels = computed<DiagramLabel[]>(() => {
 
   if (labelled.value) {
     for (const mark of marks.value) {
-      if (mark.side) continue;
+      // a pair that does step here is already written, as two numbers rather than one
+      if (mark.side === -1 && stepsHere(mark.at)) continue;
+      // and where it does not step, the two carry the same number: one of them says it
+      if (mark.side === 1) continue;
 
       wanted.push({
         x: mark.x,
