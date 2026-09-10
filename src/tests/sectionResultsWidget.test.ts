@@ -170,11 +170,22 @@ describe('what the widget draws', () => {
 });
 
 /**
- * The widget floats above both tabs rather than living in one, so which results it reads has to
- * follow the workspace on screen: the real loads in the viewer, the unit dislocations whose
- * deflected shape is an influence line in the other.
+ * The influence line workspace is work of its own, and this branch does not carry it: without it
+ * there is one load case and the widget reads that. Where it is present, which results the widget
+ * shows has to follow the workspace on screen, because the widget floats above both tabs rather
+ * than living in one.
  */
-describe('which load case the widget reads', () => {
+const hasWorkspaces = () => {
+  try {
+    setActivePinia(createPinia());
+
+    return 'workspace' in useAppStore();
+  } catch {
+    return false;
+  }
+};
+
+describe.runIf(hasWorkspaces())('which load case the widget reads', () => {
   beforeEach(() => setActivePinia(createPinia()));
 
   const momentColumn = (w: ReturnType<typeof widget>) => bodyRows(w).map((row) => row.findAll('td')[2].text());
