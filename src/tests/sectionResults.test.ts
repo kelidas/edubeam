@@ -466,3 +466,33 @@ describe('which quantities a point load steps', () => {
     expect(stepped(store)).toEqual(['n', 'vz']);
   });
 });
+
+describe('a turning point where the quantity steps', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  it('is not reported for a deflection with a dislocation in it', () => {
+    const store = withDislocation(2, 0.01);
+
+    /*
+     * The deflection has two values there and no slope between them. A difference taken across the
+     * step crosses zero for reasons of its own, and calling that a peak would put a third number on
+     * the one place that already has two.
+     */
+    expect(stationaryPoints(beam(store), lc(store), 'w').filter((x) => Math.abs(x - 2) < 1e-3)).toEqual([]);
+  });
+
+  it('is still reported for a moment under a point load, which does peak there', () => {
+    const store = withPointLoad(2);
+
+    // the shear steps through zero at the load: the moment is continuous and its peak is real
+    const [peak] = stationaryPoints(beam(store), lc(store), 'my');
+
+    near(peak, 2, 1e-3);
+  });
+
+  it('is not reported for a moment at a concentrated moment, which steps', () => {
+    const store = withPointMoment(2, 4000);
+
+    expect(stationaryPoints(beam(store), lc(store), 'my').filter((x) => Math.abs(x - 2) < 1e-3)).toEqual([]);
+  });
+});
