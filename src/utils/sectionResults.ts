@@ -280,6 +280,7 @@ export const stationaryPoints = (
 
   const length = elementLength(element);
   const jumps = discontinuities(element, loadCase);
+  const steps = jumpsOf(element, loadCase, quantity);
   const at = (x: number) => valueAt(element, loadCase, slope, x, jumps);
   const tolerance = length * 1e-9;
 
@@ -336,6 +337,14 @@ export const stationaryPoints = (
     // twice - once from either side
     if (root <= tolerance || root >= length - tolerance) continue;
     if (roots.some((found) => Math.abs(found - root) <= length * 1e-6)) continue;
+
+    /*
+     * Nothing turns where it has two values. A moment does peak under a point load - that is the
+     * shear stepping through zero, and the peak is real - but a deflection with a dislocation in it
+     * has no peak at the dislocation, only a step, and marking one there puts a third number on the
+     * one place that already has two of its own.
+     */
+    if (steps.some((step) => Math.abs(step - root) <= length * 1e-6)) continue;
 
     roots.push(root);
   }

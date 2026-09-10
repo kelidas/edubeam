@@ -318,8 +318,8 @@ const stepsHere = (at: number) =>
  * Everything written on the diagram, in the order it earns its place.
  *
  * A value at a jump is the point of a jump - the shear before a load and after it are two different
- * readings and both are wanted - so those are written whatever else is on the diagram, and only the
- * regular sections give way. The two of a pair are set apart left and right of the ordinate and one
+ * readings and both are wanted - so those are written before anything else, then a peak, and only
+ * the regular sections give way. The two of a pair are set apart left and right of the ordinate and one
  * above the curve, one below, so neither has to be dropped for the other.
  *
  * What is dropped is whatever would be written on top of something already there. Nine numbers
@@ -359,16 +359,6 @@ const clashes = (a: DiagramLabel, b: DiagramLabel) => {
 const labels = computed<DiagramLabel[]>(() => {
   const wanted: DiagramLabel[] = [];
 
-  for (const mark of turningMarks.value) {
-    wanted.push({
-      x: mark.x,
-      y: mark.y + (mark.value >= 0 ? 19 : -13),
-      anchor: 'middle',
-      text: mark.text,
-      kind: 'turn',
-    });
-  }
-
   for (const mark of marks.value) {
     if (mark.side && stepsHere(mark.at)) {
       wanted.push({
@@ -379,6 +369,16 @@ const labels = computed<DiagramLabel[]>(() => {
         kind: 'jump',
       });
     }
+  }
+
+  for (const mark of turningMarks.value) {
+    wanted.push({
+      x: mark.x,
+      y: mark.y + (mark.value >= 0 ? 19 : -13),
+      anchor: 'middle',
+      text: mark.text,
+      kind: 'turn',
+    });
   }
 
   if (labelled.value) {
