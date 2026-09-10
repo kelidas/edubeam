@@ -427,3 +427,69 @@ describe('the numbers at a jump', () => {
     }
   });
 });
+
+/**
+ * An imposed deformation is how an influence line is drawn: it steps the deflection and leaves the
+ * internal forces whole. Writing two numbers at its distance on a moment diagram - ahead of
+ * everything else, and at the cost of a neighbour - says a jump is there when none is.
+ */
+describe('a jump that only one quantity has', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const withDislocation = (at: number) => {
+    const store = build();
+
+    store.solver.loadCases[0].createBeamConcentratedDeformation('b', [0, 0.01, 0, at], true);
+    store.solve();
+
+    return store;
+  };
+
+  const draw = async (w: ReturnType<typeof widget>, name: string) => {
+    await w
+      .findAll('.v-btn-toggle button')
+      .find((b) => b.text() === name)!
+      .trigger('click');
+  };
+
+  // clear of midspan, where the peak of both the moment and the deflection wants the same room
+  it('writes both numbers on the deflection, where the step is', async () => {
+    withDislocation(1);
+    const w = widget();
+
+    await draw(w, 'w');
+
+    expect(w.findAll('svg text.jump')).toHaveLength(2);
+  });
+
+  it('writes none on the moment, where there is no step', async () => {
+    withDislocation(1);
+    const w = widget();
+
+    await draw(w, 'M');
+
+    expect(w.findAll('svg text.jump')).toHaveLength(0);
+  });
+
+  it('never writes two numbers where nothing steps', async () => {
+    withDislocation(1);
+    const w = widget();
+
+    await draw(w, 'M');
+    const here = w
+      .findAll('svg text.ordinate, svg text.jump')
+      .filter((t) => Math.abs(Number(t.attributes('x')) - (10 + (320 - 20) / 6)) < 6);
+
+    // one number, or none if a neighbouring section is too close for it - never the pair
+    expect(here.length).toBeLessThanOrEqual(1);
+  });
+
+  it('still lists both rows in the table, which is where the deflection differs', async () => {
+    withDislocation(1);
+    const w = widget();
+
+    const pairs = bodyRows(w).filter((r) => /[−+]/.test(r.find('th').text()));
+
+    expect(pairs).toHaveLength(2);
+  });
+});

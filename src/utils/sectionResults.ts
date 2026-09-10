@@ -53,16 +53,70 @@ export const elementLength = (element: Beam2D) => element.computeGeo().l;
  * a moment to the bending moment, a concentrated deformation to the deflection. One is the load's
  * own distance, and there is nothing to read exactly at it.
  */
-export const discontinuities = (element: Beam2D, loadCase: LoadCase): number[] => {
+const pointLoads = (element: Beam2D, loadCase: LoadCase) => {
   const length = elementLength(element);
 
   return loadCase
     .getElementLoadsOnElement(element.label)
-    .filter((load) => load instanceof BeamConcentratedLoad || load instanceof BeamConcentratedDeformation)
-    .map((load) => (load as BeamConcentratedLoad).values[3])
-    .filter((at) => Number.isFinite(at) && at > EITHER_SIDE && at < length - EITHER_SIDE)
-    .sort((a, b) => a - b);
+    .filter(
+      (load): load is BeamConcentratedLoad | BeamConcentratedDeformation =>
+        load instanceof BeamConcentratedLoad || load instanceof BeamConcentratedDeformation
+    )
+    .filter((load) => {
+      const at = load.values[3];
+
+      return Number.isFinite(at) && at > EITHER_SIDE && at < length - EITHER_SIDE;
+    });
 };
+
+/**
+ * Which quantities a load applied at a point steps.
+ *
+ * A force steps the shear and leaves the deflection whole; an imposed deformation steps the
+ * deflection and leaves the internal forces whole - which is what makes it the tool for drawing an
+ * influence line. Nothing steps everything, so nothing should be read either side of everything.
+ *
+ * The library is asked for the intensities in the element's own axes, so a load given in global
+ * ones on a sloping beam is correctly seen to step both the normal and the shear force.
+ */
+const steppedBy = (load: BeamConcentratedLoad | BeamConcentratedDeformation): SectionQuantity[] => {
+  const intensities = load.getLocalIntensities();
+  const components: [SectionQuantity, number][] =
+    'du' in intensities
+      ? [
+          ['u', intensities.du],
+          ['w', intensities.dw],
+          ['phi', intensities.dphi],
+        ]
+      : [
+          ['n', intensities.fx],
+          ['vz', intensities.fz],
+          ['my', intensities.my],
+        ];
+
+  // rotating a load into the element's axes leaves a residue where a component is really zero
+  const largest = components.reduce((max, [, value]) => Math.max(max, Math.abs(value)), 0);
+
+  return components.filter(([, value]) => Math.abs(value) > largest * 1e-12).map(([quantity]) => quantity);
+};
+
+/**
+ * The distances along the element where anything at all steps.
+ *
+ * This is where the table reads a section either side; which of its columns actually differ there
+ * is `jumpsOf`.
+ */
+export const discontinuities = (element: Beam2D, loadCase: LoadCase): number[] =>
+  pointLoads(element, loadCase)
+    .map((load) => load.values[3])
+    .sort((a, b) => a - b);
+
+/** The distances where one quantity in particular steps. */
+export const jumpsOf = (element: Beam2D, loadCase: LoadCase, quantity: SectionQuantity): number[] =>
+  pointLoads(element, loadCase)
+    .filter((load) => steppedBy(load).includes(quantity))
+    .map((load) => load.values[3])
+    .sort((a, b) => a - b);
 
 /**
  * The rotation of the cross section, as the slope of the deflection curve.

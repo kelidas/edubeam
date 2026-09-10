@@ -5,6 +5,7 @@ import { useProjectStore } from '@/store/project';
 import {
   discontinuities,
   elementLength,
+  jumpsOf,
   extremesOf,
   resultsAlong,
   resultsAt,
@@ -412,5 +413,56 @@ describe('the rotation at a jump', () => {
 
     // the deflection still steps by the whole dislocation; only the rotation changed
     expect(Math.abs(before.w - after.w)).toBeCloseTo(DISLOCATION, 6);
+  });
+});
+
+/**
+ * Nothing applied at a point steps everything. A force steps the shear and leaves the deflection
+ * whole; an imposed deformation steps the deflection and leaves the internal forces whole, which is
+ * what makes it the tool for drawing an influence line.
+ */
+describe('which quantities a point load steps', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const stepped = (store: ReturnType<typeof useProjectStore>) =>
+    (['n', 'vz', 'my', 'u', 'w', 'phi'] as const).filter((q) => jumpsOf(beam(store), lc(store), q).length > 0);
+
+  it('steps the shear under a transverse force, and nothing else', () => {
+    expect(stepped(withPointLoad(2))).toEqual(['vz']);
+  });
+
+  it('steps the normal force under an axial one', () => {
+    expect(stepped(withAxialLoad(2, 3000))).toEqual(['n']);
+  });
+
+  it('steps the moment under a concentrated moment', () => {
+    expect(stepped(withPointMoment(2, 4000))).toEqual(['my']);
+  });
+
+  it('steps the deflection under an imposed deformation, and no internal force', () => {
+    expect(stepped(withDislocation(2, 0.01))).toEqual(['w']);
+  });
+
+  it('still reads a section either side of any of them', () => {
+    const store = withDislocation(2, 0.01);
+
+    // the table pairs sections wherever anything steps; which columns differ is another question
+    expect(discontinuities(beam(store), lc(store))).toEqual([2]);
+  });
+
+  it('sees both when a load in global axes crosses a sloping element', () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createNode('2', [4, 0, 3], [DofID.Dz]);
+    domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+    // straight down in global axes, which on this beam is partly along it and partly across
+    store.solver.loadCases[0].createBeamConcentratedLoad('b', [0, 5000, 0, 2], false);
+    store.solve();
+
+    expect(stepped(store)).toEqual(['n', 'vz']);
   });
 });
