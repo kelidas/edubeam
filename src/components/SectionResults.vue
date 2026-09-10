@@ -299,17 +299,100 @@ const turningMarks = computed(() =>
   })
 );
 
-/**
- * Whether a section's own label would be written on top of a turning point's.
- *
- * A peak often falls all but on a division - the middle of a beam under a uniform load - and then
- * two numbers a hair apart sit in the same place. The turning one is the one solved for, so it is
- * the one that stays; the section keeps its dot and its row in the table.
- */
-const crowded = (x: number) => turningMarks.value.some((turn) => Math.abs(turn.x - x) < 14);
-
 /** Beyond a dozen the numbers would sit on top of one another, so only the ordinates are drawn. */
 const labelled = computed(() => marks.value.length <= 13);
+
+/**
+ * Everything written on the diagram, in the order it earns its place.
+ *
+ * A value at a jump is the point of a jump - the shear before a load and after it are two different
+ * readings and both are wanted - so those are written whatever else is on the diagram, and only the
+ * regular sections give way. The two of a pair are set apart left and right of the ordinate and one
+ * above the curve, one below, so neither has to be dropped for the other.
+ *
+ * What is dropped is whatever would be written on top of something already there. Nine numbers
+ * across a diagram sit about sixty pixels apart and are forty wide, so they only collide near a
+ * jump or a peak - which is exactly where the numbers that matter are.
+ */
+interface DiagramLabel {
+  x: number;
+  y: number;
+  anchor: 'start' | 'middle' | 'end';
+  text: string;
+  kind: 'turn' | 'jump' | 'ordinate';
+}
+
+/** Roughly, at nine pixels: digits are a little over half an em, and these are mostly digits. */
+const widthOf = (text: string) => text.length * 5.2;
+
+const spans = (label: DiagramLabel): [number, number] => {
+  const width = widthOf(label.text);
+
+  if (label.anchor === 'end') return [label.x - width, label.x];
+  if (label.anchor === 'start') return [label.x, label.x + width];
+
+  return [label.x - width / 2, label.x + width / 2];
+};
+
+const clashes = (a: DiagramLabel, b: DiagramLabel) => {
+  // labels on different lines do not fight, whatever their distance across
+  if (Math.abs(a.y - b.y) >= 11) return false;
+
+  const [aFrom, aTo] = spans(a);
+  const [bFrom, bTo] = spans(b);
+
+  return aFrom < bTo + 2 && bFrom < aTo + 2;
+};
+
+const labels = computed<DiagramLabel[]>(() => {
+  const wanted: DiagramLabel[] = [];
+
+  for (const mark of turningMarks.value) {
+    wanted.push({
+      x: mark.x,
+      y: mark.y + (mark.value >= 0 ? 19 : -13),
+      anchor: 'middle',
+      text: mark.text,
+      kind: 'turn',
+    });
+  }
+
+  for (const mark of marks.value) {
+    if (mark.side) {
+      wanted.push({
+        x: mark.x + mark.side * 3,
+        y: mark.y + (mark.side === -1 ? -5 : 12),
+        anchor: mark.side === -1 ? 'end' : 'start',
+        text: mark.text,
+        kind: 'jump',
+      });
+    }
+  }
+
+  if (labelled.value) {
+    for (const mark of marks.value) {
+      if (mark.side) continue;
+
+      wanted.push({
+        x: mark.x,
+        y: mark.y + (mark.value >= 0 ? 10 : -5),
+        anchor: 'middle',
+        text: mark.text,
+        kind: 'ordinate',
+      });
+    }
+  }
+
+  const kept: DiagramLabel[] = [];
+
+  for (const label of wanted) {
+    if (kept.some((placed) => clashes(placed, label))) continue;
+
+    kept.push(label);
+  }
+
+  return kept;
+});
 
 /**
  * How near the pointer has to come to a section for it to be taken as meant.
@@ -463,18 +546,22 @@ const copy = () => {
             <g v-for="(mark, i) in marks" :key="i">
               <line :x1="mark.x" :y1="axis.y" :x2="mark.x" :y2="mark.y" stroke="#1976d2" stroke-width="0.75" />
               <circle class="ordinate" :cx="mark.x" :cy="mark.y" r="1.8" fill="#1976d2" />
-              <text
-                v-if="labelled && !crowded(mark.x)"
-                class="ordinate"
-                :x="mark.x + (mark.side ?? 0) * 3"
-                :y="mark.y + (mark.value >= 0 ? 10 : -5)"
-                :text-anchor="mark.side === -1 ? 'end' : mark.side === 1 ? 'start' : 'middle'"
-                font-size="9"
-                fill="#1976d2"
-              >
-                {{ mark.text }}
-              </text>
             </g>
+
+            <!-- every number the diagram has room for, the ones at a jump and a peak first -->
+            <text
+              v-for="(written, i) in labels"
+              :key="`label-${i}`"
+              :class="written.kind"
+              :x="written.x"
+              :y="written.y"
+              :text-anchor="written.anchor"
+              font-size="9"
+              :font-weight="written.kind === 'turn' ? 600 : 400"
+              :fill="written.kind === 'turn' ? '#ef6c00' : '#1976d2'"
+            >
+              {{ written.text }}
+            </text>
 
             <!-- where the quantity turns: solved for, so it need not be one of the sections above -->
             <g v-for="(mark, i) in turningMarks" :key="`turn-${i}`">
@@ -488,17 +575,6 @@ const copy = () => {
                 stroke-dasharray="2 2"
               />
               <circle class="turn" :cx="mark.x" :cy="mark.y" r="3" fill="#ffffff" stroke="#ef6c00" stroke-width="1.5" />
-              <text
-                class="turn"
-                :x="mark.x"
-                :y="mark.y + (mark.value >= 0 ? 19 : -13)"
-                text-anchor="middle"
-                font-size="9"
-                font-weight="600"
-                fill="#ef6c00"
-              >
-                {{ mark.text }}
-              </text>
             </g>
 
             <!-- the element itself, drawn straight whatever its angle, with a named node at each end -->
