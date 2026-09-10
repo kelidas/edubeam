@@ -342,3 +342,88 @@ describe('where the drawn quantity turns', () => {
     expect(w.findAll('svg circle.turn')).toHaveLength(0);
   });
 });
+
+/**
+ * A value at a jump is the point of a jump: the shear before a load and the shear after it are two
+ * readings and both are wanted, so they are written before anything else on the diagram is.
+ */
+describe('the numbers at a jump', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const withForce = (at: number, force: number) => {
+    const store = build();
+
+    store.solver.loadCases[0].createBeamConcentratedLoad('b', [0, force, 0, at], true);
+    store.solve();
+
+    return store;
+  };
+
+  const draw = async (w: ReturnType<typeof widget>, name: string) => {
+    await w
+      .findAll('.v-btn-toggle button')
+      .find((b) => b.text() === name)!
+      .trigger('click');
+  };
+
+  it('writes both sides of a step, not one of them', async () => {
+    withForce(2.5, 9000);
+    const w = widget();
+
+    await draw(w, 'V');
+    const written = w.findAll('svg text.jump').map((t) => t.text());
+
+    expect(written).toHaveLength(2);
+    expect(written[0]).not.toBe(written[1]);
+  });
+
+  it('sets the two apart, one either side of the ordinate', async () => {
+    withForce(2.5, 9000);
+    const w = widget();
+
+    await draw(w, 'V');
+    const anchors = w.findAll('svg text.jump').map((t) => t.attributes('text-anchor'));
+
+    expect(anchors).toEqual(['end', 'start']);
+  });
+
+  it('keeps them when the sections are too many to label', async () => {
+    withForce(2.5, 9000);
+    const w = widget();
+
+    await draw(w, 'V');
+    await w.findAllComponents({ name: 'VTextField' })[0].setValue(40);
+
+    // the regular sections give their labels up, the jump does not
+    expect(w.findAll('svg text.ordinate')).toHaveLength(0);
+    expect(w.findAll('svg text.jump')).toHaveLength(2);
+  });
+
+  it('drops a neighbour that would be written on top of one', async () => {
+    withForce(2.5, 9000);
+    const w = widget();
+
+    await draw(w, 'V');
+    const all = w.findAll('svg text.ordinate, svg text.jump, svg text.turn');
+    const boxes = all.map((t) => ({
+      x: Number(t.attributes('x')),
+      y: Number(t.attributes('y')),
+      width: t.text().length * 5.2,
+      anchor: t.attributes('text-anchor'),
+    }));
+
+    for (let i = 0; i < boxes.length; i++) {
+      for (let j = i + 1; j < boxes.length; j++) {
+        const a = boxes[i];
+        const b = boxes[j];
+
+        if (Math.abs(a.y - b.y) >= 11) continue;
+
+        const from = (m: typeof a) =>
+          m.anchor === 'end' ? m.x - m.width : m.anchor === 'start' ? m.x : m.x - m.width / 2;
+
+        expect(from(a) < from(b) + b.width && from(b) < from(a) + a.width, `${i} over ${j}`).toBe(false);
+      }
+    }
+  });
+});
