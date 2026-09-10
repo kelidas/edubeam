@@ -77,22 +77,53 @@ export const discontinuities = (element: Beam2D, loadCase: LoadCase): number[] =
  * the rotation is minus the slope, so at the ends this gives back exactly the nodal rotations the
  * solver found, which is what the tests hold it to.
  */
-const rotationAt = (element: Beam2D, loadCase: LoadCase, x: number, length: number): number => {
+/**
+ * The stretch of the element a section belongs to: from the last jump before it to the next after.
+ *
+ * The deflection curve is only a curve between the discontinuities. A section just before a point
+ * load belongs to the stretch that ends there, and nothing beyond it says anything about the slope
+ * on this side of it.
+ */
+const stretchAround = (x: number, length: number, jumps: number[]): [number, number] => {
+  let low = 0;
+  let high = length;
+
+  for (const jump of jumps) {
+    if (jump < x && jump > low) low = jump;
+    if (jump > x && jump < high) high = jump;
+    // asked at a jump rather than either side of it, which is a section that has two values: the
+    // one after it is the one given, so that a number comes back rather than an average of both
+    if (jump === x) low = jump;
+  }
+
+  return [low, high];
+};
+
+/**
+ * The rotation of the cross section, as the slope of the deflection curve on its own side of any
+ * jump.
+ *
+ * Differencing has to stay inside the stretch the section belongs to. A centred difference across a
+ * concentrated deformation straddles the jump and returns it divided by the step - radians, where
+ * the beam turns by a thousandth of one - and across a concentrated moment it averages the two
+ * different slopes either side and is wrong on both. Where the stretch has room on both sides the
+ * difference is centred; otherwise it is three points reaching inwards, which is as accurate.
+ */
+const rotationAt = (element: Beam2D, loadCase: LoadCase, x: number, length: number, jumps: number[] = []): number => {
   const w = (at: number) => element.computeLocalDeflAt(loadCase, at).w;
-  const h = Math.max(length * 1e-4, 1e-9);
+  const [low, high] = stretchAround(x, length, jumps);
+  const h = Math.max(Math.min(length * 1e-4, (high - low) / 4), 1e-12);
 
-  // a centred difference wherever the element is wide enough for one on both sides
-  if (x - h >= 0 && x + h <= length) return -(w(x + h) - w(x - h)) / (2 * h);
+  // a centred difference wherever the stretch is wide enough for one on both sides
+  if (x - h >= low && x + h <= high) return -(w(x + h) - w(x - h)) / (2 * h);
 
-  // and at an end, three points reaching inwards, which is as accurate as the centred one
-  const inwards = x - h < 0 ? 1 : -1;
+  const inwards = x - h < low ? 1 : -1;
 
   return (-inwards * (-3 * w(x) + 4 * w(x + inwards * h) - w(x + 2 * inwards * h))) / (2 * h);
 };
 
 /** Everything at one section. Positions outside the element are pulled back onto it. */
-export const resultsAt = (element: Beam2D, loadCase: LoadCase, x: number): SectionResult => {
-  const length = elementLength(element);
+const sectionAt = (element: Beam2D, loadCase: LoadCase, x: number, length: number, jumps: number[]): SectionResult => {
   const at = Math.min(Math.max(x, 0), length);
   const deflection = element.computeLocalDeflAt(loadCase, at);
 
@@ -103,9 +134,12 @@ export const resultsAt = (element: Beam2D, loadCase: LoadCase, x: number): Secti
     my: element.computeBendingMomentAt(loadCase, at),
     u: deflection.u,
     w: deflection.w,
-    phi: rotationAt(element, loadCase, at, length),
+    phi: rotationAt(element, loadCase, at, length, jumps),
   };
 };
+
+export const resultsAt = (element: Beam2D, loadCase: LoadCase, x: number): SectionResult =>
+  sectionAt(element, loadCase, x, elementLength(element), discontinuities(element, loadCase));
 
 /**
  * The element cut into equal pieces, ends included: `divisions + 1` sections.
@@ -121,11 +155,11 @@ export const resultsAlong = (element: Beam2D, loadCase: LoadCase, divisions: num
   const regular = Array.from({ length: steps + 1 }, (_, i) => (length * i) / steps)
     // a division landing on a jump has no value of its own: the pair either side is what it has
     .filter((x) => !jumps.some((jump) => Math.abs(jump - x) <= EITHER_SIDE))
-    .map((x) => resultsAt(element, loadCase, x));
+    .map((x) => sectionAt(element, loadCase, x, length, jumps));
 
   const sides = jumps.flatMap((jump) => [
-    { ...resultsAt(element, loadCase, jump - EITHER_SIDE), side: -1 as const },
-    { ...resultsAt(element, loadCase, jump + EITHER_SIDE), side: 1 as const },
+    { ...sectionAt(element, loadCase, jump - EITHER_SIDE, length, jumps), side: -1 as const },
+    { ...sectionAt(element, loadCase, jump + EITHER_SIDE, length, jumps), side: 1 as const },
   ]);
 
   return [...regular, ...sides].sort((a, b) => a.x - b.x);
@@ -153,11 +187,17 @@ const SLOPE_OF: Partial<Record<SectionQuantity, SectionQuantity>> = {
   u: 'n',
 };
 
-const valueAt = (element: Beam2D, loadCase: LoadCase, quantity: SectionQuantity, x: number): number => {
+const valueAt = (
+  element: Beam2D,
+  loadCase: LoadCase,
+  quantity: SectionQuantity,
+  x: number,
+  jumps: number[]
+): number => {
   if (quantity === 'n') return element.computeNormalForceAt(loadCase, x);
   if (quantity === 'vz') return element.computeShearForceAt(loadCase, x);
   if (quantity === 'my') return element.computeBendingMomentAt(loadCase, x);
-  if (quantity === 'phi') return rotationAt(element, loadCase, x, elementLength(element));
+  if (quantity === 'phi') return rotationAt(element, loadCase, x, elementLength(element), jumps);
 
   return element.computeLocalDeflAt(loadCase, x)[quantity];
 };
@@ -185,7 +225,8 @@ export const stationaryPoints = (
   if (!slope) return [];
 
   const length = elementLength(element);
-  const at = (x: number) => valueAt(element, loadCase, slope, x);
+  const jumps = discontinuities(element, loadCase);
+  const at = (x: number) => valueAt(element, loadCase, slope, x, jumps);
   const tolerance = length * 1e-9;
 
   const xs = Array.from({ length: samples + 1 }, (_, i) => (length * i) / samples);
