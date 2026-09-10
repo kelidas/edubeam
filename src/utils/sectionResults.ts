@@ -1,4 +1,4 @@
-import { Beam2D, type LoadCase } from 'ts-fem';
+import { Beam2D, BeamConcentratedDeformation, BeamConcentratedLoad, type LoadCase } from 'ts-fem';
 
 /**
  * What an element carries at a section, rather than only at its ends.
@@ -27,9 +27,42 @@ export interface SectionResult {
   w: number;
   /** Rotation of the cross section, in radians. */
   phi: number;
+  /**
+   * Which side of a jump the section is on, where it sits at one: two sections share a distance
+   * and carry different values. Absent everywhere the results are continuous.
+   */
+  side?: -1 | 1;
 }
 
+/**
+ * How far either side of a jump a section is taken.
+ *
+ * A point load leaves the shear with two values at its own distance and no value at all, and the
+ * same goes for a moment, an axial load and a concentrated deformation. Asking a hair either side
+ * is what the drawing does - this is its own offset - so the table and the diagram agree with it
+ * rather than each picking their own idea of "just before".
+ */
+const EITHER_SIDE = 1e-7;
+
 export const elementLength = (element: Beam2D) => element.computeGeo().l;
+
+/**
+ * The distances along the element where the results jump.
+ *
+ * Everything applied at a point does it: a force to the shear, an axial force to the normal force,
+ * a moment to the bending moment, a concentrated deformation to the deflection. One is the load's
+ * own distance, and there is nothing to read exactly at it.
+ */
+export const discontinuities = (element: Beam2D, loadCase: LoadCase): number[] => {
+  const length = elementLength(element);
+
+  return loadCase
+    .getElementLoadsOnElement(element.label)
+    .filter((load) => load instanceof BeamConcentratedLoad || load instanceof BeamConcentratedDeformation)
+    .map((load) => (load as BeamConcentratedLoad).values[3])
+    .filter((at) => Number.isFinite(at) && at > EITHER_SIDE && at < length - EITHER_SIDE)
+    .sort((a, b) => a - b);
+};
 
 /**
  * The rotation of the cross section, as the slope of the deflection curve.
@@ -83,8 +116,19 @@ export const resultsAt = (element: Beam2D, loadCase: LoadCase, x: number): Secti
 export const resultsAlong = (element: Beam2D, loadCase: LoadCase, divisions: number): SectionResult[] => {
   const steps = Math.max(1, Math.floor(divisions));
   const length = elementLength(element);
+  const jumps = discontinuities(element, loadCase);
 
-  return Array.from({ length: steps + 1 }, (_, i) => resultsAt(element, loadCase, (length * i) / steps));
+  const regular = Array.from({ length: steps + 1 }, (_, i) => (length * i) / steps)
+    // a division landing on a jump has no value of its own: the pair either side is what it has
+    .filter((x) => !jumps.some((jump) => Math.abs(jump - x) <= EITHER_SIDE))
+    .map((x) => resultsAt(element, loadCase, x));
+
+  const sides = jumps.flatMap((jump) => [
+    { ...resultsAt(element, loadCase, jump - EITHER_SIDE), side: -1 as const },
+    { ...resultsAt(element, loadCase, jump + EITHER_SIDE), side: 1 as const },
+  ]);
+
+  return [...regular, ...sides].sort((a, b) => a.x - b.x);
 };
 
 export type SectionQuantity = 'n' | 'vz' | 'my' | 'u' | 'w' | 'phi';

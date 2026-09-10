@@ -77,10 +77,11 @@ const usable = computed(() => {
 
 /**
  * The case being read, which is the one the open tab is about: the real loads in the viewer, the
- * unit dislocations in the influence line workspace. Only the end force vectors depend on it - a
+ * unit dislocations in the influence line workspace - falling back to the only case there is where
+ * the app has no second workspace to speak of. Only the end force vectors depend on it - a
  * stiffness matrix is a property of the structure, not of what is put on it.
  */
-const loadCase = computed(() => projectStore.loadCase);
+const loadCase = computed(() => projectStore.loadCase ?? projectStore.solver.loadCases[0]);
 
 const solved = computed(() => loadCase.value?.solved === true);
 

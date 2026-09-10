@@ -2,7 +2,14 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
 import { DofID } from 'ts-fem';
 import { useProjectStore } from '@/store/project';
-import { elementLength, extremesOf, resultsAlong, resultsAt, stationaryPoints } from '@/utils/sectionResults';
+import {
+  discontinuities,
+  elementLength,
+  extremesOf,
+  resultsAlong,
+  resultsAt,
+  stationaryPoints,
+} from '@/utils/sectionResults';
 
 /**
  * A simply supported beam under a uniform load, which anyone can check: the moment is a parabola
@@ -34,8 +41,8 @@ const simplySupported = () => {
   return store;
 };
 
-/** The same beam with a single point load, whose moment peaks under the load wherever it is put. */
-const withPointLoad = (at: number) => {
+/** The bare beam, with whatever is applied at a point put on it by the caller. */
+const withPointValues = (values: number[], deformation = false) => {
   const store = useProjectStore();
   const domain = store.solver.domain;
 
@@ -44,11 +51,23 @@ const withPointLoad = (at: number) => {
   domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz]);
   domain.createNode('2', [L, 0, 0], [DofID.Dz]);
   domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
-  store.solver.loadCases[0].createBeamConcentratedLoad('b', [0, 5000, 0, at], true);
+
+  if (deformation) {
+    store.solver.loadCases[0].createBeamConcentratedDeformation('b', values, true);
+  } else {
+    store.solver.loadCases[0].createBeamConcentratedLoad('b', values, true);
+  }
+
   store.solve();
 
   return store;
 };
+
+/** A single transverse force, whose moment peaks under the load wherever it is put. */
+const withPointLoad = (at: number) => withPointValues([0, 5000, 0, at]);
+const withPointMoment = (at: number, my: number) => withPointValues([0, 0, my, at]);
+const withAxialLoad = (at: number, fx: number) => withPointValues([fx, 0, 0, at]);
+const withDislocation = (at: number, w: number) => withPointValues([0, w, 0, at], true);
 
 const beam = (store: ReturnType<typeof useProjectStore>) => store.solver.domain.getElement('b') as never;
 const lc = (store: ReturnType<typeof useProjectStore>) => store.solver.loadCases[0];
@@ -240,5 +259,99 @@ describe('where a quantity turns', () => {
 
     // nothing on the beam at all: the moment is zero everywhere, so no point of it is the peak
     expect(stationaryPoints(beam(store), lc(store), 'my')).toEqual([]);
+  });
+});
+
+/**
+ * Everything applied at a point leaves the results with two values at its own distance and none
+ * exactly at it, so the table has to carry both - a shear of ql/2 on one side and ql/2 - F on the
+ * other is the whole content of a point load.
+ */
+describe('either side of a jump', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const F = 5000;
+
+  it('finds the load’s distance', () => {
+    const store = withPointLoad(2);
+
+    expect(discontinuities(beam(store), lc(store))).toEqual([2]);
+  });
+
+  it('reports nothing to jump at when the load is spread', () => {
+    const store = simplySupported();
+
+    expect(discontinuities(beam(store), lc(store))).toEqual([]);
+  });
+
+  it('gives two sections there, marked which side they are', () => {
+    const store = withPointLoad(2);
+    const sections = resultsAlong(beam(store), lc(store), 4);
+    const atJump = sections.filter((section) => section.side !== undefined);
+
+    expect(atJump).toHaveLength(2);
+    expect(atJump[0].side).toBe(-1);
+    expect(atJump[1].side).toBe(1);
+    expect(atJump[0].x).toBeLessThan(atJump[1].x);
+  });
+
+  it('shows the shear stepping by the whole force across it', () => {
+    const store = withPointLoad(2);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    expect(Math.abs(before.vz - after.vz)).toBeCloseTo(F, 3);
+  });
+
+  it('keeps the moment together across a force, which does not jump', () => {
+    const store = withPointLoad(2);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    // a force breaks the slope of the moment, not the moment
+    expect(before.my).toBeCloseTo(after.my, 3);
+  });
+
+  it('shows the moment stepping across a concentrated moment', () => {
+    const store = withPointMoment(2, 4000);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    expect(Math.abs(before.my - after.my)).toBeCloseTo(4000, 2);
+  });
+
+  it('shows the normal force stepping across an axial load', () => {
+    const store = withAxialLoad(2, 3000);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    expect(Math.abs(before.n - after.n)).toBeCloseTo(3000, 2);
+  });
+
+  it('shows the deflection stepping across a concentrated deformation', () => {
+    const store = withDislocation(2, 0.01);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    expect(Math.abs(before.w - after.w)).toBeCloseTo(0.01, 6);
+  });
+
+  it('drops a division that lands on the jump, which has no value of its own', () => {
+    const store = withPointLoad(1.5);
+    const sections = resultsAlong(beam(store), lc(store), 4);
+
+    // four pieces of a six metre beam land at 1.5, exactly where the load is
+    expect(sections.filter((s) => Math.abs(s.x - 1.5) < 1e-6 && s.side === undefined)).toHaveLength(0);
+    expect(sections.filter((s) => s.side !== undefined)).toHaveLength(2);
+  });
+
+  it('keeps every section in order along the element', () => {
+    const store = withPointLoad(2);
+    const sections = resultsAlong(beam(store), lc(store), 4);
+
+    for (let i = 1; i < sections.length; i++) {
+      expect(sections[i].x).toBeGreaterThanOrEqual(sections[i - 1].x);
+    }
+  });
+
+  it('leaves a load sitting on an end alone, where there is no "either side"', () => {
+    const store = withPointLoad(0);
+
+    expect(discontinuities(beam(store), lc(store))).toEqual([]);
   });
 });
