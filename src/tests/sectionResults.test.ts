@@ -355,3 +355,62 @@ describe('either side of a jump', () => {
     expect(discontinuities(beam(store), lc(store))).toEqual([]);
   });
 });
+
+/**
+ * The rotation is differenced from the deflection curve, and that curve is only a curve between the
+ * discontinuities. A difference taken across one is not a slope of anything.
+ */
+describe('the rotation at a jump', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  const DISLOCATION = 0.01;
+
+  it('stays a rotation across a concentrated deformation', () => {
+    const store = withDislocation(2, DISLOCATION);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    /*
+     * A difference straddling the jump returns it divided by the step - with the step at 1e-4 of a
+     * six metre beam that is about 8 radians, for a beam that turns by a thousandth of one.
+     */
+    expect(Math.abs(before.phi)).toBeLessThan(0.05);
+    expect(Math.abs(after.phi)).toBeLessThan(0.05);
+  });
+
+  it('agrees with the slope a little further along the same side', () => {
+    const store = withDislocation(2, DISLOCATION);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    // the slope does not change abruptly in the last millimetres before the jump
+    expect(before.phi).toBeCloseTo(resultsAt(beam(store), lc(store), 1.99).phi, 4);
+    expect(after.phi).toBeCloseTo(resultsAt(beam(store), lc(store), 2.01).phi, 4);
+  });
+
+  it('leaves the rotation whole across a concentrated moment', () => {
+    const store = withPointMoment(2, 4000);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    // a moment steps the curvature, which is the slope of the rotation, not the rotation itself
+    expect(before.phi).toBeCloseTo(after.phi, 6);
+    expect(Math.abs(before.my - after.my)).toBeCloseTo(4000, 2);
+  });
+
+  it('still gives the solver’s own end rotations with a jump on the beam', () => {
+    const store = withPointLoad(2);
+    const element = beam(store) as unknown as {
+      computeEndDisplacement: (lc: unknown) => { get: (i: number[]) => number };
+    };
+    const ends = element.computeEndDisplacement(lc(store));
+
+    near(resultsAt(beam(store), lc(store), 0).phi, ends.get([2]), 1e-5);
+    near(resultsAt(beam(store), lc(store), L).phi, ends.get([5]), 1e-5);
+  });
+
+  it('does not leave the deflection’s own jump behind', () => {
+    const store = withDislocation(2, DISLOCATION);
+    const [before, after] = resultsAlong(beam(store), lc(store), 4).filter((s) => s.side !== undefined);
+
+    // the deflection still steps by the whole dislocation; only the rotation changed
+    expect(Math.abs(before.w - after.w)).toBeCloseTo(DISLOCATION, 6);
+  });
+});
