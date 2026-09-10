@@ -399,32 +399,20 @@ describe('the numbers at a jump', () => {
     expect(w.findAll('svg text.jump')).toHaveLength(2);
   });
 
-  it('drops a neighbour that would be written on top of one', async () => {
+  it('keeps the sections either side of it when there is room for them', async () => {
     withForce(2.5, 9000);
     const w = widget();
 
     await draw(w, 'V');
-    const all = w.findAll('svg text.ordinate, svg text.jump, svg text.turn');
-    const boxes = all.map((t) => ({
-      x: Number(t.attributes('x')),
-      y: Number(t.attributes('y')),
-      width: t.text().length * 5.2,
-      anchor: t.attributes('text-anchor'),
-    }));
+    // four pieces of a six metre beam: the neighbours of the step are half a metre from it
+    await w.findAllComponents({ name: 'VTextField' })[0].setValue(4);
 
-    for (let i = 0; i < boxes.length; i++) {
-      for (let j = i + 1; j < boxes.length; j++) {
-        const a = boxes[i];
-        const b = boxes[j];
+    const at = (metres: number) =>
+      w.findAll('svg text.ordinate').filter((t) => Math.abs(Number(t.attributes('x')) - (10 + (300 * metres) / 6)) < 4);
 
-        if (Math.abs(a.y - b.y) >= 11) continue;
-
-        const from = (m: typeof a) =>
-          m.anchor === 'end' ? m.x - m.width : m.anchor === 'start' ? m.x : m.x - m.width / 2;
-
-        expect(from(a) < from(b) + b.width && from(b) < from(a) + a.width, `${i} over ${j}`).toBe(false);
-      }
-    }
+    expect(at(1.5)).toHaveLength(1);
+    expect(at(3)).toHaveLength(1);
+    expect(w.findAll('svg text.jump')).toHaveLength(2);
   });
 });
 

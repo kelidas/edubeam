@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Beam2D } from 'ts-fem';
 import { useProjectStore } from '../store/project';
 import { useAppStore } from '../store/app';
+import { widthOf } from '../utils/labelWidth';
 import { formatResultAsText } from '../utils/numberDisplay';
 import {
   elementLength,
@@ -333,9 +334,6 @@ interface DiagramLabel {
   text: string;
   kind: 'turn' | 'jump' | 'ordinate';
 }
-
-/** Roughly, at nine pixels: digits are a little over half an em, and these are mostly digits. */
-const widthOf = (text: string) => text.length * 5.2;
 
 const spans = (label: DiagramLabel): [number, number] => {
   const width = widthOf(label.text);
