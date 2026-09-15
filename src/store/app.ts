@@ -159,6 +159,7 @@ export const useAppStore = defineStore(
       addElementLoad: false,
       addMaterial: false,
       addCrossSection: false,
+      pasteAtOffset: false,
     });
 
     const zooming = ref(false);

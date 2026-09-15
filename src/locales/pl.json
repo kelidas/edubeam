@@ -43,7 +43,8 @@
     "paste": "Wklej",
     "addNew": "Dodaj nowy",
     "whatisnew": "Co nowego?",
-    "reverse_orientation": "Odwróć wymiar"
+    "reverse_orientation": "Odwróć wymiar",
+    "pasteAtOffset": "Wklej z przesunięciem…"
   },
   "nodes": {
     "addNode": "Dodaj węzeł",
@@ -238,6 +239,10 @@
     "changelog": {
       "title": "Co nowego?",
       "description": "Nowe funkcje, usprawnienia i zapowiedzi tego, nad czym pracujemy."
+    },
+    "pasteAtOffset": {
+      "title": "Wklej z przesunięciem",
+      "hint": "Jak daleko od miejsca skopiowania."
     }
   },
   "tooltip": {
