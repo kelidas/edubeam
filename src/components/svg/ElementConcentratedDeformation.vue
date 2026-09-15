@@ -98,12 +98,10 @@ const sides = computed(() => {
   const arcStep = MOMENT_SIDE_OFFSET / props.scale;
   const shaft = SHAFT / props.scale;
 
-  return [
-    // the face on the start side keeps the sense of the value, the other one opposes it
-    { turn: 0, opposed: false },
-    { turn: 180, opposed: true },
-  ].map(({ turn, opposed }) => {
-    const away = (angle.value - 90 + turn) * (Math.PI / 180);
+  // both faces are drawn the same way round, so a positive value sends both arrows the same way
+  const away = (angle.value - 90) * (Math.PI / 180);
+
+  return [{ opposed: false }, { opposed: true }].map(({ opposed }) => {
     const at = {
       x: position.value.x + (opposed ? cos : -cos) * step,
       z: position.value.z + (opposed ? sin : -sin) * step,
@@ -111,16 +109,10 @@ const sides = computed(() => {
 
     /*
      * The head goes at the far end of the shaft, not at the beam. An arrow drawn the other way says
-     * something is pushing on this point; these two say the two faces of the cut move apart, which
-     * is what the symbol is for.
-     *
-     * The far arc is the near one mirrored rather than the other of the two moment markers. Those
-     * two are not mirror images of each other - they hang from different points - so drawn side by
-     * side they sat crooked. Mirroring one marker gives the pair the symmetry the section has.
+     * something is pushing on this point; these say which way the faces of the cut go.
      */
     return {
       ...at,
-      turn,
       opposed,
       tipX: at.x + shaft * Math.cos(away),
       tipZ: at.z + shaft * Math.sin(away),
@@ -172,13 +164,13 @@ const momentLabelPosition = computed(() => {
         points="0,0 0,0"
         vector-effect="non-scaling-stroke"
         class="decoration force"
-        :transform="`translate(${side.tipX} ${side.tipZ}) rotate(${angle + side.turn + 180})`"
+        :transform="`translate(${side.tipX} ${side.tipZ}) rotate(${angle + 180})`"
       />
 
       <!-- An imposed deformation is not a force, so its arrow carries a dashed shaft -->
       <polyline
         :points="`${side.x},${side.z} ${side.x + 40 / scale},${side.z}`"
-        :transform="`rotate(${angle - 90 + side.turn} ${side.x} ${side.z})`"
+        :transform="`rotate(${angle - 90} ${side.x} ${side.z})`"
         stroke-dasharray="6 4"
         class="decoration shaft"
         vector-effect="non-scaling-stroke"
@@ -186,7 +178,7 @@ const momentLabelPosition = computed(() => {
 
       <polyline
         :points="`${side.x},${side.z} ${side.x + 40 / scale},${side.z}`"
-        :transform="`rotate(${angle - 90 + side.turn} ${side.x} ${side.z})`"
+        :transform="`rotate(${angle - 90} ${side.x} ${side.z})`"
         class="handle"
       />
     </template>
