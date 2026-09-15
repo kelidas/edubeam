@@ -85,6 +85,9 @@ const SIDE_OFFSET = 7;
 const MOMENT_SIDE_OFFSET = 18;
 const SHAFT = 40;
 
+/** Which way the pair turns as a whole; the far face is then the mirror of the near one. */
+const isNegativeRotation = () => props.eload.values[2] < 0;
+
 const sides = computed(() => {
   const geo = target.value.computeGeo();
   const cos = geo.dx / geo.l;
@@ -121,6 +124,8 @@ const sides = computed(() => {
       tipZ: at.z + shaft * Math.sin(away),
       arcX: position.value.x + (opposed ? cos : -cos) * arcStep,
       arcZ: position.value.z + (opposed ? sin : -sin) * arcStep,
+      // the sign turns the pair over; the far face is always the mirror of the near one
+      mirrored: opposed !== isNegativeRotation(),
     };
   });
 });
@@ -165,9 +170,8 @@ const momentLabelPosition = computed(() => {
       <polyline
         points="0,0 0,0"
         vector-effect="non-scaling-stroke"
-        class="decoration moment"
-        :class="{ cw: eload.values[2] < 0, ccw: eload.values[2] > 0 }"
-        :transform="`translate(${side.arcX} ${side.arcZ})${side.opposed ? ' scale(-1 1)' : ''}`"
+        class="decoration moment dislocation-rotation"
+        :transform="`translate(${side.arcX} ${side.arcZ})${side.mirrored ? ' scale(-1 1)' : ''}`"
       />
 
       <polyline :points="`${side.arcX},${side.arcZ} ${side.arcX + 1e-6},${side.arcZ}`" class="handle moment" />

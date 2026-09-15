@@ -283,6 +283,7 @@ const markerForceSelected = computed(() => dynamicMarker('force_selected'));
 const markerCentered = computed(() => dynamicMarker('force_centered'));
 const markerCenteredHover = computed(() => dynamicMarker('force_centered_hover'));
 
+const markerDislocationRotation = computed(() => dynamicMarker('dislocation_rotation'));
 const markerMomentCw = computed(() => dynamicMarker('moment_cw'));
 const markerMomentCwHover = computed(() => dynamicMarker('moment_cw_hover'));
 const markerMomentCwSelected = computed(() => dynamicMarker('moment_cw_selected'));
@@ -350,6 +351,7 @@ defineExpose({ centerContent, fitContent, setView, update });
           '--marker-force-selected': markerForceSelected,
           '--marker-centered': markerCentered,
           '--marker-centered-hover': markerCenteredHover,
+          '--marker-dislocation-rotation': markerDislocationRotation,
           '--marker-moment-cw': markerMomentCw,
           '--marker-moment-cw-hover': markerMomentCwHover,
           '--marker-moment-cw-selected': markerMomentCwSelected,
@@ -731,6 +733,11 @@ defineExpose({ centerContent, fitContent, setView, update });
       &.decoration.shaft {
         stroke: v-bind('colors.loads');
         stroke-width: 1.5px;
+      }
+
+      /* The turn of one face of a released section, drawn over half a circle. */
+      &.decoration.dislocation-rotation {
+        marker-end: var(--marker-dislocation-rotation);
       }
 
       &.decoration.moment.cw {
