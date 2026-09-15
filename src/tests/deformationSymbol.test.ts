@@ -121,17 +121,15 @@ describe('imposed deformation symbol', () => {
     expect(transforms.filter((t) => t.includes('scale(-1 1)'))).toHaveLength(1);
   });
 
-  it('turns the two the same way before mirroring, so the pair is symmetric', () => {
-    const arcs = drawn([0, 0, 1, 2]).findAll('polyline.decoration.moment');
-    const [near, far] = arcs.map((a) =>
-      a
-        .classes()
-        .filter((c) => c === 'cw' || c === 'ccw')
-        .join()
-    );
+  it('turns the pair over with the sign, rather than turning one of them', () => {
+    const mirrored = (values: number[]) =>
+      drawn(values)
+        .findAll('polyline.decoration.moment')
+        .map((a) => a.attributes('transform')!.includes('scale(-1 1)'));
 
-    expect(near).toBe(far);
-    expect(near).not.toBe('');
+    // one of the two is mirrored either way, and which one swaps with the sign
+    expect(mirrored([0, 0, 1, 2])).toEqual([false, true]);
+    expect(mirrored([0, 0, -1, 2])).toEqual([true, false]);
   });
 
   it('stands the arcs further apart than the arrows, an arc being the wider mark', () => {

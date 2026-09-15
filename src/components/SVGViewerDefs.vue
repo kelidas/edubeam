@@ -493,6 +493,25 @@ const props = withDefaults(
       <circle r="7" fill="white" stroke="black" stroke-width="2" />
     </marker>
 
+    <!--
+      The turn of one face of a released section: half a circle, and one marker rather than two.
+      The pair is this one and its mirror, so the two halves are symmetric about the section by
+      construction - the moment markers are not mirror images of one another and sat crooked.
+    -->
+    <marker
+      :id="`${id}-dislocation_rotation`"
+      viewBox="-26 -26 52 52"
+      refX="0"
+      refY="0"
+      :markerWidth="52 / scale"
+      :markerHeight="52 / scale"
+      overflow="visible"
+      markerUnits="userSpaceOnUse"
+      :marker-end="`url(#${id}-arrow)`"
+    >
+      <path d="M 20 0 A 20 20 0 0 0 -20 0" fill="none" :stroke="colors.loads" />
+    </marker>
+
     <filter :id="`${id}-textLabel`" x="-2.5%" width="105%" y="0%" height="100%">
       <feFlood flood-color="white" flood-opacity="0.8" />
     </filter>
