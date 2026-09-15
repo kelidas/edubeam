@@ -69,11 +69,20 @@ describe('imposed deformation symbol', () => {
     expect(wrapper.findAll('polyline.decoration.shaft')).toHaveLength(2);
   });
 
-  it('points the two against each other', () => {
-    const turns = drawn([0, -1, 0, 2])
-      .findAll('polyline.decoration.force')
-      .map((a) => turnOf(a.attributes('transform')!));
-    const between = (((turns[1] - turns[0]) % 360) + 360) % 360;
+  it('sends both the same way, which the sign of the value decides', () => {
+    const turns = (values: number[]) =>
+      drawn(values)
+        .findAll('polyline.decoration.force')
+        .map((a) => turnOf(a.attributes('transform')!));
+
+    const positive = turns([0, 1, 0, 2]);
+    const negative = turns([0, -1, 0, 2]);
+
+    expect(positive[0]).toBeCloseTo(positive[1], 9);
+    expect(negative[0]).toBeCloseTo(negative[1], 9);
+
+    // and the two signs are opposite to each other
+    const between = (((negative[0] - positive[0]) % 360) + 360) % 360;
 
     expect(Math.abs(between - 180)).toBeLessThan(1e-6);
   });
