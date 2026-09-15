@@ -12,10 +12,16 @@ const removePrescribedDisplacement = () => {
   const index = Number(projectStore.selection.label);
   if (Number.isNaN(index)) return;
 
-  const selectedLoad = projectStore.solver.loadCases[0].prescribedBC[index];
+  /*
+   * The case the workspace is about, not the first one. A prescribed displacement made in the
+   * influence line workspace belongs to its case, and the deletion removes from the active one - so
+   * looking it up here in the first found nothing there to delete, and nothing was deleted.
+   */
+  const selectedLoad = projectStore.loadCase.prescribedBC[index];
   if (!selectedLoad) return;
 
   deletePrescribedDisplacement(selectedLoad);
+  projectStore.selection.type = null;
 };
 </script>
 

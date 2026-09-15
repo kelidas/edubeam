@@ -81,11 +81,13 @@ watch(loadType, (newVal) => {
 const addElementLoad = () => {
   if (!valid.value || !formRef.value) return;
   const form = formRef.value;
-  const solver = projectStore.solver;
 
   executeModelMutationWithUndo(() => {
-    solver.loadCases[0].solved = false;
-    form.createLoad(solver.loadCases[0], loadElementId.value);
+    // added to the case the workspace is about, which is where it will be looked for again
+    const loadCase = projectStore.loadCase;
+
+    loadCase.solved = false;
+    form.createLoad(loadCase, loadElementId.value);
   });
 
   projectStore.clearSelection();
