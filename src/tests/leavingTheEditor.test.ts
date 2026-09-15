@@ -4,7 +4,13 @@ import { join } from 'node:path';
 import { createPinia, setActivePinia } from 'pinia';
 import { DofID } from 'ts-fem';
 import { Command, undoRedoManager, type IKeyValue } from '@/CommandManager';
-import { executeModelMutationWithUndo, hasWorkToLose, warnBeforeLeaving } from '@/utils';
+import {
+  askBeforeLeaving,
+  executeModelMutationWithUndo,
+  hasWorkToLose,
+  leaveWithoutAsking,
+  warnBeforeLeaving,
+} from '@/utils';
 import { useProjectStore } from '@/store/project';
 
 /**
@@ -107,5 +113,49 @@ describe('tidying the address bar', () => {
 
     // one for a shared model, one for a language or a panel
     expect(tidies).toBe(2);
+  });
+});
+
+/**
+ * An update reloads the page itself, and the undo history goes with it either way - that is what
+ * taking a new version costs. Asking whether to allow a reload the reader has just asked for is
+ * noise, and a dialog they could answer wrongly, leaving the update half done.
+ */
+describe('a reload the reader asked for', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia());
+    undoRedoManager.clearHistory();
+    askBeforeLeaving();
+  });
+
+  const withWork = () => {
+    const store = useProjectStore();
+
+    store.solver.domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz]);
+    executeModelMutationWithUndo(() => store.solver.domain.createNode('2', [4, 0, 0], [DofID.Dz]));
+  };
+
+  it('goes unquestioned', () => {
+    withWork();
+    leaveWithoutAsking();
+
+    expect(leaving().asked).toBe(false);
+  });
+
+  it('is questioned again if the leaving does not happen after all', () => {
+    withWork();
+    leaveWithoutAsking();
+    askBeforeLeaving();
+
+    expect(leaving().asked).toBe(true);
+  });
+
+  it('is what the update does, and puts back if it fails', () => {
+    const prompt = readFileSync(join(process.cwd(), 'src/components/ReloadPrompt.vue'), 'utf-8');
+    const update = prompt.slice(prompt.indexOf('async function update()'));
+
+    expect(update).toContain('leaveWithoutAsking()');
+    // the catch is the one path out of it that leaves the page standing
+    expect(update.slice(update.indexOf('catch'))).toContain('askBeforeLeaving()');
   });
 });

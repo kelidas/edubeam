@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue';
 import { useRegisterSW } from 'virtual:pwa-register/vue';
+import { askBeforeLeaving, leaveWithoutAsking } from '@/utils';
 
 const updating = ref(false);
 
@@ -50,6 +51,9 @@ async function update() {
   if (updating.value) return;
   updating.value = true;
 
+  // every way out of here is a reload, and it is one the reader asked for
+  leaveWithoutAsking();
+
   // The new worker taking control is what the reload has to wait for. Reloading before that just
   // loads the old app again, and leaves the same worker waiting - so this dialog comes straight
   // back, which is the loop this replaced.
@@ -64,6 +68,8 @@ async function update() {
   } catch (err) {
     console.error('Error updating service worker:', err);
     updating.value = false;
+    // the page is still here, and still worth protecting
+    askBeforeLeaving();
     return;
   }
 
