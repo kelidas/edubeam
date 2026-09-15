@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { widthOf } from '@/utils/labelWidth';
+import { MEASURED_AT, widthOf } from '@/utils/labelWidth';
 
 /**
  * Measured in a browser, from the boxes the diagram's own labels rendered into at a font size of
@@ -34,5 +34,16 @@ describe('the width of a number on a diagram', () => {
 
   it('is nothing for nothing', () => {
     expect(widthOf('')).toBe(0);
+  });
+});
+
+describe('at other sizes', () => {
+  it('scales with the font, since a glyph does', () => {
+    expect(widthOf('123', 18)).toBeCloseTo(widthOf('123') * 2, 6);
+    expect(widthOf('1.4·10¹', 12)).toBeCloseTo((widthOf('1.4·10¹') * 12) / 9, 6);
+  });
+
+  it('measures at nine when not told otherwise', () => {
+    expect(widthOf('6.02', MEASURED_AT)).toBe(widthOf('6.02'));
   });
 });

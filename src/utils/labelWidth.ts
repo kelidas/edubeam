@@ -12,7 +12,9 @@
  * dropped for nothing.
  */
 
-/** At a font size of nine, which is what the diagrams use. */
+/** At a font size of nine, which is what these were measured at. Any other size scales from it. */
+export const MEASURED_AT = 9;
+
 const GLYPH_WIDTHS: Record<string, number> = {
   '.': 2.3,
   ',': 2.3,
@@ -27,9 +29,10 @@ const SUPERSCRIPT_DIGITS = '⁰¹²³⁴⁵⁶⁷⁸⁹';
 const DIGIT = 4.7;
 const SUPERSCRIPT_DIGIT = 3.0;
 
-export const widthOf = (text: string) =>
+export const widthOf = (text: string, fontSize = MEASURED_AT) =>
   [...text].reduce((width, glyph) => {
     if (GLYPH_WIDTHS[glyph] !== undefined) return width + GLYPH_WIDTHS[glyph];
 
     return width + (SUPERSCRIPT_DIGITS.includes(glyph) ? SUPERSCRIPT_DIGIT : DIGIT);
-  }, 0);
+  }, 0) *
+  (fontSize / MEASURED_AT);
