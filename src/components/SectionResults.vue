@@ -3,6 +3,7 @@ import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { Beam2D } from 'ts-fem';
 import { useProjectStore } from '../store/project';
 import { useAppStore } from '../store/app';
+import { MEASURED_AT, widthOf } from '../utils/labelWidth';
 import { formatResultAsText } from '../utils/numberDisplay';
 import {
   elementLength,
@@ -216,9 +217,20 @@ const bar = (section: SectionResult, key: SectionQuantity) => {
  */
 const plot = ref<SVGSVGElement | null>(null);
 const plotWidth = ref(320);
-const PLOT_HEIGHT = 132;
+
+/**
+ * How large the numbers on the diagram are written, and everything that follows from it.
+ *
+ * The rest of the drawing is laid out in proportion to this rather than in fixed pixels, so the
+ * size is the only thing to change: how far a label sits from its point, how far apart two of them
+ * have to be before they are on the same line, and how wide a number will be written.
+ */
+const LABEL_SIZE = 12;
+const em = LABEL_SIZE / MEASURED_AT;
+
+const PLOT_HEIGHT = Math.round(132 * em);
 const PAD_X = 10;
-const PAD_Y = 30;
+const PAD_Y = Math.round(30 * em);
 
 let observer: ResizeObserver | null = null;
 
@@ -334,11 +346,8 @@ interface DiagramLabel {
   kind: 'turn' | 'jump' | 'ordinate';
 }
 
-/** Roughly, at nine pixels: digits are a little over half an em, and these are mostly digits. */
-const widthOf = (text: string) => text.length * 5.2;
-
 const spans = (label: DiagramLabel): [number, number] => {
-  const width = widthOf(label.text);
+  const width = widthOf(label.text, LABEL_SIZE);
 
   if (label.anchor === 'end') return [label.x - width, label.x];
   if (label.anchor === 'start') return [label.x, label.x + width];
@@ -346,14 +355,28 @@ const spans = (label: DiagramLabel): [number, number] => {
   return [label.x - width / 2, label.x + width / 2];
 };
 
+/**
+ * The same label, nudged back inside the drawing.
+ *
+ * The section at either end sits against the edge, and half of a number centred on it hangs off the
+ * side and is cut. Moving it in by the overflow keeps it whole and still nearest its own ordinate,
+ * which is the most that can be done for it.
+ */
+const fitted = (label: DiagramLabel): DiagramLabel => {
+  const [from, to] = spans(label);
+  const over = Math.max(0, to - (plotWidth.value - 1)) - Math.max(0, 1 - from);
+
+  return over === 0 ? label : { ...label, x: label.x - over };
+};
+
 const clashes = (a: DiagramLabel, b: DiagramLabel) => {
   // labels on different lines do not fight, whatever their distance across
-  if (Math.abs(a.y - b.y) >= 11) return false;
+  if (Math.abs(a.y - b.y) >= 11 * em) return false;
 
   const [aFrom, aTo] = spans(a);
   const [bFrom, bTo] = spans(b);
 
-  return aFrom < bTo + 2 && bFrom < aTo + 2;
+  return aFrom < bTo + 2 * em && bFrom < aTo + 2 * em;
 };
 
 const labels = computed<DiagramLabel[]>(() => {
@@ -362,8 +385,8 @@ const labels = computed<DiagramLabel[]>(() => {
   for (const mark of marks.value) {
     if (mark.side && stepsHere(mark.at)) {
       wanted.push({
-        x: mark.x + mark.side * 3,
-        y: mark.y + (mark.side === -1 ? -5 : 12),
+        x: mark.x + mark.side * 3 * em,
+        y: mark.y + (mark.side === -1 ? -5 * em : 12 * em),
         anchor: mark.side === -1 ? 'end' : 'start',
         text: mark.text,
         kind: 'jump',
@@ -374,7 +397,7 @@ const labels = computed<DiagramLabel[]>(() => {
   for (const mark of turningMarks.value) {
     wanted.push({
       x: mark.x,
-      y: mark.y + (mark.value >= 0 ? 19 : -13),
+      y: mark.y + (mark.value >= 0 ? 19 * em : -13 * em),
       anchor: 'middle',
       text: mark.text,
       kind: 'turn',
@@ -390,7 +413,7 @@ const labels = computed<DiagramLabel[]>(() => {
 
       wanted.push({
         x: mark.x,
-        y: mark.y + (mark.value >= 0 ? 10 : -5),
+        y: mark.y + (mark.value >= 0 ? 10 * em : -5 * em),
         anchor: 'middle',
         text: mark.text,
         kind: 'ordinate',
@@ -401,9 +424,11 @@ const labels = computed<DiagramLabel[]>(() => {
   const kept: DiagramLabel[] = [];
 
   for (const label of wanted) {
-    if (kept.some((placed) => clashes(placed, label))) continue;
+    const placed = fitted(label);
 
-    kept.push(label);
+    if (kept.some((already) => clashes(already, placed))) continue;
+
+    kept.push(placed);
   }
 
   return kept;
@@ -560,7 +585,7 @@ const copy = () => {
             <!-- an ordinate at every section the table lists, as if each were a node of its own -->
             <g v-for="(mark, i) in marks" :key="i">
               <line :x1="mark.x" :y1="axis.y" :x2="mark.x" :y2="mark.y" stroke="#1976d2" stroke-width="0.75" />
-              <circle class="ordinate" :cx="mark.x" :cy="mark.y" r="1.8" fill="#1976d2" />
+              <circle class="ordinate" :cx="mark.x" :cy="mark.y" :r="1.8 * em" fill="#1976d2" />
             </g>
 
             <!-- every number the diagram has room for, the ones at a jump and a peak first -->
@@ -571,7 +596,7 @@ const copy = () => {
               :x="written.x"
               :y="written.y"
               :text-anchor="written.anchor"
-              font-size="9"
+              :font-size="LABEL_SIZE"
               :font-weight="written.kind === 'turn' ? 600 : 400"
               :fill="written.kind === 'turn' ? '#ef6c00' : '#1976d2'"
             >
@@ -589,14 +614,36 @@ const copy = () => {
                 stroke-width="1"
                 stroke-dasharray="2 2"
               />
-              <circle class="turn" :cx="mark.x" :cy="mark.y" r="3" fill="#ffffff" stroke="#ef6c00" stroke-width="1.5" />
+              <circle
+                class="turn"
+                :cx="mark.x"
+                :cy="mark.y"
+                :r="3 * em"
+                fill="#ffffff"
+                stroke="#ef6c00"
+                stroke-width="1.5"
+              />
             </g>
 
             <!-- the element itself, drawn straight whatever its angle, with a named node at each end -->
             <line :x1="atX(0)" :y1="axis.y" :x2="atX(length)" :y2="axis.y" stroke="#000000" stroke-width="1.5" />
             <g v-for="(node, i) in ends" :key="i">
-              <rect :x="atX(i * length) - 3" :y="axis.y - 3" width="6" height="6" fill="#ffffff" stroke="#000000" />
-              <circle class="node" :cx="atX(i * length)" :cy="axis.y - 14" r="7.5" fill="#ffffff" stroke="#000000" />
+              <rect
+                :x="atX(i * length) - 3 * em"
+                :y="axis.y - 3 * em"
+                :width="6 * em"
+                :height="6 * em"
+                fill="#ffffff"
+                stroke="#000000"
+              />
+              <circle
+                class="node"
+                :cx="atX(i * length)"
+                :cy="axis.y - 14 * em"
+                :r="7.5 * em"
+                fill="#ffffff"
+                stroke="#000000"
+              />
               <text
                 class="node"
                 :x="atX(i * length)"
@@ -619,8 +666,8 @@ const copy = () => {
                 stroke-width="1"
                 stroke-dasharray="3 2"
               />
-              <circle :cx="atX(asked.x)" :cy="atY(asked[drawn])" r="2.6" fill="#d81b60" />
-              <text :x="atX(asked.x)" y="11" text-anchor="middle" font-size="9" fill="#d81b60">
+              <circle :cx="atX(asked.x)" :cy="atY(asked[drawn])" :r="2.6 * em" fill="#d81b60" />
+              <text :x="atX(asked.x)" :y="11 * em" text-anchor="middle" :font-size="LABEL_SIZE" fill="#d81b60">
                 {{ showBriefly(quantityOf(drawn).convert(asked[drawn]), drawn) }}
               </text>
             </g>
