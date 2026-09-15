@@ -42,8 +42,7 @@
     "lcs": "ระบบพิกัดท้องถิ่น",
     "paste": "วาง",
     "addNew": "เพิ่มใหม่",
-    "reverse_orientation": "พลิกมิติ",
-    "pasteAtOffset": "วางโดยมีระยะเยื้อง…"
+    "reverse_orientation": "พลิกมิติ"
   },
   "nodes": {
     "addNode": "เพิ่มโหนด",
@@ -233,10 +232,6 @@
     },
     "editNode": {
       "editNode": "แก้ไขโหนด"
-    },
-    "pasteAtOffset": {
-      "title": "วางโดยมีระยะเยื้อง",
-      "hint": "ห่างจากตำแหน่งที่คัดลอกเท่าใด"
     }
   },
   "tooltip": {

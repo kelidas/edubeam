@@ -43,8 +43,7 @@
     "paste": "Coller",
     "addNew": "Ajouter",
     "whatisnew": "Quoi de neuf ?",
-    "reverse_orientation": "Inverser la cote",
-    "pasteAtOffset": "Coller avec décalage…"
+    "reverse_orientation": "Inverser la cote"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",
@@ -239,10 +238,6 @@
     "changelog": {
       "title": "Quoi de neuf ?",
       "description": "Nouvelles fonctionnalités, améliorations et aperçu de ce que nous préparons."
-    },
-    "pasteAtOffset": {
-      "title": "Coller avec décalage",
-      "hint": "À quelle distance de l’endroit copié."
     }
   },
   "tooltip": {

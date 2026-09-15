@@ -43,8 +43,7 @@
     "paste": "Einfügen",
     "addNew": "Neu hinzufügen",
     "whatisnew": "Was gibt's Neues?",
-    "reverse_orientation": "Bemaßung umkehren",
-    "pasteAtOffset": "Mit Versatz einfügen…"
+    "reverse_orientation": "Bemaßung umkehren"
   },
   "nodes": {
     "addNode": "Knoten hinzufügen",
@@ -239,10 +238,6 @@
     "changelog": {
       "title": "Was gibt's Neues?",
       "description": "Neue Funktionen, Verbesserungen und Einblicke in das, woran wir gerade arbeiten."
-    },
-    "pasteAtOffset": {
-      "title": "Mit Versatz einfügen",
-      "hint": "Wie weit von der kopierten Stelle entfernt."
     }
   },
   "tooltip": {

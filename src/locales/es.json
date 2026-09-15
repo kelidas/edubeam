@@ -43,8 +43,7 @@
     "paste": "Pegar",
     "addNew": "Añadir",
     "whatisnew": "¿Qué hay de nuevo?",
-    "reverse_orientation": "Invertir cota",
-    "pasteAtOffset": "Pegar con desplazamiento…"
+    "reverse_orientation": "Invertir cota"
   },
   "nodes": {
     "addNode": "Añadir nodo",
@@ -239,10 +238,6 @@
     "changelog": {
       "title": "¿Qué hay de nuevo?",
       "description": "Nuevas funciones, mejoras y un vistazo a lo que estamos preparando."
-    },
-    "pasteAtOffset": {
-      "title": "Pegar con desplazamiento",
-      "hint": "A qué distancia de donde se copió."
     }
   },
   "tooltip": {

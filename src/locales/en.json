@@ -43,8 +43,7 @@
     "paste": "Paste",
     "addNew": "Add new",
     "whatisnew": "What’s New?",
-    "reverse_orientation": "Flip dimension",
-    "pasteAtOffset": "Paste with offset…"
+    "reverse_orientation": "Flip dimension"
   },
   "nodes": {
     "addNode": "Add node",
@@ -300,10 +299,6 @@
       "noShape": "No polygonal shape",
       "centroidal": "centroidal",
       "centroidalNote": "All second moments of area are taken about axes through the centroid; I₁, I₂ are the principal values and α is the angle from the y axis to axis 1."
-    },
-    "pasteAtOffset": {
-      "title": "Paste with offset",
-      "hint": "How far from where it was copied."
     }
   },
   "tooltip": {

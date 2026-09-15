@@ -43,8 +43,7 @@
     "paste": "粘贴",
     "addNew": "新增",
     "whatisnew": "更新内容",
-    "reverse_orientation": "翻转标注",
-    "pasteAtOffset": "偏移粘贴…"
+    "reverse_orientation": "翻转标注"
   },
   "nodes": {
     "addNode": "添加节点",
@@ -239,10 +238,6 @@
     "changelog": {
       "title": "更新内容",
       "description": "新功能、改进以及我们正在开发内容的预览。"
-    },
-    "pasteAtOffset": {
-      "title": "偏移粘贴",
-      "hint": "相对复制位置的距离。"
     }
   },
   "tooltip": {
