@@ -3062,6 +3062,7 @@ defineExpose({ centerContent, fitContent });
                 :show-deformed-shape="false"
                 :show-reactions="false"
                 :convert-force="appStore.convertForce"
+                :convert-moment="appStore.convertMoment"
                 :load-case="viewerLoadCase"
                 :multiplier="projectStore.defoScale * viewerStore.resultsScalePx_ * results.resultScale.deformedShape"
                 :font-size="viewerStore.fontSize"
