@@ -41,7 +41,8 @@ const open = ref(true);
 const valid = ref(false);
 const formRef = ref<InstanceType<typeof ElementLoadFields> | null>(null);
 
-const load = computed(() => projectStore.solver.loadCases[0].elementLoadList[props.index]);
+// the case the workspace is about: an imposed deformation made for an influence line is in its
+const load = computed(() => projectStore.loadCase.elementLoadList[props.index]);
 const elementId = computed(() => load.value.target);
 const loadType = computed(() => LT(load.value));
 
