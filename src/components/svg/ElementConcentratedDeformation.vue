@@ -81,8 +81,10 @@ const labelPosition = computed(() => {
  * belonging to one section.
  */
 const SIDE_OFFSET = 7;
-/** An arc is far wider than a shaft, so the pair of them has to stand further apart to read as two. */
-const MOMENT_SIDE_OFFSET = 18;
+/** The two halves of the circle stand just clear of each other, leaving the section between them. */
+const MOMENT_SIDE_OFFSET = 4;
+/** How big the circle is on the screen, whatever the drawing is zoomed to. */
+const ROTATION_RADIUS = 18;
 const SHAFT = 40;
 
 /** Which way the pair turns as a whole; the far face is then the mirror of the near one. */
@@ -122,11 +124,34 @@ const sides = computed(() => {
       opposed,
       tipX: at.x + shaft * Math.cos(away),
       tipZ: at.z + shaft * Math.sin(away),
-      arcX: position.value.x + (opposed ? cos : -cos) * arcStep,
-      arcZ: position.value.z + (opposed ? sin : -sin) * arcStep,
-      // the sign turns the pair over; the far face is always the mirror of the near one
-      mirrored: opposed !== isNegativeRotation(),
+      // the bulge of each half is on its own side, so the two together close a circle
+      arcX: position.value.x + (opposed ? -cos : cos) * arcStep,
+      arcZ: position.value.z + (opposed ? -sin : sin) * arcStep,
+      /*
+       * Turned through half a turn rather than mirrored. A mirror puts both heads at the same end,
+       * where they sit on top of one another; turning one over puts them at opposite ends of the
+       * circle, which is what two faces turning against each other look like.
+       */
+      turned: opposed !== isNegativeRotation(),
     };
+  });
+});
+
+/**
+ * The two halves of the circle, each a semicircle standing on the section.
+ *
+ * Drawn here rather than hung off a marker: a marker is anchored by a reference point that is
+ * fitted along with its own view box, and getting the centre of a circle to land on the section
+ * that way is guesswork. The radius is in pixels of the screen, so the symbol keeps its size at any
+ * zoom, as every other mark on the drawing does.
+ */
+const rotationArcs = computed(() => {
+  const radius = ROTATION_RADIUS / props.scale;
+
+  return sides.value.map((side) => {
+    const [from, to] = side.turned ? [radius, -radius] : [-radius, radius];
+
+    return `M ${side.arcX} ${side.arcZ + from} A ${radius} ${radius} 0 0 1 ${side.arcX} ${side.arcZ + to}`;
   });
 });
 
@@ -167,12 +192,7 @@ const momentLabelPosition = computed(() => {
     </template>
 
     <template v-for="(side, i) in eload.values[2] !== 0 ? sides : []" :key="`r-${i}`">
-      <polyline
-        points="0,0 0,0"
-        vector-effect="non-scaling-stroke"
-        class="decoration moment dislocation-rotation"
-        :transform="`translate(${side.arcX} ${side.arcZ})${side.mirrored ? ' scale(-1 1)' : ''}`"
-      />
+      <path class="decoration moment dislocation-rotation" :d="rotationArcs[i]" />
 
       <polyline :points="`${side.arcX},${side.arcZ} ${side.arcX + 1e-6},${side.arcZ}`" class="handle moment" />
     </template>
