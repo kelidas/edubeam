@@ -69,8 +69,56 @@ const labelPosition = computed(() => {
   return `translate(${px} ${pz})`;
 });
 
-const momentHandlePoints = computed(() => {
-  return `${position.value.x},${position.value.z} ${position.value.x + 1e-6},${position.value.z}`;
+/**
+ * The two halves of the cut, a little either side of it.
+ *
+ * An imposed deformation is a relative movement of the two faces of a section, not a force applied
+ * to one point, and it is drawn as such: the same symbol twice, once for each face, pointing
+ * against each other. A reader who sees one arrow reads a load; a reader who sees two opposed ones
+ * reads a release, which is what an influence line is drawn from.
+ *
+ * The offset is small on purpose. Far enough apart to be seen as two, near enough to be read as
+ * belonging to one section.
+ */
+const SIDE_OFFSET = 11;
+/** An arc is far wider than a shaft, so the pair of them has to stand further apart to read as two. */
+const MOMENT_SIDE_OFFSET = 21;
+const SHAFT = 40;
+
+const sides = computed(() => {
+  const geo = target.value.computeGeo();
+  const cos = geo.dx / geo.l;
+  const sin = geo.dz / geo.l;
+  const step = SIDE_OFFSET / props.scale;
+  const arcStep = MOMENT_SIDE_OFFSET / props.scale;
+  const shaft = SHAFT / props.scale;
+
+  return [
+    // the face on the start side keeps the sense of the value, the other one opposes it
+    { turn: 0, opposed: false },
+    { turn: 180, opposed: true },
+  ].map(({ turn, opposed }) => {
+    const away = (angle.value - 90 + turn) * (Math.PI / 180);
+    const at = {
+      x: position.value.x + (opposed ? cos : -cos) * step,
+      z: position.value.z + (opposed ? sin : -sin) * step,
+    };
+
+    /*
+     * The head goes at the far end of the shaft, not at the beam. An arrow drawn the other way says
+     * something is pushing on this point; these two say the two faces of the cut move apart, which
+     * is what the symbol is for.
+     */
+    return {
+      ...at,
+      turn,
+      opposed,
+      tipX: at.x + shaft * Math.cos(away),
+      tipZ: at.z + shaft * Math.sin(away),
+      arcX: position.value.x + (opposed ? cos : -cos) * arcStep,
+      arcZ: position.value.z + (opposed ? sin : -sin) * arcStep,
+    };
+  });
 });
 
 const momentLabelPosition = computed(() => {
@@ -81,41 +129,48 @@ const momentLabelPosition = computed(() => {
 
 <template>
   <g class="nodal-load">
-    <polyline
-      v-if="eload.values[0] !== 0 || eload.values[1] !== 0"
-      points="0,0 0,0"
-      vector-effect="non-scaling-stroke"
-      class="decoration force"
-      :transform="`translate(${position.x} ${position.z}) rotate(${angle})`"
-    />
+    <!--
+      One symbol for each face of the cut, pointing against each other: the movement is relative, so
+      a single arrow would read as a load applied at the point rather than as a release.
+    -->
+    <template v-for="(side, i) in eload.values[0] !== 0 || eload.values[1] !== 0 ? sides : []" :key="`d-${i}`">
+      <polyline
+        points="0,0 0,0"
+        vector-effect="non-scaling-stroke"
+        class="decoration force"
+        :transform="`translate(${side.tipX} ${side.tipZ}) rotate(${angle + side.turn + 180})`"
+      />
 
-    <polyline
-      v-if="eload.values[2] !== 0"
-      points="0,0 0,0"
-      vector-effect="non-scaling-stroke"
-      class="decoration moment"
-      :class="{ cw: eload.values[2] < 0, ccw: eload.values[2] > 0 }"
-      :transform="`translate(${position.x} ${position.z})`"
-    />
+      <!-- An imposed deformation is not a force, so its arrow carries a dashed shaft -->
+      <polyline
+        :points="`${side.x},${side.z} ${side.x + 40 / scale},${side.z}`"
+        :transform="`rotate(${angle - 90 + side.turn} ${side.x} ${side.z})`"
+        stroke-dasharray="6 4"
+        class="decoration shaft"
+        vector-effect="non-scaling-stroke"
+      />
 
-    <!-- An imposed deformation is not a force, so its arrow carries a dashed shaft -->
-    <polyline
-      v-if="eload.values[0] !== 0 || eload.values[1] !== 0"
-      :points="`${position.x},${position.z} ${position.x + 40 / scale},${position.z}`"
-      :transform="`rotate(${angle - 90} ${position.x} ${position.z})`"
-      stroke-dasharray="6 4"
-      class="decoration shaft"
-      vector-effect="non-scaling-stroke"
-    />
+      <polyline
+        :points="`${side.x},${side.z} ${side.x + 40 / scale},${side.z}`"
+        :transform="`rotate(${angle - 90 + side.turn} ${side.x} ${side.z})`"
+        class="handle"
+      />
+    </template>
 
-    <polyline
-      v-if="eload.values[0] !== 0 || eload.values[1] !== 0"
-      :points="`${position.x},${position.z} ${position.x + 40 / scale},${position.z}`"
-      :transform="`rotate(${angle - 90} ${position.x} ${position.z})`"
-      class="handle"
-    />
+    <template v-for="(side, i) in eload.values[2] !== 0 ? sides : []" :key="`r-${i}`">
+      <polyline
+        points="0,0 0,0"
+        vector-effect="non-scaling-stroke"
+        class="decoration moment"
+        :class="{
+          cw: side.opposed ? eload.values[2] > 0 : eload.values[2] < 0,
+          ccw: side.opposed ? eload.values[2] < 0 : eload.values[2] > 0,
+        }"
+        :transform="`translate(${side.arcX} ${side.arcZ})`"
+      />
 
-    <polyline v-if="eload.values[2] !== 0" :points="momentHandlePoints" class="handle moment" />
+      <polyline :points="`${side.arcX},${side.arcZ} ${side.arcX + 1e-6},${side.arcZ}`" class="handle moment" />
+    </template>
 
     <text
       v-if="eload.values[2] !== 0"
