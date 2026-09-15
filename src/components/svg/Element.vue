@@ -606,18 +606,12 @@ const emit = defineEmits(['elementmousemove', 'elementresultsmousemove', 'elemen
       class="pointer-events-none"
       :transform="`translate(${dl[0]} ${dl[1]}) rotate(${dl[3]})`"
     >
-      <text
-        v-if="showLabelBackground"
-        :font-size="fontSize / scale"
-        class="deflection-label filter-text-label"
-        font-weight="normal"
-        :x="labelAnchorOffset(dl[4])"
-        y="0"
-        :text-anchor="dl[4]"
-        dominant-baseline="central"
-      >
-        {{ formatEngineeringNumber(dl[2], deformationNumberFormat) }}
-      </text>
+      <!--
+        No plate behind these. The one the other labels carry is a white flood over the whole box of
+        the text, which is invisible where they sit - out beyond their diagram, against the page -
+        but an influence line is drawn filled, and its own values sit on top of that fill, where the
+        flood reads as a white card laid over the shape.
+      -->
       <text
         :font-size="fontSize / scale"
         class="deflection-label"
