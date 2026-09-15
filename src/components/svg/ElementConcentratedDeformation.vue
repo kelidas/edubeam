@@ -82,7 +82,7 @@ const labelPosition = computed(() => {
  */
 const SIDE_OFFSET = 7;
 /** The two halves of the circle stand just clear of each other, leaving the section between them. */
-const MOMENT_SIDE_OFFSET = 4;
+const MOMENT_SIDE_OFFSET = 8;
 /** How big the circle is on the screen, whatever the drawing is zoomed to. */
 const ROTATION_RADIUS = 18;
 const SHAFT = 40;
@@ -98,10 +98,12 @@ const sides = computed(() => {
   const arcStep = MOMENT_SIDE_OFFSET / props.scale;
   const shaft = SHAFT / props.scale;
 
-  // both faces are drawn the same way round, so a positive value sends both arrows the same way
-  const away = (angle.value - 90) * (Math.PI / 180);
-
-  return [{ opposed: false }, { opposed: true }].map(({ opposed }) => {
+  return [
+    // the face on the start side keeps the sense of the value, the other one opposes it
+    { turn: 0, opposed: false },
+    { turn: 180, opposed: true },
+  ].map(({ turn, opposed }) => {
+    const away = (angle.value - 90 + turn) * (Math.PI / 180);
     const at = {
       x: position.value.x + (opposed ? cos : -cos) * step,
       z: position.value.z + (opposed ? sin : -sin) * step,
@@ -109,28 +111,28 @@ const sides = computed(() => {
 
     /*
      * The head goes at the far end of the shaft, not at the beam. An arrow drawn the other way says
-     * something is pushing on this point; these say which way the faces of the cut go.
+     * something is pushing on this point; these two say the two faces of the cut move apart, which
+     * is what the symbol is for.
      */
     return {
       ...at,
+      turn,
       opposed,
       tipX: at.x + shaft * Math.cos(away),
       tipZ: at.z + shaft * Math.sin(away),
       // the bulge of each half is on its own side, so the two together close a circle
-      arcX: position.value.x + (opposed ? -cos : cos) * arcStep,
-      arcZ: position.value.z + (opposed ? -sin : sin) * arcStep,
-      /*
-       * Turned through half a turn rather than mirrored. A mirror puts both heads at the same end,
-       * where they sit on top of one another; turning one over puts them at opposite ends of the
-       * circle, which is what two faces turning against each other look like.
-       */
-      turned: opposed !== isNegativeRotation(),
+      arcX: position.value.x + (opposed ? cos : -cos) * arcStep,
+      arcZ: position.value.z + (opposed ? sin : -sin) * arcStep,
     };
   });
 });
 
 /**
  * The two halves of the circle, each a semicircle standing on the section.
+ *
+ * Both run the same way round, so both heads end at the same end of the circle - up for a positive
+ * rotation, down for a negative one. Each bulges away from the other, so the two of them close a
+ * circle with the section in the gap.
  *
  * Drawn here rather than hung off a marker: a marker is anchored by a reference point that is
  * fitted along with its own view box, and getting the centre of a circle to land on the section
@@ -139,11 +141,15 @@ const sides = computed(() => {
  */
 const rotationArcs = computed(() => {
   const radius = ROTATION_RADIUS / props.scale;
+  const upward = !isNegativeRotation();
 
   return sides.value.map((side) => {
-    const [from, to] = side.turned ? [radius, -radius] : [-radius, radius];
+    // from the bottom of the circle to the top, or the other way about
+    const [from, to] = upward ? [radius, -radius] : [-radius, radius];
+    // and round the side it stands on, which for a given direction of travel is one flag or the other
+    const sweep = upward !== side.opposed ? 1 : 0;
 
-    return `M ${side.arcX} ${side.arcZ + from} A ${radius} ${radius} 0 0 1 ${side.arcX} ${side.arcZ + to}`;
+    return `M ${side.arcX} ${side.arcZ + from} A ${radius} ${radius} 0 0 ${sweep} ${side.arcX} ${side.arcZ + to}`;
   });
 });
 
@@ -164,13 +170,13 @@ const momentLabelPosition = computed(() => {
         points="0,0 0,0"
         vector-effect="non-scaling-stroke"
         class="decoration force"
-        :transform="`translate(${side.tipX} ${side.tipZ}) rotate(${angle + 180})`"
+        :transform="`translate(${side.tipX} ${side.tipZ}) rotate(${angle + side.turn + 180})`"
       />
 
       <!-- An imposed deformation is not a force, so its arrow carries a dashed shaft -->
       <polyline
         :points="`${side.x},${side.z} ${side.x + 40 / scale},${side.z}`"
-        :transform="`rotate(${angle - 90} ${side.x} ${side.z})`"
+        :transform="`rotate(${angle - 90 + side.turn} ${side.x} ${side.z})`"
         stroke-dasharray="6 4"
         class="decoration shaft"
         vector-effect="non-scaling-stroke"
@@ -178,7 +184,7 @@ const momentLabelPosition = computed(() => {
 
       <polyline
         :points="`${side.x},${side.z} ${side.x + 40 / scale},${side.z}`"
-        :transform="`rotate(${angle - 90} ${side.x} ${side.z})`"
+        :transform="`rotate(${angle - 90 + side.turn} ${side.x} ${side.z})`"
         class="handle"
       />
     </template>
