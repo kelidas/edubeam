@@ -62,7 +62,8 @@
     "pointAlongHint": "Pointez la barre pour lire une section",
     "hideEmptyRows": "Masquer les lignes vides",
     "emptyRowsHidden": "{n} vides masquées",
-    "step": "Pas"
+    "step": "Pas",
+    "pasteAtOffset": "Coller avec décalage…"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",
@@ -258,6 +259,10 @@
     "changelog": {
       "title": "Quoi de neuf ?",
       "description": "Nouvelles fonctionnalités, améliorations et aperçu de ce que nous préparons."
+    },
+    "pasteAtOffset": {
+      "title": "Coller avec décalage",
+      "hint": "À quelle distance de l’endroit copié."
     }
   },
   "tooltip": {
@@ -340,7 +345,6 @@
     "loadType": "Type de charge",
     "concentrated_deformation": "Déformation ponctuelle",
     "concentrated": "Charge ponctuelle",
-    "concentrated_deformation": "Déformation ponctuelle",
     "trapezoidal": "Charge trapézoïdale",
     "udl": "Charge uniformément répartie",
     "temperature": "Charge thermique"

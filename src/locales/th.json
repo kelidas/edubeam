@@ -61,7 +61,8 @@
     "pointAlongHint": "ชี้ที่คานเพื่ออ่านหน้าตัด",
     "hideEmptyRows": "ซ่อนแถวว่าง",
     "emptyRowsHidden": "ซ่อนแถวว่าง {n} แถว",
-    "step": "ระยะขั้น"
+    "step": "ระยะขั้น",
+    "pasteAtOffset": "วางโดยมีระยะเยื้อง…"
   },
   "nodes": {
     "addNode": "เพิ่มโหนด",
@@ -252,6 +253,10 @@
     },
     "editNode": {
       "editNode": "แก้ไขโหนด"
+    },
+    "pasteAtOffset": {
+      "title": "วางโดยมีระยะเยื้อง",
+      "hint": "ห่างจากตำแหน่งที่คัดลอกเท่าใด"
     }
   },
   "tooltip": {
@@ -334,7 +339,6 @@
     "loadType": "ประเภทแรงกระทำ",
     "concentrated_deformation": "การเสียรูปเข้มข้น",
     "concentrated": "แรงกระทำเข้มข้น",
-    "concentrated_deformation": "การเสียรูปเข้มข้น",
     "udl": "แรงกระจายสม่ำเสมอ",
     "temperature": "แรงกระทำเนื่องจากอุณหภูมิ"
   },

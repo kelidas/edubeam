@@ -62,7 +62,8 @@
     "pointAlongHint": "Aponte a barra para ler uma seção",
     "hideEmptyRows": "Ocultar linhas vazias",
     "emptyRowsHidden": "{n} vazias ocultas",
-    "step": "Passo"
+    "step": "Passo",
+    "pasteAtOffset": "Colar com deslocamento…"
   },
   "nodes": {
     "addNode": "Adicionar nó",
@@ -258,6 +259,10 @@
     "changelog": {
       "title": "O que há de novo?",
       "description": "Novos recursos, melhorias e prévias do que estamos desenvolvendo."
+    },
+    "pasteAtOffset": {
+      "title": "Colar com deslocamento",
+      "hint": "A que distância de onde foi copiado."
     }
   },
   "tooltip": {
@@ -340,7 +345,6 @@
     "loadType": "Tipo de carga",
     "concentrated_deformation": "Deformação concentrada",
     "concentrated": "Carga concentrada",
-    "concentrated_deformation": "Deformação concentrada",
     "trapezoidal": "Carga trapezoidal",
     "udl": "Carga distribuída uniforme",
     "temperature": "Carga térmica"

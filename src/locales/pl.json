@@ -62,7 +62,8 @@
     "pointAlongHint": "Wskaż pręt, aby odczytać przekrój",
     "hideEmptyRows": "Ukryj puste wiersze",
     "emptyRowsHidden": "ukryto pustych: {n}",
-    "step": "Krok"
+    "step": "Krok",
+    "pasteAtOffset": "Wklej z przesunięciem…"
   },
   "nodes": {
     "addNode": "Dodaj węzeł",
@@ -258,6 +259,10 @@
     "changelog": {
       "title": "Co nowego?",
       "description": "Nowe funkcje, usprawnienia i zapowiedzi tego, nad czym pracujemy."
+    },
+    "pasteAtOffset": {
+      "title": "Wklej z przesunięciem",
+      "hint": "Jak daleko od miejsca skopiowania."
     }
   },
   "tooltip": {
@@ -340,7 +345,6 @@
     "loadType": "Typ obciążenia",
     "concentrated_deformation": "Odkształcenie skupione",
     "concentrated": "Obciążenie skupione",
-    "concentrated_deformation": "Odkształcenie skupione",
     "trapezoidal": "Obciążenie trapezowe",
     "udl": "Obciążenie równomiernie rozłożone",
     "temperature": "Obciążenie termiczne"

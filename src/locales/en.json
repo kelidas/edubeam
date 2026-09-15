@@ -62,7 +62,8 @@
     "pointAlongHint": "Point along the beam to read a section",
     "hideEmptyRows": "Hide empty rows",
     "emptyRowsHidden": "{n} empty hidden",
-    "step": "Step"
+    "step": "Step",
+    "pasteAtOffset": "Paste with offset…"
   },
   "nodes": {
     "addNode": "Add node",
@@ -319,6 +320,10 @@
       "noShape": "No polygonal shape",
       "centroidal": "centroidal",
       "centroidalNote": "All second moments of area are taken about axes through the centroid; I₁, I₂ are the principal values and α is the angle from the y axis to axis 1."
+    },
+    "pasteAtOffset": {
+      "title": "Paste with offset",
+      "hint": "How far from where it was copied."
     }
   },
   "tooltip": {
@@ -405,7 +410,6 @@
     "loadType": "Load type",
     "concentrated_deformation": "Concentrated deformation",
     "concentrated": "Concentrated load",
-    "concentrated_deformation": "Concentrated deformation",
     "trapezoidal": "Trapezoidal load",
     "udl": "Uniformly distributed load",
     "temperature": "Temperature load"

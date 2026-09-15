@@ -62,7 +62,8 @@
     "pointAlongHint": "Señale la barra para leer una sección",
     "hideEmptyRows": "Ocultar filas vacías",
     "emptyRowsHidden": "{n} vacías ocultas",
-    "step": "Paso"
+    "step": "Paso",
+    "pasteAtOffset": "Pegar con desplazamiento…"
   },
   "nodes": {
     "addNode": "Añadir nodo",
@@ -258,6 +259,10 @@
     "changelog": {
       "title": "¿Qué hay de nuevo?",
       "description": "Nuevas funciones, mejoras y un vistazo a lo que estamos preparando."
+    },
+    "pasteAtOffset": {
+      "title": "Pegar con desplazamiento",
+      "hint": "A qué distancia de donde se copió."
     }
   },
   "tooltip": {
@@ -340,7 +345,6 @@
     "loadType": "Tipo de carga",
     "concentrated_deformation": "Deformación concentrada",
     "concentrated": "Carga concentrada",
-    "concentrated_deformation": "Deformación concentrada",
     "trapezoidal": "Carga trapezoidal",
     "udl": "Carga uniformemente distribuida",
     "temperature": "Carga térmica"
