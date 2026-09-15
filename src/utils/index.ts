@@ -158,6 +158,24 @@ export const undoModelChange = () => {
 export const hasWorkToLose = () => undoRedoManager.canUndo();
 
 /**
+ * Set while the page is being reloaded on purpose, so the question below is not asked about it.
+ *
+ * An update reloads the page itself, and the undo history goes with it either way - that is what
+ * taking a new version costs. Asking whether to allow a reload the reader has just asked for is
+ * noise, and a dialog they could answer wrongly, ending the update half done.
+ */
+let leavingOnPurpose = false;
+
+export const leaveWithoutAsking = () => {
+  leavingOnPurpose = true;
+};
+
+/** For when the leaving does not happen after all, and the page is still there to protect. */
+export const askBeforeLeaving = () => {
+  leavingOnPurpose = false;
+};
+
+/**
  * Ask before the page goes, once there is anything to lose.
  *
  * A mis-swiped back gesture on a touch screen leaves the model standing - it is written to storage
@@ -167,7 +185,7 @@ export const hasWorkToLose = () => undoRedoManager.canUndo();
  * page has been interacted with, which by then it has.
  */
 export const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
-  if (!hasWorkToLose()) return false;
+  if (leavingOnPurpose || !hasWorkToLose()) return false;
 
   event.preventDefault();
   // older browsers want this set rather than the call above, and ignore whatever it is set to
