@@ -107,44 +107,53 @@ describe('imposed deformation symbol', () => {
   });
 
   /**
-   * The two moment markers are not mirror images of one another - they hang from different points -
-   * so a pair built from one of each sat crooked. The pair is one marker and its mirror instead,
-   * which gives it the symmetry the section itself has.
+   * Two halves of one circle, standing on the section with a gap where it is. Drawn as paths rather
+   * than hung off a marker: a marker is anchored by a reference point fitted along with its own
+   * view box, and getting the centre of a circle to land on the section that way is guesswork.
    */
-  it('draws two moments against each other for an imposed rotation', () => {
-    const arcs = drawn([0, 0, 1, 2]).findAll('polyline.decoration.moment');
+  const arcsOf = (values: number[]) => drawn(values).findAll('path.dislocation-rotation');
+
+  it('draws two halves of a circle for an imposed rotation', () => {
+    const arcs = arcsOf([0, 0, 1, 2]);
 
     expect(arcs).toHaveLength(2);
+    // each is an arc of one radius, which is what makes the two of them a circle
+    arcs.forEach((arc) => expect(arc.attributes('d')).toMatch(/^M [-\d.e]+ [-\d.e]+ A ([-\d.e]+) \1 0 0 1 /));
+  });
 
-    const transforms = arcs.map((a) => a.attributes('transform')!);
+  it('runs the two the opposite way round, so their heads end apart', () => {
+    const ends = arcsOf([0, 0, 1, 2]).map((arc) => {
+      const [, from, to] = arc.attributes('d')!.match(/^M [-\d.e]+ ([-\d.e]+) A .* ([-\d.e]+)$/)!;
 
-    expect(transforms.filter((t) => t.includes('scale(-1 1)'))).toHaveLength(1);
+      return Number(to) - Number(from) > 0 ? 'down' : 'up';
+    });
+
+    expect(ends).toEqual(['down', 'up']);
   });
 
   it('turns the pair over with the sign, rather than turning one of them', () => {
-    const mirrored = (values: number[]) =>
-      drawn(values)
-        .findAll('polyline.decoration.moment')
-        .map((a) => a.attributes('transform')!.includes('scale(-1 1)'));
+    const directions = (values: number[]) =>
+      arcsOf(values).map((arc) => {
+        const [, from, to] = arc.attributes('d')!.match(/^M [-\d.e]+ ([-\d.e]+) A .* ([-\d.e]+)$/)!;
 
-    // one of the two is mirrored either way, and which one swaps with the sign
-    expect(mirrored([0, 0, 1, 2])).toEqual([false, true]);
-    expect(mirrored([0, 0, -1, 2])).toEqual([true, false]);
+        return Number(to) - Number(from) > 0 ? 'down' : 'up';
+      });
+
+    expect(directions([0, 0, 1, 2])).toEqual(['down', 'up']);
+    expect(directions([0, 0, -1, 2])).toEqual(['up', 'down']);
   });
 
-  it('stands the arcs further apart than the arrows, an arc being the wider mark', () => {
-    const arcs = drawn([0, 0, 1, 2])
-      .findAll('polyline.decoration.moment')
-      .map((a) => alongOf(a.attributes('transform')!));
-    const shafts = drawn([0, -1, 0, 2])
-      .findAll('polyline.decoration.shaft')
-      .map((shaft) => startOf(shaft.attributes('points')!)[0]);
+  it('leaves only a gap between the halves, the section being what is between them', () => {
+    const along = arcsOf([0, 0, 1, 2]).map((arc) => Number(arc.attributes('d')!.split(' ')[1]));
+    const shafts = shaftsAlong([0, -1, 0, 2]);
 
-    expect(Math.abs(arcs[1] - arcs[0])).toBeGreaterThan(Math.abs(shafts[1] - shafts[0]));
+    // the two halves stand closer together than the two arrows do
+    expect(Math.abs(along[1] - along[0])).toBeLessThan(Math.abs(shafts[1] - shafts[0]));
+    expect(along[0]).not.toBe(along[1]);
   });
 
   it('draws nothing of the kind the load does not have', () => {
-    expect(drawn([0, -1, 0, 2]).findAll('polyline.decoration.moment')).toHaveLength(0);
+    expect(arcsOf([0, -1, 0, 2])).toHaveLength(0);
     expect(drawn([0, 0, 1, 2]).findAll('polyline.decoration.force')).toHaveLength(0);
   });
 });

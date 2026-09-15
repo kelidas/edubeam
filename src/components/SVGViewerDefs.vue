@@ -610,22 +610,23 @@ const props = withDefaults(
     </marker>
 
     <!--
-      The turn of one face of a released section: half a circle, and one marker rather than two.
-      The pair is this one and its mirror, so the two halves are symmetric about the section by
-      construction - the moment markers are not mirror images of one another and sat crooked.
+      The head of the released rotation's arc, sized in pixels of the screen.
+
+      The plain arrow marker cannot be used for this: it measures twelve user units, which is small
+      inside another marker - where the coordinates are already shrunk - and twelve metres out on
+      the drawing, where this arc is.
     -->
     <marker
-      :id="`${id}-dislocation_rotation`"
-      viewBox="-26 -26 52 52"
-      refX="0"
-      refY="0"
-      :markerWidth="52 / scale"
-      :markerHeight="52 / scale"
-      overflow="visible"
+      :id="`${id}-dislocation_arrow`"
+      viewBox="0 0 10 10"
+      refX="5"
+      refY="5"
+      :markerWidth="12 / scale"
+      :markerHeight="12 / scale"
+      orient="auto-start-reverse"
       markerUnits="userSpaceOnUse"
-      :marker-end="`url(#${id}-arrow)`"
     >
-      <path d="M 20 0 A 20 20 0 0 0 -20 0" fill="none" :stroke="colors.loads" />
+      <path d="M 0 0 L 10 5 L 0 10 z" :fill="colors.loads" />
     </marker>
 
     <filter :id="`${id}-textLabel`" x="-2.5%" width="105%" y="0%" height="100%">

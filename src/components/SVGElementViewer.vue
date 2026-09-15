@@ -277,13 +277,13 @@ const dynamicMarker = (label: string) => {
 };
 
 // Computed dynamic markers
+const markerDislocationArrow = computed(() => dynamicMarker('dislocation_arrow'));
 const markerForce = computed(() => dynamicMarker('force'));
 const markerForceHover = computed(() => dynamicMarker('force_hover'));
 const markerForceSelected = computed(() => dynamicMarker('force_selected'));
 const markerCentered = computed(() => dynamicMarker('force_centered'));
 const markerCenteredHover = computed(() => dynamicMarker('force_centered_hover'));
 
-const markerDislocationRotation = computed(() => dynamicMarker('dislocation_rotation'));
 const markerMomentCw = computed(() => dynamicMarker('moment_cw'));
 const markerMomentCwHover = computed(() => dynamicMarker('moment_cw_hover'));
 const markerMomentCwSelected = computed(() => dynamicMarker('moment_cw_selected'));
@@ -346,12 +346,12 @@ defineExpose({ centerContent, fitContent, setView, update });
         ref="svg"
         :style="{
           opacity: panZoom?.fitted ? 1 : 0,
+          '--marker-dislocation-arrow': markerDislocationArrow,
           '--marker-force': markerForce,
           '--marker-force-hover': markerForceHover,
           '--marker-force-selected': markerForceSelected,
           '--marker-centered': markerCentered,
           '--marker-centered-hover': markerCenteredHover,
-          '--marker-dislocation-rotation': markerDislocationRotation,
           '--marker-moment-cw': markerMomentCw,
           '--marker-moment-cw-hover': markerMomentCwHover,
           '--marker-moment-cw-selected': markerMomentCwSelected,
@@ -722,6 +722,19 @@ defineExpose({ centerContent, fitContent, setView, update });
     text {
       fill: v-bind('colors.loads');
     }
+    /*
+     * The turn of one face of a released section: half a circle, drawn here rather than hung off a
+     * marker, so that where it sits is a matter of arithmetic rather than of how a marker anchors.
+     */
+    path.dislocation-rotation {
+      fill: none;
+      stroke: v-bind('viewerStore.colors.loads');
+      stroke-width: 1.5px;
+      vector-effect: non-scaling-stroke;
+      /* the head alone, in pixels; the force marker is a whole arrow, shaft and all */
+      marker-end: var(--marker-dislocation-arrow);
+    }
+
     polyline {
       stroke-linecap: butt;
       vector-effect: non-scaling-stroke;
@@ -733,11 +746,6 @@ defineExpose({ centerContent, fitContent, setView, update });
       &.decoration.shaft {
         stroke: v-bind('colors.loads');
         stroke-width: 1.5px;
-      }
-
-      /* The turn of one face of a released section, drawn over half a circle. */
-      &.decoration.dislocation-rotation {
-        marker-end: var(--marker-dislocation-rotation);
       }
 
       &.decoration.moment.cw {
