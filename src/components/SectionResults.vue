@@ -228,6 +228,15 @@ const plotWidth = ref(320);
 const LABEL_SIZE = 12;
 const em = LABEL_SIZE / MEASURED_AT;
 
+/**
+ * The ring a node's name sits in, sized the way the drawing sizes its own.
+ *
+ * Half the font plus a little is what makes a ring look drawn around a character rather than a
+ * character dropped into a hoop, and growing it with the length of the name keeps a node called
+ * "left" inside its ring rather than spilling out of it.
+ */
+const ringAround = (node: string) => 1 + (LABEL_SIZE / 2) * (1 + Math.pow(String(node).length - 1, 1.7) * 0.3);
+
 const PLOT_HEIGHT = Math.round(132 * em);
 const PAD_X = 10;
 const PAD_Y = Math.round(30 * em);
@@ -640,16 +649,17 @@ const copy = () => {
                 class="node"
                 :cx="atX(i * length)"
                 :cy="axis.y - 14 * em"
-                :r="7.5 * em"
+                :r="ringAround(node)"
                 fill="#ffffff"
                 stroke="#000000"
               />
               <text
                 class="node"
                 :x="atX(i * length)"
-                :y="axis.y - 11"
+                :y="axis.y - 14 * em"
                 text-anchor="middle"
-                font-size="9"
+                dominant-baseline="central"
+                :font-size="LABEL_SIZE"
                 fill="#000000"
               >
                 {{ node }}
