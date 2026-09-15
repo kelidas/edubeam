@@ -106,12 +106,32 @@ describe('imposed deformation symbol', () => {
     expect(Math.hypot(alongOf(head) - fromX, acrossOf(head) - fromZ)).toBeCloseTo(40 / SCALE, 6);
   });
 
+  /**
+   * The two moment markers are not mirror images of one another - they hang from different points -
+   * so a pair built from one of each sat crooked. The pair is one marker and its mirror instead,
+   * which gives it the symmetry the section itself has.
+   */
   it('draws two moments against each other for an imposed rotation', () => {
     const arcs = drawn([0, 0, 1, 2]).findAll('polyline.decoration.moment');
 
     expect(arcs).toHaveLength(2);
-    expect(arcs.filter((a) => a.classes().includes('cw'))).toHaveLength(1);
-    expect(arcs.filter((a) => a.classes().includes('ccw'))).toHaveLength(1);
+
+    const transforms = arcs.map((a) => a.attributes('transform')!);
+
+    expect(transforms.filter((t) => t.includes('scale(-1 1)'))).toHaveLength(1);
+  });
+
+  it('turns the two the same way before mirroring, so the pair is symmetric', () => {
+    const arcs = drawn([0, 0, 1, 2]).findAll('polyline.decoration.moment');
+    const [near, far] = arcs.map((a) =>
+      a
+        .classes()
+        .filter((c) => c === 'cw' || c === 'ccw')
+        .join()
+    );
+
+    expect(near).toBe(far);
+    expect(near).not.toBe('');
   });
 
   it('stands the arcs further apart than the arrows, an arc being the wider mark', () => {
