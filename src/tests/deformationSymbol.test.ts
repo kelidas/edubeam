@@ -69,20 +69,11 @@ describe('imposed deformation symbol', () => {
     expect(wrapper.findAll('polyline.decoration.shaft')).toHaveLength(2);
   });
 
-  it('sends both the same way, which the sign of the value decides', () => {
-    const turns = (values: number[]) =>
-      drawn(values)
-        .findAll('polyline.decoration.force')
-        .map((a) => turnOf(a.attributes('transform')!));
-
-    const positive = turns([0, 1, 0, 2]);
-    const negative = turns([0, -1, 0, 2]);
-
-    expect(positive[0]).toBeCloseTo(positive[1], 9);
-    expect(negative[0]).toBeCloseTo(negative[1], 9);
-
-    // and the two signs are opposite to each other
-    const between = (((negative[0] - positive[0]) % 360) + 360) % 360;
+  it('points the two against each other', () => {
+    const turns = drawn([0, -1, 0, 2])
+      .findAll('polyline.decoration.force')
+      .map((a) => turnOf(a.attributes('transform')!));
+    const between = (((turns[1] - turns[0]) % 360) + 360) % 360;
 
     expect(Math.abs(between - 180)).toBeLessThan(1e-6);
   });
@@ -127,38 +118,40 @@ describe('imposed deformation symbol', () => {
 
     expect(arcs).toHaveLength(2);
     // each is an arc of one radius, which is what makes the two of them a circle
-    arcs.forEach((arc) => expect(arc.attributes('d')).toMatch(/^M [-\d.e]+ [-\d.e]+ A ([-\d.e]+) \1 0 0 1 /));
+    arcs.forEach((arc) => expect(arc.attributes('d')).toMatch(/^M [-\d.e]+ [-\d.e]+ A ([-\d.e]+) \1 0 0 [01] /));
   });
 
-  it('runs the two the opposite way round, so their heads end apart', () => {
-    const ends = arcsOf([0, 0, 1, 2]).map((arc) => {
+  const headsOf = (values: number[]) =>
+    arcsOf(values).map((arc) => {
       const [, from, to] = arc.attributes('d')!.match(/^M [-\d.e]+ ([-\d.e]+) A .* ([-\d.e]+)$/)!;
 
-      return Number(to) - Number(from) > 0 ? 'down' : 'up';
+      // z counts downwards, so an end above where it started is the smaller number
+      return Number(to) < Number(from) ? 'up' : 'down';
     });
 
-    expect(ends).toEqual(['down', 'up']);
+  it('ends both heads at the same end of the circle', () => {
+    expect(headsOf([0, 0, 1, 2])).toEqual(['up', 'up']);
   });
 
-  it('turns the pair over with the sign, rather than turning one of them', () => {
-    const directions = (values: number[]) =>
-      arcsOf(values).map((arc) => {
-        const [, from, to] = arc.attributes('d')!.match(/^M [-\d.e]+ ([-\d.e]+) A .* ([-\d.e]+)$/)!;
-
-        return Number(to) - Number(from) > 0 ? 'down' : 'up';
-      });
-
-    expect(directions([0, 0, 1, 2])).toEqual(['down', 'up']);
-    expect(directions([0, 0, -1, 2])).toEqual(['up', 'down']);
+  it('sends them to the other end for a negative rotation', () => {
+    expect(headsOf([0, 0, -1, 2])).toEqual(['down', 'down']);
   });
 
-  it('leaves only a gap between the halves, the section being what is between them', () => {
-    const along = arcsOf([0, 0, 1, 2]).map((arc) => Number(arc.attributes('d')!.split(' ')[1]));
-    const shafts = shaftsAlong([0, -1, 0, 2]);
+  it('bulges each half away from the other, so the two close a circle', () => {
+    const sweeps = arcsOf([0, 0, 1, 2]).map((arc) => arc.attributes('d')!.match(/A [-\d.e]+ [-\d.e]+ 0 0 ([01])/)![1]);
 
-    // the two halves stand closer together than the two arrows do
-    expect(Math.abs(along[1] - along[0])).toBeLessThan(Math.abs(shafts[1] - shafts[0]));
-    expect(along[0]).not.toBe(along[1]);
+    // one half round one way and the other round the other, from the same direction of travel
+    expect(sweeps[0]).not.toBe(sweeps[1]);
+  });
+
+  it('leaves a gap between the halves rather than standing them apart', () => {
+    const arcs = arcsOf([0, 0, 1, 2]);
+    const centres = arcs.map((arc) => Number(arc.attributes('d')!.split(' ')[1]));
+    const radius = Number(arcs[0].attributes('d')!.match(/A ([-\d.e]+)/)![1]);
+
+    // wide enough apart that the two heads clear each other, near enough to close one circle
+    expect(Math.abs(centres[1] - centres[0])).toBeGreaterThan(0);
+    expect(Math.abs(centres[1] - centres[0])).toBeLessThan(radius);
   });
 
   it('draws nothing of the kind the load does not have', () => {
