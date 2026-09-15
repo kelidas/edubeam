@@ -80,9 +80,9 @@ const labelPosition = computed(() => {
  * The offset is small on purpose. Far enough apart to be seen as two, near enough to be read as
  * belonging to one section.
  */
-const SIDE_OFFSET = 11;
+const SIDE_OFFSET = 7;
 /** An arc is far wider than a shaft, so the pair of them has to stand further apart to read as two. */
-const MOMENT_SIDE_OFFSET = 21;
+const MOMENT_SIDE_OFFSET = 18;
 const SHAFT = 40;
 
 const sides = computed(() => {
@@ -108,6 +108,10 @@ const sides = computed(() => {
      * The head goes at the far end of the shaft, not at the beam. An arrow drawn the other way says
      * something is pushing on this point; these two say the two faces of the cut move apart, which
      * is what the symbol is for.
+     *
+     * The far arc is the near one mirrored rather than the other of the two moment markers. Those
+     * two are not mirror images of each other - they hang from different points - so drawn side by
+     * side they sat crooked. Mirroring one marker gives the pair the symmetry the section has.
      */
     return {
       ...at,
@@ -162,11 +166,8 @@ const momentLabelPosition = computed(() => {
         points="0,0 0,0"
         vector-effect="non-scaling-stroke"
         class="decoration moment"
-        :class="{
-          cw: side.opposed ? eload.values[2] > 0 : eload.values[2] < 0,
-          ccw: side.opposed ? eload.values[2] < 0 : eload.values[2] > 0,
-        }"
-        :transform="`translate(${side.arcX} ${side.arcZ})`"
+        :class="{ cw: eload.values[2] < 0, ccw: eload.values[2] > 0 }"
+        :transform="`translate(${side.arcX} ${side.arcZ})${side.opposed ? ' scale(-1 1)' : ''}`"
       />
 
       <polyline :points="`${side.arcX},${side.arcZ} ${side.arcX + 1e-6},${side.arcZ}`" class="handle moment" />
