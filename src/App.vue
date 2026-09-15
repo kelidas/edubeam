@@ -8,6 +8,7 @@ import {
   importJSON,
   redoModelChange,
   undoModelChange,
+  warnBeforeLeaving,
 } from './utils';
 import { provide, nextTick } from 'vue';
 import { undoRedoManager } from './CommandManager';
@@ -24,7 +25,7 @@ export default {
 </script>
 
 <script setup lang="ts">
-import { onMounted, ref, computed } from 'vue';
+import { onMounted, onUnmounted, ref, computed } from 'vue';
 import { DofID } from 'ts-fem';
 import { setLocale, availableLocales } from './plugins/i18n';
 
@@ -75,6 +76,9 @@ const steps = computed(() => [
     },
   },
 ]);
+
+onMounted(() => window.addEventListener('beforeunload', warnBeforeLeaving));
+onUnmounted(() => window.removeEventListener('beforeunload', warnBeforeLeaving));
 
 onMounted(() => {
   document.addEventListener('keydown', function (e) {
@@ -159,8 +163,13 @@ onMounted(() => {
     }
     solve();
 
+    /*
+     * Replaced rather than pushed. Pushing leaves the shared link behind as an entry of its own, so
+     * a press of the browser's back button returns to it - and the app reads ?model= as it starts,
+     * clears the mesh and loads the shared model over whatever has been built since.
+     */
     const url = document.location.href;
-    window.history.pushState({}, '', url.split('?')[0]);
+    window.history.replaceState({}, '', url.split('?')[0]);
 
     return;
   }
@@ -171,7 +180,7 @@ onMounted(() => {
 
   if (lang || panel) {
     const url = document.location.href;
-    window.history.pushState({}, '', url.split('?')[0]);
+    window.history.replaceState({}, '', url.split('?')[0]);
   }
 
   if (domain.nodes.size > 0) return solve();

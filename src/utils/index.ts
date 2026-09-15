@@ -150,6 +150,33 @@ export const undoModelChange = () => {
   useProjectStore().clearSelection();
 };
 
+/**
+ * Whether this session holds changes that leaving the page would throw away.
+ *
+ * The model itself is written to storage as it is edited and comes back on its own, but the steps
+ * that led to it are only in memory: navigate away and the model survives while every undo is gone.
+ */
+export const hasWorkToLose = () => undoRedoManager.canUndo();
+
+/**
+ * Ask before the page goes, once there is anything to lose.
+ *
+ * A mis-swiped back gesture on a touch screen leaves the model standing - it is written to storage
+ * as it is edited - and every undo gone, which is not obvious until one is wanted.
+ *
+ * Only asked when this session has changed something. A browser will not show it at all until the
+ * page has been interacted with, which by then it has.
+ */
+export const warnBeforeLeaving = (event: BeforeUnloadEvent) => {
+  if (!hasWorkToLose()) return false;
+
+  event.preventDefault();
+  // older browsers want this set rather than the call above, and ignore whatever it is set to
+  event.returnValue = '';
+
+  return true;
+};
+
 export const redoModelChange = () => {
   undoRedoManager.redo();
   useProjectStore().clearSelection();

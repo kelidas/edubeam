@@ -44,6 +44,15 @@ export class CommandManager<T> {
     this.history.push(command);
   }
 
+  /** Whether there is anything to undo or redo, which is also whether this session holds work. */
+  canUndo(): boolean {
+    return this.history.length > 0;
+  }
+
+  canRedo(): boolean {
+    return this.redoStack.length > 0;
+  }
+
   clearHistory(): void {
     this.history = [];
     this.redoStack = [];
