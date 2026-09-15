@@ -62,8 +62,7 @@
     "pointAlongHint": "Auf den Stab zeigen, um einen Schnitt zu lesen",
     "hideEmptyRows": "Leere Zeilen ausblenden",
     "emptyRowsHidden": "{n} leere ausgeblendet",
-    "step": "Schritt",
-    "pasteAtOffset": "Mit Versatz einfügen…"
+    "step": "Schritt"
   },
   "nodes": {
     "addNode": "Knoten hinzufügen",
@@ -259,10 +258,6 @@
     "changelog": {
       "title": "Was gibt's Neues?",
       "description": "Neue Funktionen, Verbesserungen und Einblicke in das, woran wir gerade arbeiten."
-    },
-    "pasteAtOffset": {
-      "title": "Mit Versatz einfügen",
-      "hint": "Wie weit von der kopierten Stelle entfernt."
     }
   },
   "tooltip": {

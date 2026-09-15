@@ -62,8 +62,7 @@
     "pointAlongHint": "Point along the beam to read a section",
     "hideEmptyRows": "Hide empty rows",
     "emptyRowsHidden": "{n} empty hidden",
-    "step": "Step",
-    "pasteAtOffset": "Paste with offset…"
+    "step": "Step"
   },
   "nodes": {
     "addNode": "Add node",
@@ -320,10 +319,6 @@
       "noShape": "No polygonal shape",
       "centroidal": "centroidal",
       "centroidalNote": "All second moments of area are taken about axes through the centroid; I₁, I₂ are the principal values and α is the angle from the y axis to axis 1."
-    },
-    "pasteAtOffset": {
-      "title": "Paste with offset",
-      "hint": "How far from where it was copied."
     }
   },
   "tooltip": {

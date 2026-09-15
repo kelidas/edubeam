@@ -62,8 +62,7 @@
     "pointAlongHint": "Aponte a barra para ler uma seção",
     "hideEmptyRows": "Ocultar linhas vazias",
     "emptyRowsHidden": "{n} vazias ocultas",
-    "step": "Passo",
-    "pasteAtOffset": "Colar com deslocamento…"
+    "step": "Passo"
   },
   "nodes": {
     "addNode": "Adicionar nó",
@@ -259,10 +258,6 @@
     "changelog": {
       "title": "O que há de novo?",
       "description": "Novos recursos, melhorias e prévias do que estamos desenvolvendo."
-    },
-    "pasteAtOffset": {
-      "title": "Colar com deslocamento",
-      "hint": "A que distância de onde foi copiado."
     }
   },
   "tooltip": {

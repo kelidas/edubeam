@@ -61,8 +61,7 @@
     "pointAlongHint": "ชี้ที่คานเพื่ออ่านหน้าตัด",
     "hideEmptyRows": "ซ่อนแถวว่าง",
     "emptyRowsHidden": "ซ่อนแถวว่าง {n} แถว",
-    "step": "ระยะขั้น",
-    "pasteAtOffset": "วางโดยมีระยะเยื้อง…"
+    "step": "ระยะขั้น"
   },
   "nodes": {
     "addNode": "เพิ่มโหนด",
@@ -253,10 +252,6 @@
     },
     "editNode": {
       "editNode": "แก้ไขโหนด"
-    },
-    "pasteAtOffset": {
-      "title": "วางโดยมีระยะเยื้อง",
-      "hint": "ห่างจากตำแหน่งที่คัดลอกเท่าใด"
     }
   },
   "tooltip": {

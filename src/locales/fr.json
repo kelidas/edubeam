@@ -62,8 +62,7 @@
     "pointAlongHint": "Pointez la barre pour lire une section",
     "hideEmptyRows": "Masquer les lignes vides",
     "emptyRowsHidden": "{n} vides masquées",
-    "step": "Pas",
-    "pasteAtOffset": "Coller avec décalage…"
+    "step": "Pas"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",
@@ -259,10 +258,6 @@
     "changelog": {
       "title": "Quoi de neuf ?",
       "description": "Nouvelles fonctionnalités, améliorations et aperçu de ce que nous préparons."
-    },
-    "pasteAtOffset": {
-      "title": "Coller avec décalage",
-      "hint": "À quelle distance de l’endroit copié."
     }
   },
   "tooltip": {

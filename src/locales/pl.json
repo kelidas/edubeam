@@ -62,8 +62,7 @@
     "pointAlongHint": "Wskaż pręt, aby odczytać przekrój",
     "hideEmptyRows": "Ukryj puste wiersze",
     "emptyRowsHidden": "ukryto pustych: {n}",
-    "step": "Krok",
-    "pasteAtOffset": "Wklej z przesunięciem…"
+    "step": "Krok"
   },
   "nodes": {
     "addNode": "Dodaj węzeł",
@@ -259,10 +258,6 @@
     "changelog": {
       "title": "Co nowego?",
       "description": "Nowe funkcje, usprawnienia i zapowiedzi tego, nad czym pracujemy."
-    },
-    "pasteAtOffset": {
-      "title": "Wklej z przesunięciem",
-      "hint": "Jak daleko od miejsca skopiowania."
     }
   },
   "tooltip": {

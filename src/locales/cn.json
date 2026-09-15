@@ -62,8 +62,7 @@
     "pointAlongHint": "指向杆件以读取截面",
     "hideEmptyRows": "隐藏空行",
     "emptyRowsHidden": "已隐藏 {n} 个空行",
-    "step": "步长",
-    "pasteAtOffset": "偏移粘贴…"
+    "step": "步长"
   },
   "nodes": {
     "addNode": "添加节点",
@@ -259,10 +258,6 @@
     "changelog": {
       "title": "更新内容",
       "description": "新功能、改进以及我们正在开发内容的预览。"
-    },
-    "pasteAtOffset": {
-      "title": "偏移粘贴",
-      "hint": "相对复制位置的距离。"
     }
   },
   "tooltip": {

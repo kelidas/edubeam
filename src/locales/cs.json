@@ -56,8 +56,7 @@
     "pointAlongHint": "Ukažte na prut a čtěte řez",
     "hideEmptyRows": "Skrýt prázdné řádky",
     "emptyRowsHidden": "skryto prázdných: {n}",
-    "step": "Krok",
-    "pasteAtOffset": "Vložit s posunem…"
+    "step": "Krok"
   },
   "tabs": {
     "nodes": "Uzly",
@@ -318,10 +317,6 @@
       "noShape": "Bez polygonálního tvaru",
       "centroidal": "těžišťové",
       "centroidalNote": "Všechny momenty setrvačnosti jsou vztaženy k osám procházejícím těžištěm; I₁, I₂ jsou hlavní momenty a α je úhel od osy y k ose 1."
-    },
-    "pasteAtOffset": {
-      "title": "Vložit s posunem",
-      "hint": "O kolik dál, než odkud bylo zkopírováno."
     }
   },
   "tooltip": {

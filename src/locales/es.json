@@ -62,8 +62,7 @@
     "pointAlongHint": "Señale la barra para leer una sección",
     "hideEmptyRows": "Ocultar filas vacías",
     "emptyRowsHidden": "{n} vacías ocultas",
-    "step": "Paso",
-    "pasteAtOffset": "Pegar con desplazamiento…"
+    "step": "Paso"
   },
   "nodes": {
     "addNode": "Añadir nodo",
@@ -259,10 +258,6 @@
     "changelog": {
       "title": "¿Qué hay de nuevo?",
       "description": "Nuevas funciones, mejoras y un vistazo a lo que estamos preparando."
-    },
-    "pasteAtOffset": {
-      "title": "Pegar con desplazamiento",
-      "hint": "A qué distancia de donde se copió."
     }
   },
   "tooltip": {
