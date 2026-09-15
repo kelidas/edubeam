@@ -728,7 +728,7 @@ defineExpose({ centerContent, fitContent, setView, update });
      */
     path.dislocation-rotation {
       fill: none;
-      stroke: v-bind('viewerStore.colors.loads');
+      stroke: v-bind('colors.loads');
       stroke-width: 1.5px;
       vector-effect: non-scaling-stroke;
       /* the head alone, in pixels; the force marker is a whole arrow, shaft and all */
