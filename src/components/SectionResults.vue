@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
+import { computed, onBeforeUnmount, ref, watch } from 'vue';
 import { Beam2D } from 'ts-fem';
 import { useProjectStore } from '../store/project';
 import { useAppStore } from '../store/app';
@@ -243,14 +243,26 @@ const PAD_Y = Math.round(30 * em);
 
 let observer: ResizeObserver | null = null;
 
-onMounted(() => {
-  if (typeof ResizeObserver === 'undefined' || !plot.value) return;
+/*
+ * The drawing is taken out of the page and put back whenever the element briefly goes missing - and
+ * a change made from the bottom bar rebuilds the whole model, so it does. The observer has to follow
+ * whichever drawing is there now: left on the old one, it heard that drawing report no width as it
+ * was removed, and the new one was never measured, so the diagram stayed at its narrowest.
+ */
+watch(
+  plot,
+  (element, previous) => {
+    if (previous) observer?.unobserve(previous);
+    if (!element || typeof ResizeObserver === 'undefined') return;
 
-  observer = new ResizeObserver(([entry]) => {
-    plotWidth.value = Math.max(120, entry.contentRect.width);
-  });
-  observer.observe(plot.value);
-});
+    observer ??= new ResizeObserver(([entry]) => {
+      // a drawing out of the page has no width, which is not a width to draw at
+      if (entry.contentRect.width > 0) plotWidth.value = Math.max(120, entry.contentRect.width);
+    });
+    observer.observe(element);
+  },
+  { flush: 'post' }
+);
 
 onBeforeUnmount(() => observer?.disconnect());
 
