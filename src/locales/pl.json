@@ -62,7 +62,8 @@
     "pointAlongHint": "Wskaż pręt, aby odczytać przekrój",
     "hideEmptyRows": "Ukryj puste wiersze",
     "emptyRowsHidden": "ukryto pustych: {n}",
-    "step": "Krok"
+    "step": "Krok",
+    "move": "Przenieś"
   },
   "nodes": {
     "addNode": "Dodaj węzeł",

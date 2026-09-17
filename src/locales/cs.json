@@ -56,7 +56,8 @@
     "pointAlongHint": "Ukažte na prut a čtěte řez",
     "hideEmptyRows": "Skrýt prázdné řádky",
     "emptyRowsHidden": "skryto prázdných: {n}",
-    "step": "Krok"
+    "step": "Krok",
+    "move": "Přesunout"
   },
   "tabs": {
     "nodes": "Uzly",

@@ -62,7 +62,8 @@
     "pointAlongHint": "Auf den Stab zeigen, um einen Schnitt zu lesen",
     "hideEmptyRows": "Leere Zeilen ausblenden",
     "emptyRowsHidden": "{n} leere ausgeblendet",
-    "step": "Schritt"
+    "step": "Schritt",
+    "move": "Verschieben"
   },
   "nodes": {
     "addNode": "Knoten hinzufügen",

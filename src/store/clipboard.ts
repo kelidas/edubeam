@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia';
-import { reactive } from 'vue';
+import { reactive, ref } from 'vue';
 import { useProjectStore } from './project';
 import {
   Beam2D,
@@ -42,7 +42,17 @@ export const useClipboardStore = defineStore('clipboard', () => {
     dimensions: [],
   });
 
-  const select = (sel: Selection) => {
+  /**
+   * Whether what is held is to be copied or moved when it is placed.
+   *
+   * The two are one gesture - pick up a selection, carry it under the pointer, put it down - and
+   * differ only in what putting it down does, so they share the placing mode, its preview and its
+   * typed offset rather than each having their own.
+   */
+  const mode = ref<'copy' | 'move'>('copy');
+
+  const select = (sel: Selection, as: 'copy' | 'move' = 'copy') => {
+    mode.value = as;
     selection.nodes = [...sel.nodes];
     selection.elements = [...sel.elements];
     selection.nodalLoads = [...sel.nodalLoads];
@@ -153,6 +163,69 @@ export const useClipboardStore = defineStore('clipboard', () => {
     return [(min[0] + max[0]) / 2, (min[1] + max[1]) / 2, (min[2] + max[2]) / 2];
   };
 
+  const clear = () => {
+    selection.nodes = [];
+    selection.elements = [];
+    selection.nodalLoads = [];
+    selection.elementLoads = [];
+    selection.prescribedBC = [];
+    selection.dimensions = [];
+    mode.value = 'copy';
+  };
+
+  /**
+   * Moves what is held by `d`, rather than copying it there.
+   *
+   * Only the nodes are moved - the selected ones and the ends of every selected element - since
+   * everything else hangs off them: the elements between them, the loads on those, the loads and
+   * supports on the nodes, and any dimension measured from a node. A dimension placed freely has
+   * nothing to hang off, so its points are moved with the selection it belongs to.
+   *
+   * What was moved has been put down, so it is let go of: holding on would move it a second time
+   * on the next paste.
+   */
+  const move = (d: { x: number; z: number } = { x: 0, z: 0 }) => {
+    executeModelMutationWithUndo(() => {
+      const projectStore = useProjectStore();
+      const domain = projectStore.solver.domain;
+
+      setUnsolved();
+
+      const moved = new Set(selection.nodes);
+
+      for (const label of selection.elements) {
+        const element = domain.elements.get(label) as Beam2D | undefined;
+
+        element?.nodes.forEach((node) => moved.add(node));
+      }
+
+      for (const label of moved) {
+        const node = domain.nodes.get(label);
+
+        if (!node) continue;
+
+        node.coords[0] += d.x;
+        node.coords[2] += d.z;
+      }
+
+      for (const dimension of projectStore.dimensions) {
+        if (!dimension.id || !selection.dimensions.includes(dimension.id)) continue;
+
+        for (const point of dimension.points) {
+          // a point measured from a node goes wherever its node goes
+          if (point.sourceNodeLabel !== null && point.sourceNodeLabel !== undefined) {
+            if (domain.nodes.has(String(point.sourceNodeLabel))) continue;
+          }
+
+          point.x += d.x;
+          point.y += d.z;
+        }
+      }
+    });
+
+    clear();
+  };
+
   const isAnythingInClipboard = () => {
     return (
       selection.nodes.length > 0 ||
@@ -165,8 +238,11 @@ export const useClipboardStore = defineStore('clipboard', () => {
 
   return {
     selection,
+    mode,
     select,
     paste,
+    move,
+    clear,
     midpoint,
     isAnythingInClipboard,
   };

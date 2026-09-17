@@ -61,7 +61,8 @@
     "pointAlongHint": "ชี้ที่คานเพื่ออ่านหน้าตัด",
     "hideEmptyRows": "ซ่อนแถวว่าง",
     "emptyRowsHidden": "ซ่อนแถวว่าง {n} แถว",
-    "step": "ระยะขั้น"
+    "step": "ระยะขั้น",
+    "move": "ย้าย"
   },
   "nodes": {
     "addNode": "เพิ่มโหนด",

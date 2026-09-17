@@ -490,7 +490,7 @@ const { current, escape, f, c, g, s, _delete } = useMagicKeys({
   },
 });
 
-const { ctrl_a, ctrl_c, ctrl_v } = useMagicKeys({
+const { ctrl_a, ctrl_c, ctrl_v, ctrl_x } = useMagicKeys({
   passive: false,
   onEventFired(e) {
     if (isShortcutBlocked()) return;
@@ -540,6 +540,11 @@ watch(ctrl_c, (v) => {
   }
 });
 
+watch(ctrl_x, (v) => {
+  if (isShortcutBlocked()) return;
+  if (v && projectStore.isAnythingSelected2()) startMove();
+});
+
 watch(ctrl_v, (v) => {
   if (isShortcutBlocked()) return;
   if (v) {
@@ -550,6 +555,10 @@ watch(ctrl_v, (v) => {
 /** Leaves whatever mode the canvas is in - what Esc does, and what the mode banner button calls. */
 const cancelActiveMode = () => {
   if (appStore.mouseMode === MouseMode.PICK_WINDOW) finishWindowPick(null);
+  // a move given up must not wait in the clipboard to happen on the next paste
+  if (appStore.mouseMode === MouseMode.PASTE_CLIPBOARD && useClipboardStore().mode === 'move') {
+    useClipboardStore().clear();
+  }
   cancelDimensionDrag();
   cancelDimensionPointDrag();
   if ('activeElement' in document) (document.activeElement as HTMLElement).blur();
@@ -595,7 +604,11 @@ const activeAddMode = computed(() => {
     return { icon: 'mdi-arrow-expand-horizontal', label: t('dimensioning.add_dimension') };
   }
 
-  if (appStore.mouseMode === MouseMode.PASTE_CLIPBOARD) return { icon: 'mdi-content-paste', label: t('common.paste') };
+  if (appStore.mouseMode === MouseMode.PASTE_CLIPBOARD) {
+    return useClipboardStore().mode === 'move'
+      ? { icon: 'mdi-cursor-move', label: t('common.move') }
+      : { icon: 'mdi-content-paste', label: t('common.paste') };
+  }
 
   if (appStore.mouseMode === MouseMode.PICK_WINDOW) {
     return { icon: 'mdi-select-drag', label: t('exportImage.pickWindowHint') };
@@ -669,10 +682,27 @@ watch(
 const pasteOffsetX = ref(0);
 const pasteOffsetZ = ref(0);
 
+/** Puts down what the clipboard holds: a copy, or the selection itself when it was picked up to move. */
+const placeClipboard = (d: { x: number; z: number }) => {
+  const clipboard = useClipboardStore();
+
+  if (clipboard.mode === 'move') clipboard.move(d);
+  else clipboard.paste(d);
+};
+
+/**
+ * Picks the selection up to move it, in the same placing mode a paste uses: carried under the
+ * pointer, put down by a click or by an offset typed into the banner.
+ */
+const startMove = () => {
+  useClipboardStore().select(projectStore.selection2, 'move');
+  paste();
+};
+
 const pasteAtOffset = () => {
   const metres = (value: number) => (Number.isFinite(value) ? appStore.convertInverseLength(value) : 0);
 
-  useClipboardStore().paste({ x: metres(pasteOffsetX.value), z: metres(pasteOffsetZ.value) });
+  placeClipboard({ x: metres(pasteOffsetX.value), z: metres(pasteOffsetZ.value) });
   appStore.mouseMode = MouseMode.NONE;
   startNode.value = null;
 };
@@ -1502,7 +1532,7 @@ const mouseMove = (e: PointerEvent) => {
 const placeAtPointer = (e: PointerEvent) => {
   if (appStore.mouseMode === MouseMode.PASTE_CLIPBOARD) {
     appStore.mouseMode = MouseMode.NONE;
-    useClipboardStore().paste({
+    placeClipboard({
       x: mouseXReal.value - startNode.value.x + deltaPaste.value.x,
       z: mouseYReal.value - startNode.value.y + deltaPaste.value.y,
     });
@@ -2547,7 +2577,7 @@ defineExpose({ centerContent, fitContent });
           @keydown.enter="pasteAtOffset"
         />
         <v-btn size="small" variant="tonal" density="comfortable" @click="pasteAtOffset">
-          {{ $t('common.paste') }}
+          {{ useClipboardStore().mode === 'move' ? $t('common.move') : $t('common.paste') }}
         </v-btn>
       </div>
 
@@ -2638,6 +2668,15 @@ defineExpose({ centerContent, fitContent });
         <template #label>
           <span class="label">{{ $t('common.copy') }}</span>
           <span class="ml-auto text-right" style="font-size: 10px">Ctrl + C</span>
+        </template>
+      </context-menu-item>
+      <context-menu-item :disabled="!projectStore.isAnythingSelected2()" @click="startMove()">
+        <template #icon>
+          <v-icon size="x-small">mdi-cursor-move</v-icon>
+        </template>
+        <template #label>
+          <span class="label">{{ $t('common.move') }}</span>
+          <span class="ml-auto text-right" style="font-size: 10px">Ctrl + X</span>
         </template>
       </context-menu-item>
       <context-menu-item :disabled="!useClipboardStore().isAnythingInClipboard()" @click="paste()">
