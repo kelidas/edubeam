@@ -43,7 +43,8 @@
     "paste": "粘贴",
     "addNew": "新增",
     "whatisnew": "更新内容",
-    "reverse_orientation": "翻转标注"
+    "reverse_orientation": "翻转标注",
+    "move": "移动"
   },
   "nodes": {
     "addNode": "添加节点",

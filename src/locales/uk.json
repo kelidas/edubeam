@@ -43,7 +43,8 @@
     "paste": "Вставити",
     "addNew": "Додати",
     "whatisnew": "Що нового?",
-    "reverse_orientation": "Змінити напрям розміру"
+    "reverse_orientation": "Змінити напрям розміру",
+    "move": "Перемістити"
   },
   "nodes": {
     "addNode": "Додати вузол",

@@ -38,7 +38,8 @@
     "paste": "Vložit",
     "addNew": "Přidat",
     "whatisnew": "Co je nového?",
-    "reverse_orientation": "Převrátit kótu"
+    "reverse_orientation": "Převrátit kótu",
+    "move": "Přesunout"
   },
   "tabs": {
     "nodes": "Uzly",

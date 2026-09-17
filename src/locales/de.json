@@ -43,7 +43,8 @@
     "paste": "Einfügen",
     "addNew": "Neu hinzufügen",
     "whatisnew": "Was gibt's Neues?",
-    "reverse_orientation": "Bemaßung umkehren"
+    "reverse_orientation": "Bemaßung umkehren",
+    "move": "Verschieben"
   },
   "nodes": {
     "addNode": "Knoten hinzufügen",

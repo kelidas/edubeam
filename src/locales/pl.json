@@ -43,7 +43,8 @@
     "paste": "Wklej",
     "addNew": "Dodaj nowy",
     "whatisnew": "Co nowego?",
-    "reverse_orientation": "Odwróć wymiar"
+    "reverse_orientation": "Odwróć wymiar",
+    "move": "Przenieś"
   },
   "nodes": {
     "addNode": "Dodaj węzeł",

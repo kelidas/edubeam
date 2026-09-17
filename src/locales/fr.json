@@ -43,7 +43,8 @@
     "paste": "Coller",
     "addNew": "Ajouter",
     "whatisnew": "Quoi de neuf ?",
-    "reverse_orientation": "Inverser la cote"
+    "reverse_orientation": "Inverser la cote",
+    "move": "Déplacer"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",

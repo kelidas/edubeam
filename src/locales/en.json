@@ -43,7 +43,8 @@
     "paste": "Paste",
     "addNew": "Add new",
     "whatisnew": "What’s New?",
-    "reverse_orientation": "Flip dimension"
+    "reverse_orientation": "Flip dimension",
+    "move": "Move"
   },
   "nodes": {
     "addNode": "Add node",

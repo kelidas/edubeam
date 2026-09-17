@@ -43,7 +43,8 @@
     "paste": "Вставить",
     "addNew": "Добавить",
     "whatisnew": "Что нового?",
-    "reverse_orientation": "Развернуть размер"
+    "reverse_orientation": "Развернуть размер",
+    "move": "Переместить"
   },
   "nodes": {
     "addNode": "Добавить узел",

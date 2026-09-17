@@ -43,7 +43,8 @@
     "paste": "Colar",
     "addNew": "Adicionar",
     "whatisnew": "O que há de novo?",
-    "reverse_orientation": "Inverter cota"
+    "reverse_orientation": "Inverter cota",
+    "move": "Mover"
   },
   "nodes": {
     "addNode": "Adicionar nó",

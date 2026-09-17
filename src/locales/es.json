@@ -43,7 +43,8 @@
     "paste": "Pegar",
     "addNew": "Añadir",
     "whatisnew": "¿Qué hay de nuevo?",
-    "reverse_orientation": "Invertir cota"
+    "reverse_orientation": "Invertir cota",
+    "move": "Mover"
   },
   "nodes": {
     "addNode": "Añadir nodo",
