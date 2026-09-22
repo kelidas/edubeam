@@ -413,7 +413,13 @@ const toggleSnapToGrid = () => {
   nextTick(() => grid.value?.refreshGrid(true));
 };
 
+/** In viewer mode nothing is picked up, dragged or changed: the drawing is there to be read. */
+const isReadOnly = () => appStore.inViewerMode;
+
 const isShortcutBlocked = () => {
+  // the keys this guards are the ones that change a model; panning and fitting stay
+  if (isReadOnly()) return true;
+
   const activeElement = document.activeElement as HTMLElement | null;
   if (!activeElement) return false;
   if (activeElement === document.body) return false;
@@ -1011,6 +1017,8 @@ const onDimensionPointerDown = (e: PointerEvent, dimensionId: string) => {
   const dimension = findDimensionById(dimensionId);
   if (dimension) convertDistanceToWorld(dimension);
 
+  if (isReadOnly()) return;
+
   pendingDimensionId = dimensionId;
   pointerDownOriginatesFromDimension = true;
   intersected.value.type = 'dimension';
@@ -1040,6 +1048,8 @@ const onDimensionPointPointerDown = (e: PointerEvent, dimensionId: string, point
     startPoint: createDimensionPoint(currentPoint.x, currentPoint.y, currentPoint.sourceNodeLabel ?? null),
     lastPoint: createDimensionPoint(currentPoint.x, currentPoint.y, currentPoint.sourceNodeLabel ?? null),
   };
+
+  if (isReadOnly()) return;
 
   pointerDownOriginatesFromDimension = true;
   intersected.value.type = 'dimension-point';
@@ -1741,7 +1751,7 @@ const onMouseDown = (e: PointerEvent) => {
 
     if (placeAtPointer(e)) return;
 
-    if (appStore.mouseMode === MouseMode.HOVER) {
+    if (appStore.mouseMode === MouseMode.HOVER && !isReadOnly()) {
       if (intersected.value.type === 'node') hideTooltip(false);
       appStore.mouseMode = MouseMode.MOVING;
     } else if ((e.pointerType === 'mouse' || touchSelectArmed.value) && appStore.mouseMode !== MouseMode.MOVING) {
@@ -2096,6 +2106,8 @@ const elementAtEvent = (e: Event) => {
 
 const openCtxMenu = (e: MouseEvent) => {
   if (hasMoved(e) || longPressFired) return;
+  // its entries add, edit and delete; none of them belongs in a drawing that is only being shown
+  if (isReadOnly()) return;
 
   ctxMenuElement.value = elementAtEvent(e);
   optionsCtxMenu.x = e.clientX;

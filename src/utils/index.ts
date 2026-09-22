@@ -16,6 +16,7 @@ import { availableLocales, i18n } from '../plugins/i18n';
 import { useProjectStore } from '../store/project';
 import { Command, IKeyValue, undoRedoManager } from '../CommandManager';
 import { useViewerStore } from '../store/viewer';
+import { useAppStore } from '../store/app';
 
 import { loadType } from './loadType';
 import { ensureDimensionId, createDimensionId } from './id';
@@ -106,6 +107,14 @@ const restoreProjectSnapshot = (snapshot: ProjectSnapshot) => {
 };
 
 export const executeModelMutationWithUndo = (mutate: () => void) => {
+  /*
+   * Viewer mode is for showing a model, not for changing one, and it is reached by a link that an
+   * author hands out - typically in an iframe. Every edit in the app arrives here, whichever button
+   * or key or dialog started it, so this is the one place where that promise can be kept. Guarding
+   * each affordance instead leaves whatever was forgotten.
+   */
+  if (useAppStore().inViewerMode) return;
+
   if (modelMutationDepth > 0) {
     mutate();
     return;
