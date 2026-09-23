@@ -87,6 +87,96 @@ const MOMENT_SIDE_OFFSET = 8;
 const ROTATION_RADIUS = 18;
 const SHAFT = 40;
 
+/** The hinge at a released rotation, the size the hinges on an element are drawn. */
+const HINGE_RADIUS = 6;
+/** A roller of the sliding plate: the size of the hinge, so the releases read as one family. */
+const ROLLER_RADIUS = HINGE_RADIUS;
+const ROLLER_SPACING = 14;
+/** Half the distance between the plates: the rollers run between them without touching. */
+const PLATE_GAP = ROLLER_RADIUS + 1.5;
+/** Half the length of a plate: long enough to hold the three rollers with a little to spare. */
+const PLATE_HALF_LENGTH = ROLLER_SPACING + ROLLER_RADIUS + 3;
+/** The room left between a plate and the arrows, so neither is read as part of the other. */
+const PLATE_CLEARANCE = 8;
+
+/** The local axes of the element in the coordinates the drawing is in. */
+const axes = computed(() => {
+  const geo = target.value.computeGeo();
+  const cos = geo.dx / geo.l;
+  const sin = geo.dz / geo.l;
+
+  return { along: [cos, sin] as const, across: [-sin, cos] as const };
+});
+
+/** The imposed movement resolved onto the element, whichever frame it was typed in. */
+const slip = computed(() => {
+  const [vx, vz] = [props.eload.values[0], props.eload.values[1]];
+
+  if (props.eload.lcs) return { axial: vx, transverse: vz };
+
+  const { along, across } = axes.value;
+
+  return { axial: along[0] * vx + along[1] * vz, transverse: across[0] * vx + across[1] * vz };
+});
+
+/**
+ * A sliding plate: two plates with three rollers between them, drawn about the section.
+ *
+ * The plates run the way the two faces travel and the rollers roll along them, so a slip along the
+ * beam lies flat on it and a slip across it stands upright - which is the way these are drawn on
+ * paper, and the way a reader tells one release from the other at a glance.
+ *
+ * What lies between the plates is painted out first, so the beam runs into the symbol and stops
+ * there instead of running through the rollers. A release does part the beam, and drawing it parted
+ * is both what a reader expects and the only way the small circles stay readable.
+ */
+const slidingPlate = (travel: readonly [number, number], standoff = 0) => {
+  const normal = [-travel[1], travel[0]] as const;
+  const half = PLATE_HALF_LENGTH / props.scale;
+  const gap = PLATE_GAP / props.scale;
+  const spacing = ROLLER_SPACING / props.scale;
+  const from = standoff / props.scale;
+  const at = (u: number, v: number) => ({
+    x: position.value.x + travel[0] * u + normal[0] * (v + from),
+    z: position.value.z + travel[1] * u + normal[1] * (v + from),
+  });
+  const corners = [at(-half, -gap), at(half, -gap), at(half, gap), at(-half, gap)];
+
+  return {
+    backing: corners.map((c) => `${c.x},${c.z}`).join(' '),
+    plates: [gap, -gap].map((side) => {
+      const from = at(-half, side);
+      const to = at(half, side);
+
+      return `${from.x},${from.z} ${to.x},${to.z}`;
+    }),
+    rollers: [-spacing, 0, spacing].map((u) => ({ ...at(u, 0), r: ROLLER_RADIUS / props.scale })),
+  };
+};
+
+/** The releases at the section: what kind of movement the arrows beside them stand for. */
+const releases = computed(() => {
+  const plates = [];
+
+  if (slip.value.axial !== 0) plates.push(slidingPlate(axes.value.along));
+  if (slip.value.transverse !== 0) plates.push(slidingPlate(axes.value.across));
+
+  return plates;
+});
+
+/**
+ * How far along the beam the arrows start.
+ *
+ * A plate reaches further than the usual gap - a long way, where it lies along the beam - and an
+ * arrow drawn from inside one would read as part of it. So the arrows step aside far enough to leave
+ * whichever symbol is there whole.
+ */
+const arrowOffset = computed(() => {
+  const reach = Math.max(slip.value.axial !== 0 ? PLATE_HALF_LENGTH : 0, slip.value.transverse !== 0 ? PLATE_GAP : 0);
+
+  return reach > 0 ? Math.max(SIDE_OFFSET, reach + PLATE_CLEARANCE) : SIDE_OFFSET;
+});
+
 /** Which way the pair turns as a whole; the far face is then the mirror of the near one. */
 const isNegativeRotation = () => props.eload.values[2] < 0;
 
@@ -94,7 +184,7 @@ const sides = computed(() => {
   const geo = target.value.computeGeo();
   const cos = geo.dx / geo.l;
   const sin = geo.dz / geo.l;
-  const step = SIDE_OFFSET / props.scale;
+  const step = arrowOffset.value / props.scale;
   const arcStep = MOMENT_SIDE_OFFSET / props.scale;
   const shaft = SHAFT / props.scale;
 
@@ -194,6 +284,41 @@ const momentLabelPosition = computed(() => {
 
       <polyline :points="`${side.arcX},${side.arcZ} ${side.arcX + 1e-6},${side.arcZ}`" class="handle moment" />
     </template>
+
+    <!--
+      The release at the section, over the arrows that say how far it opens: a hinge for a turn, a
+      sliding plate for a slip, both in the colour the arrows are drawn in.
+    -->
+    <template v-for="(plate, i) in releases" :key="`p-${i}`">
+      <polygon :points="plate.backing" class="release backing" />
+
+      <polyline
+        v-for="(points, j) in plate.plates"
+        :key="`pl-${i}-${j}`"
+        :points="points"
+        class="release plate"
+        vector-effect="non-scaling-stroke"
+      />
+
+      <circle
+        v-for="(roller, j) in plate.rollers"
+        :key="`ro-${i}-${j}`"
+        :cx="roller.x"
+        :cy="roller.z"
+        :r="roller.r"
+        class="release roller"
+        vector-effect="non-scaling-stroke"
+      />
+    </template>
+
+    <circle
+      v-if="eload.values[2] !== 0"
+      :cx="position.x"
+      :cy="position.z"
+      :r="HINGE_RADIUS / scale"
+      class="release hinge"
+      vector-effect="non-scaling-stroke"
+    />
 
     <text
       v-if="eload.values[2] !== 0"

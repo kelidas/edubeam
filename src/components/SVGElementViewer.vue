@@ -723,6 +723,39 @@ defineExpose({ centerContent, fitContent, setView, update });
       fill: v-bind('colors.loads');
     }
     /*
+     * The release itself: a hinge where the section turns, a sliding plate where it slips. White
+     * inside, so the beam behind does not show through the symbol, and in the colour of the loads,
+     * because it belongs to the load rather than to the structure.
+     */
+    .release {
+      stroke: v-bind('colors.loads');
+      vector-effect: non-scaling-stroke;
+
+      &.backing {
+        fill: white;
+        stroke: none;
+      }
+
+      &.plate {
+        stroke-width: 2px;
+        stroke-linecap: round;
+      }
+
+      &.roller,
+      &.hinge {
+        fill: white;
+      }
+
+      &.roller {
+        stroke-width: 1.5px;
+      }
+
+      &.hinge {
+        stroke-width: 2px;
+      }
+    }
+
+    /*
      * The turn of one face of a released section: half a circle, drawn here rather than hung off a
      * marker, so that where it sits is a matter of arithmetic rather than of how a marker anchors.
      */
