@@ -22,6 +22,7 @@ const props = withDefaults(
     showNormalForce: boolean;
     showShearForce: boolean;
     showBendingMoment: boolean;
+    showRotation: boolean;
     showLabel: boolean;
     showLabelBackground?: boolean;
     convertForce: (f: number) => number;
@@ -32,6 +33,7 @@ const props = withDefaults(
     normalForceMultiplier: number;
     shearForceMultiplier: number;
     bendingMomentMultiplier: number;
+    rotationMultiplier: number;
     resultLabelMode?: ResultLabelMode;
     padding?: number;
     fontSize?: number;
@@ -313,6 +315,46 @@ const deflectionLabels = computed(() => {
   }
 
   return labels;
+});
+
+/**
+ * The rotation of the cross section along the element, drawn as a curve on the element's normal.
+ *
+ * It belongs with the deflected shape rather than with the internal forces: it is what the beam
+ * does, not what it carries, so it is drawn plain, without a value written at every ordinate.
+ *
+ * ts-fem evaluates it, so the curve is the rotation itself rather than a difference taken from the
+ * deflection it is the slope of.
+ */
+const rotationCurve = computed(() => {
+  if (!props.loadCase.solved || !props.showRotation) return '';
+
+  const element = props.element as unknown as { computeLocalRotationAt?: (lc: LoadCase, x: number) => number };
+
+  // an older build of the library has no rotation to ask for
+  if (typeof element.computeLocalRotationAt !== 'function') return '';
+
+  const geo = props.element.computeGeo();
+  const n1 = props.element.domain.nodes.get(props.element.nodes[0]) as Node;
+  const cos = geo.dx / geo.l;
+  const sin = geo.dz / geo.l;
+  const nx = -geo.dz / geo.l;
+  const ny = geo.dx / geo.l;
+  const by = props.rotationMultiplier / props.scale;
+
+  const SEGMENTS = 20;
+  const points: string[] = [`${n1.coords[0]},${n1.coords[2]}`];
+
+  for (let i = 0; i <= SEGMENTS; i++) {
+    const along = (geo.l * i) / SEGMENTS;
+    const value = element.computeLocalRotationAt(props.loadCase, along);
+
+    points.push(`${n1.coords[0] + cos * along + value * nx * by},${n1.coords[2] + sin * along + value * ny * by}`);
+  }
+
+  points.push(`${n1.coords[0] + cos * geo.l},${n1.coords[2] + sin * geo.l}`);
+
+  return points.join(' ');
 });
 
 const forces = computed(() => {
@@ -706,6 +748,15 @@ const emit = defineEmits(['elementmousemove', 'elementresultsmousemove', 'elemen
           {{ numberFormat.format(Math.abs(mv[2]) < 1e-6 ? 0 : mv[2]) }}
         </text>
       </g>
+    </g>
+
+    <g v-if="showResults && loadCase.solved && showRotation" class="rotation" data-fit-ignore="results">
+      <polyline
+        :points="rotationCurve"
+        vector-effect="non-scaling-stroke"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
     </g>
 
     <g
