@@ -158,4 +158,60 @@ describe('imposed deformation symbol', () => {
     expect(arcsOf([0, -1, 0, 2])).toHaveLength(0);
     expect(drawn([0, 0, 1, 2]).findAll('polyline.decoration.force')).toHaveLength(0);
   });
+
+  /**
+   * The release itself, beside the arrows that say how far it opens: the arrows are the size of the
+   * movement, these are what kind of movement it is.
+   */
+  const shaftsAcross = (values: number[]) =>
+    drawn(values)
+      .findAll('polyline.decoration.shaft')
+      .map((shaft) => startOf(shaft.attributes('points')!)[1]);
+
+  it('sets the two arrows of a slip along the beam either side of it', () => {
+    // colinear, they would be one line with a head at each end, saying nothing about which face is which
+    const across = shaftsAcross([1, 0, 0, 2]);
+
+    expect(Math.sign(across[0])).toBe(-Math.sign(across[1]));
+    expect(Math.abs(across[1] - across[0])).toBeGreaterThan(0);
+  });
+
+  const platesOf = (values: number[]) => drawn(values).findAll('polyline.release.plate');
+
+  it('draws a sliding plate for a slip, lying the way the faces travel', () => {
+    // the beam runs along x, so a slip along it gets plates along x and a slip across it plates along z
+    const [alongFrom, alongTo] = [platesOf([1, 0, 0, 2])[0], platesOf([0, 1, 0, 2])[0]].map((plate) => {
+      const [from, to] = plate
+        .attributes('points')!
+        .split(' ')
+        .map((p) => p.split(',').map(Number));
+
+      return { dx: Math.abs(to[0] - from[0]), dz: Math.abs(to[1] - from[1]) };
+    });
+
+    expect(alongFrom.dx).toBeGreaterThan(0);
+    expect(alongFrom.dz).toBeCloseTo(0, 9);
+    expect(alongTo.dz).toBeGreaterThan(0);
+    expect(alongTo.dx).toBeCloseTo(0, 9);
+  });
+
+  it('runs three rollers between the two plates', () => {
+    expect(platesOf([1, 0, 0, 2])).toHaveLength(2);
+    expect(drawn([1, 0, 0, 2]).findAll('circle.release.roller')).toHaveLength(3);
+  });
+
+  it('puts a hinge at the section of an imposed rotation, and only there', () => {
+    const hinge = drawn([0, 0, 1, 2]).find('circle.release.hinge');
+
+    expect(hinge.exists()).toBe(true);
+    expect(Number(hinge.attributes('cx'))).toBeCloseTo(2, 9);
+    expect(drawn([1, 0, 0, 2]).find('circle.release.hinge').exists()).toBe(false);
+    expect(drawn([0, 0, 1, 2]).findAll('polyline.release.plate')).toHaveLength(0);
+  });
+
+  it('keeps every release the same size on the screen at any zoom', () => {
+    const radius = (scale: number) => Number(drawn([0, 0, 1, 2], scale).find('circle.release.hinge').attributes('r'));
+
+    expect(radius(SCALE)).toBeCloseTo(radius(SCALE * 4) * 4, 9);
+  });
 });
