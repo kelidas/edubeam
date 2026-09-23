@@ -6,12 +6,12 @@ import Deformation from '../components/svg/ElementConcentratedDeformation.vue';
 /** The drawing is in model units, so the scale is how many pixels of symbol go to one of them. */
 const SCALE = 10;
 
-const drawn = (values: number[], scale = SCALE) => {
+const drawn = (values: number[], scale = SCALE, endsAt: [number, number, number] = [4, 0, 0]) => {
   const solver = new LinearStaticSolver();
   const d = solver.domain;
 
   d.createNode(1, [0, 0, 0], []);
-  d.createNode(2, [4, 0, 0], []);
+  d.createNode(2, endsAt, []);
   d.createMaterial(1, { e: 1, g: 1, alpha: 0, d: 0 });
   d.createCrossSection(1, { a: 1, iy: 1, h: 1, k: 1 });
   d.createBeam2D(1, [1, 2], 1, 1);
@@ -207,6 +207,33 @@ describe('imposed deformation symbol', () => {
     expect(Number(hinge.attributes('cx'))).toBeCloseTo(2, 9);
     expect(drawn([1, 0, 0, 2]).find('circle.release.hinge').exists()).toBe(false);
     expect(drawn([0, 0, 1, 2]).findAll('polyline.release.plate')).toHaveLength(0);
+  });
+
+  /**
+   * The pair of half circles straddles the section, and the section runs across the beam whichever
+   * way the beam runs - so the symbol turns with the element, as the arrows beside it do.
+   */
+  const arcEndsOf = (endsAt: [number, number, number]) =>
+    drawn([0, 0, 1, 2], SCALE, endsAt)
+      .findAll('path.dislocation-rotation')
+      .map((arc) => {
+        const [, x1, z1, x2, z2] = arc.attributes('d')!.match(/^M ([-\d.e]+) ([-\d.e]+) A .* ([-\d.e]+) ([-\d.e]+)$/)!;
+
+        return { dx: Math.abs(Number(x2) - Number(x1)), dz: Math.abs(Number(z2) - Number(z1)) };
+      });
+
+  it('turns the circle with the element', () => {
+    // on a beam along x the two ends of each half circle sit one above the other
+    arcEndsOf([4, 0, 0]).forEach((ends) => {
+      expect(ends.dx).toBeCloseTo(0, 9);
+      expect(ends.dz).toBeGreaterThan(0);
+    });
+
+    // and on a column they sit side by side, the whole symbol having turned with it
+    arcEndsOf([0, 0, 4]).forEach((ends) => {
+      expect(ends.dz).toBeCloseTo(0, 9);
+      expect(ends.dx).toBeGreaterThan(0);
+    });
   });
 
   it('keeps every release the same size on the screen at any zoom', () => {

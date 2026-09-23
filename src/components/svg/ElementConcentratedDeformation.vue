@@ -251,13 +251,21 @@ const rotationArcs = computed(() => {
   const radius = ROTATION_RADIUS / props.scale;
   const upward = !isNegativeRotation();
 
+  /*
+   * The two ends of each half circle lie across the element, not straight up and down the page: the
+   * pair straddles the section, and the section runs across the beam whichever way the beam runs.
+   * Rotating both ends and leaving the radius and the flag alone turns the whole arc with it.
+   */
+  const { across } = axes.value;
+
   return sides.value.map((side) => {
-    // from the bottom of the circle to the top, or the other way about
+    // from one end of the circle to the other, or the other way about
     const [from, to] = upward ? [radius, -radius] : [-radius, radius];
     // and round the side it stands on, which for a given direction of travel is one flag or the other
     const sweep = upward !== side.opposed ? 1 : 0;
+    const at = (along: number) => `${side.arcX + across[0] * along} ${side.arcZ + across[1] * along}`;
 
-    return `M ${side.arcX} ${side.arcZ + from} A ${radius} ${radius} 0 0 ${sweep} ${side.arcX} ${side.arcZ + to}`;
+    return `M ${at(from)} A ${radius} ${radius} 0 0 ${sweep} ${at(to)}`;
   });
 });
 
