@@ -416,13 +416,14 @@ const LOAD_DECORATION_PX = 60;
 const scalableResults = computed(() =>
   [
     { key: 'deformedShape' as const, label: 'w', shown: results.showDeformedShape },
+    { key: 'rotation' as const, label: '\u03c6', shown: results.showRotation },
     { key: 'normalForce' as const, label: 'N&nbsp;(x)', shown: results.showNormalForce },
     { key: 'shearForce' as const, label: 'V<sub>z</sub>&nbsp;(x)', shown: results.showShearForce },
     { key: 'bendingMoment' as const, label: 'M<sub>y</sub>&nbsp;(x)', shown: results.showBendingMoment },
   ].filter((row) => row.shown)
 );
 
-type ResultScaleKey = 'deformedShape' | 'normalForce' | 'shearForce' | 'bendingMoment';
+type ResultScaleKey = 'deformedShape' | 'rotation' | 'normalForce' | 'shearForce' | 'bendingMoment';
 
 /** One wheel notch, one button press: a quarter up or down, never past a factor of a thousand. */
 const stepResultScale = (key: ResultScaleKey, direction: number) => {
@@ -2805,6 +2806,10 @@ defineExpose({ centerContent, fitContent });
               :element="element"
               :scale="scale"
               :show-deformed-shape="!isZooming && results.showDeformedShape"
+              :show-rotation="!isZooming && results.showRotation"
+              :rotation-multiplier="
+                projectStore.rotationScale * viewerStore.resultsScalePx_ * results.resultScale.rotation
+              "
               :show-normal-force="!isZooming && results.showNormalForce"
               :show-shear-force="!isZooming && results.showShearForce"
               :show-bending-moment="!isZooming && results.showBendingMoment"
@@ -2848,6 +2853,10 @@ defineExpose({ centerContent, fitContent });
               :element="element"
               :scale="scale"
               :show-deformed-shape="!isZooming && results.showDeformedShape"
+              :show-rotation="!isZooming && results.showRotation"
+              :rotation-multiplier="
+                projectStore.rotationScale * viewerStore.resultsScalePx_ * results.resultScale.rotation
+              "
               :show-normal-force="!isZooming && results.showNormalForce"
               :show-shear-force="!isZooming && results.showShearForce"
               :show-bending-moment="!isZooming && results.showBendingMoment"
@@ -2934,6 +2943,10 @@ defineExpose({ centerContent, fitContent });
               :show-label="!isZooming && viewerStore.showNodeLabels"
               :show-supports="viewerStore.showSupports"
               :show-deformed-shape="!isZooming && results.showDeformedShape"
+              :show-rotation="!isZooming && results.showRotation"
+              :rotation-multiplier="
+                projectStore.rotationScale * viewerStore.resultsScalePx_ * results.resultScale.rotation
+              "
               :show-reactions="!isZooming && results.showReactions"
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
@@ -3097,11 +3110,23 @@ defineExpose({ centerContent, fitContent });
         >
           <v-checkbox
             v-model="results.showDeformedShape"
-            :label="$t('sideSettings.showDeformedShape')"
+            label=""
             hide-details
             density="compact"
             class="inline-checkbox mr-2 flex-shrink-0 text-no-wrap"
-          />
+          >
+            <template #label>w (x)</template>
+          </v-checkbox>
+          <v-checkbox
+            v-model="results.showRotation"
+            label=""
+            hide-details
+            density="compact"
+            class="inline-checkbox mr-2 flex-shrink-0 text-no-wrap"
+            :disabled="useProjectStore().model === 'EigenValueDynamicSolver'"
+          >
+            <template #label>&#966; (x)</template>
+          </v-checkbox>
           <v-checkbox
             v-model="results.showNormalForce"
             label=""
@@ -3336,6 +3361,12 @@ defineExpose({ centerContent, fitContent });
 
     text.deflection-label {
       fill: v-bind('viewerStore.colors.deformedShape');
+    }
+
+    .rotation polyline {
+      fill: none;
+      stroke: v-bind('viewerStore.colors.rotation');
+      stroke-width: 1.5px;
     }
 
     path.deformedShape {

@@ -52,6 +52,7 @@ export const useProjectStore = defineStore(
     );
 
     const defoScale = ref(1);
+    const rotationScale = ref(1);
     const normalForceScale = ref(1);
     const bendingMomentScale = ref(1);
     const shearForceScale = ref(1);
@@ -196,6 +197,7 @@ export const useProjectStore = defineStore(
       }
 
       let maxDefo = 1e-32; //Math.max(Math.abs(max(r)), Math.abs(min(r)));
+      let maxRotation = 1e-32;
       let maxNormalForce = 1e-32;
       let maxBendingMoment = 1e-32;
       let maxShearForce = 1e-32;
@@ -232,6 +234,15 @@ export const useProjectStore = defineStore(
         maxBendingMoment = Math.max(maxBendingMoment, Math.abs(max(m)), Math.abs(min(m)));
 
         maxShearForce = Math.max(maxShearForce, Math.abs(max(v)), Math.abs(min(v)));
+
+        // an older build of the library evaluates no rotation, and then none is drawn
+        const rotating = beam as unknown as { computeLocalRotation?: (lc: unknown, n: number) => number[] };
+
+        if (typeof rotating.computeLocalRotation === 'function') {
+          const phi = rotating.computeLocalRotation(loadCase.value, 10);
+
+          maxRotation = Math.max(maxRotation, Math.abs(max(phi)), Math.abs(min(phi)));
+        }
       }
 
       if (maxDefo === 1e-32 && loadCase.value.prescribedBC.length > 0) {
@@ -251,6 +262,8 @@ export const useProjectStore = defineStore(
       const scaleFor = (value: number, reference: number) => (value > reference * NEGLIGIBLE_RATIO ? 1 / value : 0);
 
       useProjectStore().defoScale = maxDefo > 1e-30 ? 1 / maxDefo : 0;
+      // the rotation is what the beam does rather than what it carries, so it is scaled to itself
+      useProjectStore().rotationScale = maxRotation > 1e-30 ? 1 / maxRotation : 0;
       useProjectStore().normalForceScale = scaleFor(maxNormalForce, largestForce);
       useProjectStore().bendingMomentScale = scaleFor(maxBendingMoment, largestForce);
       useProjectStore().shearForceScale = scaleFor(maxShearForce, largestForce);
@@ -357,6 +370,7 @@ export const useProjectStore = defineStore(
       solver,
       nthEigenVector,
       defoScale,
+      rotationScale,
       normalForceScale,
       bendingMomentScale,
       shearForceScale,

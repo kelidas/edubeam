@@ -27,10 +27,11 @@ export const useViewerStore = defineStore(
       showShearForce: false,
       showBendingMoment: true,
       showDeformedShape: true,
+      showRotation: false,
       showReactions: true,
       // Per quantity multiplier on top of the automatic scale, so a diagram that comes out too
       // flat or too tall can be adjusted without touching the others.
-      resultScale: { deformedShape: 1, normalForce: 1, shearForce: 1, bendingMoment: 1 },
+      resultScale: { deformedShape: 1, rotation: 1, normalForce: 1, shearForce: 1, bendingMoment: 1 },
       // Whether the scale rows are on screen. Per workspace like the rest of this set, so opening
       // them where they are wanted does not put them in front of the other viewer as well.
       showScalePanel: false,
@@ -50,6 +51,7 @@ export const useViewerStore = defineStore(
       shearForce: '#00af00', // used
       bendingMoment: '#ff2222', // used
       deformedShape: '#555555', // used
+      rotation: '#00838f', // used
       loads: '#ff8700', // used
       nodes: '#000000',
       elements: '#000000',
