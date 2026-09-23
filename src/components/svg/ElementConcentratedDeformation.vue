@@ -165,17 +165,14 @@ const releases = computed(() => {
 });
 
 /**
- * How far along the beam the arrows start.
+ * How far apart the two arrows sit.
  *
- * A plate reaches further than the usual gap - a long way, where it lies along the beam - and an
- * arrow drawn from inside one would read as part of it. So the arrows step aside far enough to leave
- * whichever symbol is there whole.
+ * Wide enough to leave the plate between them whole, since an arrow drawn from inside one would read
+ * as part of it.
  */
-const arrowOffset = computed(() => {
-  const reach = Math.max(slip.value.axial !== 0 ? PLATE_HALF_LENGTH : 0, slip.value.transverse !== 0 ? PLATE_GAP : 0);
-
-  return reach > 0 ? Math.max(SIDE_OFFSET, reach + PLATE_CLEARANCE) : SIDE_OFFSET;
-});
+const arrowOffset = computed(() =>
+  releases.value.length > 0 ? Math.max(SIDE_OFFSET, PLATE_GAP + PLATE_CLEARANCE) : SIDE_OFFSET
+);
 
 /** Which way the pair turns as a whole; the far face is then the mirror of the near one. */
 const isNegativeRotation = () => props.eload.values[2] < 0;
@@ -194,10 +191,13 @@ const sides = computed(() => {
     { turn: 180, opposed: true },
   ].map(({ turn, opposed }) => {
     const away = (angle.value - 90 + turn) * (Math.PI / 180);
-    const at = {
-      x: position.value.x + (opposed ? cos : -cos) * step,
-      z: position.value.z + (opposed ? sin : -sin) * step,
-    };
+    /*
+     * Each arrow steps aside across its own direction, not along the beam: two arrows offset the way
+     * they point would be one line with a head at each end, which says nothing about which face is
+     * which. Side by side, they read as the two faces passing each other - which is the movement.
+     */
+    const aside = { x: Math.sin(away), z: -Math.cos(away) };
+    const at = { x: position.value.x + aside.x * step, z: position.value.z + aside.z * step };
 
     /*
      * The head goes at the far end of the shaft, not at the beam. An arrow drawn the other way says
