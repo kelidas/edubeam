@@ -492,7 +492,6 @@
             <v-icon small>mdi-plus</v-icon> {{ $t('loads.addNodalLoad') }}
           </v-btn>
           <v-btn
-            v-if="appStore.workspace !== 'influence'"
             size="small"
             variant="flat"
             color="secondary"
@@ -500,18 +499,10 @@
             :rounded="0"
             @click.stop="if (useProjectStore().solver.domain.elements.size > 0) openModal(AddElementLoad);"
           >
-            <v-icon small>mdi-plus</v-icon> {{ $t('loads.addElementLoad') }}
-          </v-btn>
-          <v-btn
-            v-else
-            size="small"
-            variant="flat"
-            color="secondary"
-            style="border-left: 1px solid #ccc"
-            :rounded="0"
-            @click.stop="if (useProjectStore().solver.domain.elements.size > 0) openModal(AddConcentratedDeformation);"
-          >
-            <v-icon small>mdi-plus</v-icon> {{ $t('loadType.concentrated_deformation') }}
+            <v-icon small>mdi-plus</v-icon>
+            {{
+              appStore.workspace === 'influence' ? $t('loadType.concentrated_deformation') : $t('loads.addElementLoad')
+            }}
           </v-btn>
         </div>
         <v-data-table-virtual
@@ -1640,7 +1631,6 @@ import type { HelpTopicKey } from '../utils/helpTopics';
 import { openModal } from 'jenesius-vue-modal';
 import AddNodalLoad from './dialogs/AddNodalLoad.vue';
 import AddElementLoad from './dialogs/AddElementLoad.vue';
-import AddConcentratedDeformation from './dialogs/AddConcentratedDeformation.vue';
 import EditNodalLoad from './dialogs/EditNodalLoad.vue';
 import EditElementLoad from './dialogs/EditElementLoad.vue';
 import AddElementDialog from './dialogs/AddElement.vue';

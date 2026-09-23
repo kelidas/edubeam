@@ -1,10 +1,8 @@
 <script setup lang="ts">
 import { openModal } from 'jenesius-vue-modal';
 import EditElementLoadDialog from './dialogs/EditElementLoad.vue';
-import EditConcentratedDeformationDialog from './dialogs/EditConcentratedDeformation.vue';
 import { deleteElementLoad } from '@/utils';
 import { useProjectStore } from '@/store/project';
-import { BeamConcentratedDeformation } from 'ts-fem';
 import { computed } from 'vue';
 
 const projectStore = useProjectStore();
@@ -12,11 +10,6 @@ const projectStore = useProjectStore();
 const load = computed(() => {
   return projectStore.loadCase.elementLoadList[projectStore.selection.label];
 });
-
-/** A dislocation has its own dialog; everything else shares the element load one. */
-const editDialog = computed(() =>
-  load.value instanceof BeamConcentratedDeformation ? EditConcentratedDeformationDialog : EditElementLoadDialog
-);
 
 const removeElementLoad = () => {
   if (projectStore.selection.label === null || !load.value) return;
@@ -34,7 +27,7 @@ const removeElementLoad = () => {
       link
       class="text-body-2"
       @click="
-        openModal(editDialog, { index: projectStore.selection.label });
+        openModal(EditElementLoadDialog, { index: projectStore.selection.label });
         projectStore.selection.type = null;
       "
     >
