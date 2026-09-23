@@ -51,4 +51,21 @@ describe('the tab the tour points at', () => {
 
     i18n.global.locale.value = was;
   });
+
+  it('gives each bubble the name of the tab it points at', () => {
+    const was = i18n.global.locale.value;
+
+    for (const locale of ['en', 'cs']) {
+      i18n.global.locale.value = locale;
+
+      // a bubble titled something other than the tab under it reads as being about something else
+      for (const workspace of ['viewer', 'influence']) {
+        expect(i18n.global.t(`tour.${workspace}.title`), `${workspace} in ${locale}`).toBe(
+          i18n.global.t(`tabView.${workspace}`)
+        );
+      }
+    }
+
+    i18n.global.locale.value = was;
+  });
 });
