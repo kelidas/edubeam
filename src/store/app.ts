@@ -176,12 +176,25 @@ export const useAppStore = defineStore(
         component: Raw<Component>;
         props: { id?: string };
         closable: boolean;
+        /** Whether what the tab holds is taller than the tab and has to scroll inside it. */
+        scrolls?: boolean;
       }[]
     > = ref([
       { title: 'tabView.viewer', component: markRaw(SVGViewer), props: { id: 'viewer' }, closable: false },
       { title: 'tabView.influence', component: markRaw(SVGViewer), props: { id: 'influence' }, closable: false },
       //{ title: "tabView.results", component: markRaw(Results), props: {}, closable: true },
-      { title: 'tabView.settings', component: markRaw(Settings), props: { id: 'settings' }, closable: true },
+      /*
+       * Not closable: closing it was a one way door, since nothing ever put it back - the gear opens
+       * the same panel in a dialog instead, and the code that would have reopened the tab has been
+       * commented out below since it was written.
+       */
+      {
+        title: 'tabView.settings',
+        component: markRaw(Settings),
+        props: { id: 'settings' },
+        closable: false,
+        scrolls: true,
+      },
     ]);
 
     const openedTab = computed(() => tabs.value[tab.value] || null);

@@ -37,10 +37,15 @@
       :touch="false"
       :style="`${projStore.selection.type !== null ? 'overflow: visible !important;' : ''}`"
     >
+      <!--
+        The drawing fills its tab and must not scroll - a canvas pans instead. A panel of settings
+        is taller than the tab on a short window, and nothing above it scrolls, so it says so itself.
+      -->
       <v-window-item
         v-for="item in appStore.tabs"
         :key="item.title"
-        class="fill-height overflow-hidden"
+        class="fill-height"
+        :class="item.scrolls ? 'overflow-y-auto' : 'overflow-hidden'"
         :transition="false"
         :reverse-transition="false"
       >
