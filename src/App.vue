@@ -74,6 +74,14 @@ const steps = computed(() => [
       description: t('tour.bottomBar.description'),
     },
   },
+  // the two workspaces last, once what is in one of them has been shown
+  {
+    attachTo: { element: '#tab-viewer' },
+    content: {
+      title: t('tour.viewer.title'),
+      description: t('tour.viewer.description'),
+    },
+  },
   {
     attachTo: { element: '#tab-influence' },
     content: {

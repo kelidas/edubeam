@@ -34,14 +34,18 @@ describe('the tab the tour points at', () => {
     expect(tabs().map((tab) => tab.attributes('id'))).toEqual(['tab-viewer', 'tab-influence', 'tab-settings']);
   });
 
-  it('has something to say about it in both languages that are kept up to date', () => {
+  it('has something to say about each of them in both languages that are kept up to date', () => {
     // the messages are compiled, so they are read the way the app reads them rather than as data
     const was = i18n.global.locale.value;
 
     for (const locale of ['en', 'cs']) {
       i18n.global.locale.value = locale;
 
-      expect(i18n.global.t('tour.influence.title'), locale).not.toBe('tour.influence.title');
+      for (const key of ['tour.viewer', 'tour.influence']) {
+        expect(i18n.global.t(`${key}.title`), `${key} in ${locale}`).not.toBe(`${key}.title`);
+        expect(i18n.global.t(`${key}.description`).length, `${key} in ${locale}`).toBeGreaterThan(40);
+      }
+
       expect(i18n.global.t('tour.influence.description'), locale).toMatch(/kinematic|kinematick/);
     }
 

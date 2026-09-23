@@ -342,6 +342,10 @@
     "influence": {
       "title": "Příčinkové čáry",
       "description": "Samostatné pracovní prostředí, kde se příčinkové čáry kreslí kinematickou metodou: v řezu se uvolní vazba jednotkovou deformací a výsledná deformovaná konstrukce je hledaná příčinková čára (Müller-Breslau)."
+    },
+    "viewer": {
+      "title": "Konstrukce",
+      "description": "Pracovní prostředí, ve kterém se konstrukce zadává: uzly, prvky, podpory a zatížení, a k nim výsledky - normálová síla, posouvající síla, ohybový moment a deformovaný tvar."
     }
   },
   "welcome": {
