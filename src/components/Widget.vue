@@ -89,7 +89,84 @@ const props = withDefaults(
  * when a press lands on the title bar - is settled on the frame itself with `active` and
  * `prevent-deactivation`, rather than by overriding the library's own display rule.
  */
+/*
+ * The frame is resized from its edges and corners, as a window is, rather than from marks drawn on
+ * it. The library's handles are small grey squares sitting outside the frame; they are kept, made
+ * invisible, and stretched along each side so the whole edge answers - which is what a pointer
+ * looks for, and it costs no space in a widget that is mostly numbers.
+ */
 :deep(.handle) {
   pointer-events: auto;
+  background: transparent;
+  border: none;
+}
+
+/* The two sides, full height, half in and half out of the frame. */
+:deep(.handle-ml),
+:deep(.handle-mr) {
+  top: 0;
+  margin-top: 0;
+  height: 100%;
+  width: 8px;
+}
+
+:deep(.handle-ml) {
+  left: -4px;
+}
+
+:deep(.handle-mr) {
+  right: -4px;
+}
+
+/* And the top and bottom, full width. */
+:deep(.handle-tm),
+:deep(.handle-bm) {
+  left: 0;
+  margin-left: 0;
+  width: 100%;
+  height: 8px;
+}
+
+:deep(.handle-tm) {
+  top: -4px;
+}
+
+:deep(.handle-bm) {
+  bottom: -4px;
+}
+
+/* The corners sit over the sides, since a corner resizes both ways and is what is aimed at there. */
+:deep(.handle-tl),
+:deep(.handle-tr),
+:deep(.handle-bl),
+:deep(.handle-br) {
+  width: 14px;
+  height: 14px;
+  z-index: 1;
+}
+
+:deep(.handle-tl) {
+  top: -5px;
+  left: -5px;
+}
+
+:deep(.handle-tr) {
+  top: -5px;
+  right: -5px;
+}
+
+:deep(.handle-bl) {
+  bottom: -5px;
+  left: -5px;
+}
+
+:deep(.handle-br) {
+  bottom: -5px;
+  right: -5px;
+}
+
+/* The dashed outline marked the frame as active; a window edge says that better. */
+.vdr {
+  border: none;
 }
 </style>
