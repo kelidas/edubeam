@@ -341,8 +341,18 @@ onMounted(() => {
 /**
  * Tabs keep every viewer mounted, and one that has never been shown has never been measured: its
  * view is empty and its scale meaningless. Fit once it is on screen and has a size to fit into.
+ *
+ * Once, and only once. Fitting on every return threw away wherever the reader had panned to, and it
+ * happened a frame after the tab appeared - so the drawing came up at the old view and then jumped,
+ * which is the flicker between the two workspaces. A viewer that has been shown before keeps the
+ * view it was left at, which is both steadier and what a reader expects of a tab.
  */
+const hasBeenShown = ref(false);
+
 onActivated(async () => {
+  if (hasBeenShown.value) return;
+
+  hasBeenShown.value = true;
   await nextTick();
   fitContent();
 });
