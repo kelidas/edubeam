@@ -415,8 +415,8 @@ const LOAD_DECORATION_PX = 60;
 /** Diagrams whose scale can be adjusted, named as the viewer settings name them. */
 const scalableResults = computed(() =>
   [
-    { key: 'deformedShape' as const, label: 'w', shown: results.showDeformedShape },
-    { key: 'rotation' as const, label: '\u03c6', shown: results.showRotation },
+    { key: 'deformedShape' as const, label: 'w&nbsp;(x)', shown: results.showDeformedShape },
+    { key: 'rotation' as const, label: '\u03c6&nbsp;(x)', shown: results.showRotation },
     { key: 'normalForce' as const, label: 'N&nbsp;(x)', shown: results.showNormalForce },
     { key: 'shearForce' as const, label: 'V<sub>z</sub>&nbsp;(x)', shown: results.showShearForce },
     { key: 'bendingMoment' as const, label: 'M<sub>y</sub>&nbsp;(x)', shown: results.showBendingMoment },
