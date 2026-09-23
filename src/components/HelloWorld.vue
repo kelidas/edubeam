@@ -32,6 +32,7 @@
       or pinching it would leave the tab. Tabs are changed from the tab bar.
     -->
     <v-window
+      id="workspaceWindow"
       v-model="appStore.tab"
       class="fill-height"
       :touch="false"
@@ -64,3 +65,21 @@ import { useProjectStore } from '../store/project';
 const appStore = useAppStore();
 const projStore = useProjectStore();
 </script>
+
+<style scoped>
+/*
+ * Switching tabs leaves both panes in the flow for a frame or two, and a column splits the height
+ * between them. The arriving drawing then measures half the room it is about to get, fits itself to
+ * that, and is corrected once the pane it replaces goes - which is the flicker between the
+ * workspaces. Stacked instead, the one arriving has its full size from its first frame.
+ */
+#workspaceWindow :deep(.v-window__container) {
+  position: relative;
+  height: 100%;
+}
+
+#workspaceWindow > :deep(.v-window__container) > .v-window-item {
+  position: absolute;
+  inset: 0;
+}
+</style>

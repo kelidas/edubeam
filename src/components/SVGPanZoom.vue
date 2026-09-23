@@ -76,8 +76,19 @@ const onWindowResize = (): void => {
   // A viewer on a hidden tab has never been sized, so its scale is still meaningless
   if (!Number.isFinite(scale.value) || scale.value <= 0) scale.value = 1;
 
-  const dX = rootRef.value!.offsetWidth - svgRef.value!.getBoundingClientRect().width;
-  const dY = rootRef.value!.offsetHeight - svgRef.value!.getBoundingClientRect().height;
+  const drawn = svgRef.value!.getBoundingClientRect();
+
+  /*
+   * The correction below is the difference between the room there is and the room the drawing takes.
+   * On the frame a hidden tab is shown, the box has its size but the drawing in it has not been laid
+   * out yet, so that difference is the whole width - and dividing it by a scale left over from
+   * before sent the view off to somewhere around 1e35, where nothing is visible. Nothing has been
+   * measured yet on such a frame, so there is nothing to correct for.
+   */
+  if (drawn.width === 0 || drawn.height === 0) return;
+
+  const dX = rootRef.value!.offsetWidth - drawn.width;
+  const dY = rootRef.value!.offsetHeight - drawn.height;
 
   svgRef.value.setAttribute('width', rootRef.value!.offsetWidth.toString());
   svgRef.value.setAttribute('height', rootRef.value!.offsetHeight.toString());
@@ -99,6 +110,13 @@ const updateMatrix = (zooming = false): void => {
   const usable = Number.isFinite(viewBox.x) && Number.isFinite(viewBox.y) && viewBox.w > 0 && viewBox.h > 0;
 
   if (!usable) return;
+
+  /*
+   * A view whose corner is astronomically far from its own size is looking at empty space: whatever
+   * produced it measured something that was not there. Publishing it empties the drawing, and the
+   * reader has no way to bring it back, so the last view that made sense is kept instead.
+   */
+  if (Math.abs(viewBox.x) > 1e9 * viewBox.w || Math.abs(viewBox.y) > 1e9 * viewBox.h) return;
 
   svgEl.setAttribute('viewBox', `${viewBox.x} ${viewBox.y} ${viewBox.w} ${viewBox.h}`);
   props.onUpdate(zooming);
