@@ -207,7 +207,9 @@ export const useAppStore = defineStore(
         prescribedBC: [],
         dimensions: [],
       });
-      useProjectStore().solve();
+      // before the first frame of the workspace arriving, or its results are drawn to the other
+      // case's scale - see solveNow
+      useProjectStore().solveNow();
     });
 
     const openSettings = () => {

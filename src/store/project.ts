@@ -271,6 +271,19 @@ export const useProjectStore = defineStore(
 
     const solve = throttle(_solve, 50);
 
+    /*
+     * The same solve, without waiting its turn.
+     *
+     * Every diagram is scaled to the largest value in the load case being drawn, and those scales
+     * are worked out by the solve. Throttled, a solve asked for while one has just run is put off
+     * for up to a twentieth of a second - long enough to paint a frame. That is harmless while the
+     * case stays the same, but on changing workspace the other case's scale is applied to this
+     * case's results: an influence line of order one drawn at the scale of a structure that deflects
+     * by millimetres lands tens of thousands of pixels off screen, and is then pulled back into the
+     * picture. Where the scales must be right for the first frame, this is the one to call.
+     */
+    const solveNow = _solve;
+
     const selectAll2 = () => {
       clearSelection2();
 
@@ -357,6 +370,7 @@ export const useProjectStore = defineStore(
       loadCase,
       influenceLoadCase,
       solve,
+      solveNow,
       model,
       selection,
       selection2,
