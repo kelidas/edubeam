@@ -14,6 +14,12 @@ import { deleteElement, setUnsolved, solve, toggleArray } from '../utils';
 
 const projectStore = useProjectStore();
 
+/** A different material or cross section is a different structure: it has to be solved again. */
+const resolveAgain = () => {
+  setUnsolved();
+  solve();
+};
+
 const selectedShape = computed(() => {
   const cs = element.value?.cs;
   return cs !== undefined ? projectStore.solver.domain.crossSections.get(cs)?.shape : undefined;
@@ -100,6 +106,7 @@ watch([n1, n2], () => {
             <v-col cols="12">
               <v-select
                 v-model="element.mat"
+                @update:model-value="resolveAgain"
                 density="compact"
                 label="Material"
                 hide-details="auto"
@@ -112,6 +119,7 @@ watch([n1, n2], () => {
             <v-col cols="12" class="d-flex align-center ga-2">
               <v-select
                 v-model="element.cs"
+                @update:model-value="resolveAgain"
                 density="compact"
                 label="Cross section"
                 hide-details="auto"
