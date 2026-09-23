@@ -98,6 +98,7 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#viewerStatus' },
+    on: onDrawing,
     content: {
       title: t('tour.viewerStatus.title'),
       description: t('tour.viewerStatus.description'),
