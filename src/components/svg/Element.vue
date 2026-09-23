@@ -343,10 +343,34 @@ const rotationCurve = computed(() => {
   const by = props.rotationMultiplier / props.scale;
 
   const SEGMENTS = 20;
+
+  /*
+   * An imposed rotation is a step in this curve, and a curve sampled at even intervals draws a
+   * slope across it: the step is smeared over whichever interval it falls in and stands nowhere
+   * near where it belongs. Read a hair either side of it, the two values sit next to each other and
+   * the line between them stands up where the step is. It is the same hair the deflected shape is
+   * read either side of, so the two agree about where the beam breaks.
+   */
+  const EITHER_SIDE = 1e-7;
+  const steps = (
+    props.loadCase.elementLoadList.filter(
+      (l) => l.target === props.element.label && l instanceof BeamConcentratedDeformation
+    ) as BeamConcentratedDeformation[]
+  )
+    .filter((load) => load.getLocalIntensities().dphi !== 0)
+    .map((load) => load.values[3])
+    .filter((at) => at > EITHER_SIDE && at < geo.l - EITHER_SIDE);
+
+  const sections = [
+    ...Array.from({ length: SEGMENTS + 1 }, (_, i) => (geo.l * i) / SEGMENTS).filter(
+      (x) => !steps.some((step) => Math.abs(step - x) <= EITHER_SIDE)
+    ),
+    ...steps.flatMap((step) => [step - EITHER_SIDE, step + EITHER_SIDE]),
+  ].sort((a, b) => a - b);
+
   const points: string[] = [`${n1.coords[0]},${n1.coords[2]}`];
 
-  for (let i = 0; i <= SEGMENTS; i++) {
-    const along = (geo.l * i) / SEGMENTS;
+  for (const along of sections) {
     const value = element.computeLocalRotationAt(props.loadCase, along);
 
     points.push(`${n1.coords[0] + cos * along + value * nx * by},${n1.coords[2] + sin * along + value * ny * by}`);
