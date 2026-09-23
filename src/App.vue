@@ -39,7 +39,7 @@ import Dialogs from '@/components/Dialogs.vue';
 import { useProjectStore } from './store/project';
 import { useAppStore } from './store/app';
 
-import { VOnboardingWrapper, VOnboardingStep } from 'v-onboarding';
+import { VOnboardingWrapper, VOnboardingStep, useVOnboarding } from 'v-onboarding';
 import 'v-onboarding/dist/style.css';
 
 import { useI18n } from 'vue-i18n';
@@ -276,6 +276,19 @@ const openExamples = () => {
   openModal(Examples);
 };
 
+/**
+ * The tour is offered once, on a first visit, and the answer is kept. Anyone who waved it away then
+ * had no way back to it, so it sits in the menu as well. Starting it puts it back on its first step,
+ * whether it ran before or not; the drawer closes because the tour points at what it covers.
+ */
+const startTour = () => {
+  appStore.drawerOpen = false;
+
+  const { start } = useVOnboarding(onboardingWrapper);
+
+  nextTick(() => start());
+};
+
 const openExportImage = () => {
   openModal(ExportImage);
 };
@@ -495,6 +508,12 @@ const app_commit = APP_COMMIT;
           :title="$t('examples.title')"
           value="examples"
           @click="openExamples"
+        ></v-list-item>
+        <v-list-item
+          prepend-icon="mdi-compass-outline"
+          :title="$t('tour.startTour')"
+          value="tour"
+          @click="startTour"
         ></v-list-item>
         <v-list-item
           prepend-icon="mdi-delete-empty"
