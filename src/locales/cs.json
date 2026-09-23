@@ -367,6 +367,10 @@
     "viewer": {
       "title": "Konstrukce",
       "description": "Pracovní prostředí, ve kterém se konstrukce zadává: uzly, prvky, podpory a zatížení, a k nim výsledky - normálová síla, posouvající síla, ohybový moment a deformovaný tvar."
+    },
+    "viewerStatus": {
+      "title": "Rastr, měřítko a jednotky",
+      "description": "Roh, ve kterém výkres říká, jak se má číst: rastr a přichytávání k němu, jak moc jsou průběhy výsledků roztažené, a jednotky, ve kterých jsou všechna čísla na obrazovce."
     }
   },
   "welcome": {

@@ -370,6 +370,10 @@
     "viewer": {
       "title": "Structure",
       "description": "The workspace the structure is built in: nodes, elements, supports and loads, and the results that follow from them - normal force, shear force, bending moment and the deflected shape."
+    },
+    "viewerStatus": {
+      "title": "Grid, scale and units",
+      "description": "The corner where the drawing says how it is to be read: the grid and whether points snap to it, how far the result diagrams are stretched, and the units every number on screen is in."
     }
   },
   "welcome": {

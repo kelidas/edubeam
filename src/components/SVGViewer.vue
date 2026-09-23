@@ -2406,7 +2406,8 @@ defineExpose({ centerContent, fitContent });
           </div>
         </div>
 
-        <div class="d-flex ga-1 align-center">
+        <!-- how the drawing is being read: the grid, the scale of the diagrams, the units -->
+        <div id="viewerStatus" class="d-flex ga-1 align-center">
           <div class="d-flex align-center ga-1">
             <v-chip density="compact" class="d-flex pa-0 overflow-hidden">
               <!-- Grid toggle -->
