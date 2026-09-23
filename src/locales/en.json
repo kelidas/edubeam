@@ -3,7 +3,8 @@
     "influence": "Influence lines",
     "viewer": "Viewer",
     "settings": "Settings",
-    "results": "Results"
+    "results": "Results",
+    "influenceHint": "Influence lines by the kinematic method: release the section with a unit deformation and the deflected shape that follows is the influence line (Muller-Breslau)."
   },
   "common": {
     "label": "Label",

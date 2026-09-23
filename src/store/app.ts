@@ -176,10 +176,18 @@ export const useAppStore = defineStore(
         component: Raw<Component>;
         props: { id?: string };
         closable: boolean;
+        /** A line about what the tab is for, where its name does not say it. */
+        hint?: string;
       }[]
     > = ref([
       { title: 'tabView.viewer', component: markRaw(SVGViewer), props: { id: 'viewer' }, closable: false },
-      { title: 'tabView.influence', component: markRaw(SVGViewer), props: { id: 'influence' }, closable: false },
+      {
+        title: 'tabView.influence',
+        component: markRaw(SVGViewer),
+        props: { id: 'influence' },
+        closable: false,
+        hint: 'tabView.influenceHint',
+      },
       //{ title: "tabView.results", component: markRaw(Results), props: {}, closable: true },
       { title: 'tabView.settings', component: markRaw(Settings), props: { id: 'settings' }, closable: true },
     ]);
