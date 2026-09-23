@@ -421,10 +421,16 @@ const LOAD_DECORATION_PX = 60;
  * diagrams, reactions and loads plus one line of labels. Reserving it whether or
  * not they are shown keeps the fitted view identical across display settings.
  */
-/** Diagrams whose scale can be adjusted, named as the viewer settings name them. */
+/**
+ * Diagrams whose scale can be adjusted, named as the viewer settings name them.
+ *
+ * The deflected shape is the odd one out: it is the structure drawn where it moved to, both
+ * components of the movement at once, rather than one quantity plotted along the axis. So it is
+ * named for the pair it scales and not, as it briefly was, for a w(x) it is not.
+ */
 const scalableResults = computed(() =>
   [
-    { key: 'deformedShape' as const, label: 'w&nbsp;(x)', shown: results.showDeformedShape },
+    { key: 'deformedShape' as const, label: 'u,&nbsp;w', shown: results.showDeformedShape },
     { key: 'rotation' as const, label: '\u03c6&nbsp;(x)', shown: results.showRotation },
     { key: 'normalForce' as const, label: 'N&nbsp;(x)', shown: results.showNormalForce },
     { key: 'shearForce' as const, label: 'V<sub>z</sub>&nbsp;(x)', shown: results.showShearForce },
@@ -3145,13 +3151,11 @@ defineExpose({ centerContent, fitContent });
         >
           <v-checkbox
             v-model="results.showDeformedShape"
-            label=""
+            :label="$t('sideSettings.showDeformedShape')"
             hide-details
             density="compact"
             class="inline-checkbox mr-2 flex-shrink-0 text-no-wrap"
-          >
-            <template #label>w (x)</template>
-          </v-checkbox>
+          />
           <v-checkbox
             v-model="results.showRotation"
             label=""
