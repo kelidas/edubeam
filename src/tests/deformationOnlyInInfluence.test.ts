@@ -46,19 +46,20 @@ if (!('visualViewport' in window)) {
  * `workspace` is derived from the open tab, so it is switched by opening one. Its two values are
  * 'influence' and 'loads' - there is no 'viewer'; that is the tab's id, not the workspace's name.
  */
-const typesOffered = (workspace: 'loads' | 'influence') => {
+const opened = (workspace: 'loads' | 'influence') => {
   build();
 
   const appStore = useAppStore();
   appStore.tab = appStore.tabs.findIndex((t) => t.props.id === (workspace === 'influence' ? 'influence' : 'viewer'));
   expect(appStore.workspace).toBe(workspace);
 
-  const wrapper = mount(AddElementLoad, {
+  return mount(AddElementLoad, {
     global: { plugins: [createVuetify({ components, directives }), i18n] },
   });
-
-  return (wrapper.vm as unknown as { loadTypes: { value: string }[] }).loadTypes.map((t) => t.value);
 };
+
+const typesOffered = (workspace: 'loads' | 'influence') =>
+  (opened(workspace).vm as unknown as { loadTypes: { value: string }[] }).loadTypes.map((t) => t.value);
 
 describe('the add element load dialog', () => {
   beforeEach(() => setActivePinia(createPinia()));
@@ -73,5 +74,26 @@ describe('the add element load dialog', () => {
 
   it('offers it in the influence workspace', () => {
     expect(typesOffered('influence')).toContain('concentrated_deformation');
+  });
+
+  /**
+   * One dialog for every way in, rather than a preview-less one of its own: the imposed deformation
+   * used to have separate add and edit dialogs, reached by double click and by the context menu,
+   * while the bottom bar opened this one. Same load, two different forms.
+   */
+  it('opens on an imposed deformation in the influence workspace, ready to draw an M line', () => {
+    const form = opened('influence').findComponent({ name: 'ElementLoadFields' });
+
+    expect((form.vm as unknown as { loadType: string }).loadType).toBe('concentrated_deformation');
+    // a unit rotation: the Muller-Breslau influence line for a bending moment
+    expect((form.vm as unknown as { my: string }).my).toBe('1');
+    expect(form.findComponent({ name: 'ElementLoadPreview' }).exists()).toBe(true);
+  });
+
+  it('opens on an ordinary load elsewhere', () => {
+    const form = opened('loads').findComponent({ name: 'ElementLoadFields' });
+
+    expect((form.vm as unknown as { loadType: string }).loadType).toBe('udl');
+    expect((form.vm as unknown as { my: string }).my).toBe('0.0');
   });
 });

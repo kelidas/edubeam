@@ -63,7 +63,6 @@ import {
   BeamTemperatureLoad,
 } from 'ts-fem';
 import { useMagicKeys } from '@vueuse/core';
-import EditConcentratedDeformationDialog from './dialogs/EditConcentratedDeformation.vue';
 
 import { useI18n } from 'vue-i18n';
 const { t } = useI18n();
@@ -2770,7 +2769,7 @@ defineExpose({ centerContent, fitContent });
                   @mouseleave="hideTooltip"
                   @pointerup="onElementLoadClick($event, index)"
                   @dblclick="
-                    openModal(EditConcentratedDeformationDialog, { index });
+                    openModal(EditElementLoadDialog, { index });
                     projectStore.clearSelection();
                   "
                 />

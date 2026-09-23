@@ -23,7 +23,7 @@
           <v-col cols="12" md="12">
             <v-text-field
               v-model="fx"
-              :label="`${mainLabel}x`"
+              :label="labelX"
               hide-details="auto"
               :rules="numberRules"
               :suffix="mainUnits"
@@ -34,7 +34,7 @@
           <v-col cols="12" md="12">
             <v-text-field
               v-model="fz"
-              :label="`${mainLabel}z`"
+              :label="labelZ"
               hide-details="auto"
               :rules="numberRules"
               :suffix="mainUnits"
@@ -45,7 +45,7 @@
           <v-col v-if="['concentrated', 'concentrated_deformation'].includes(loadType)" cols="12" md="12">
             <v-text-field
               v-model="my"
-              :label="`${momentLabel}y`"
+              :label="labelMy"
               hide-details="auto"
               :rules="numberRules"
               :suffix="momentUnits"
@@ -180,8 +180,9 @@ defineProps<{
 const {
   appStore,
   projectStore,
-  mainLabel,
-  momentLabel,
+  labelX,
+  labelZ,
+  labelMy,
   mainUnits,
   momentUnits,
   minMax,
@@ -197,11 +198,11 @@ const {
   position,
   lcs,
   previewLoad,
-  resetPositionToDefault,
+  applyTypeDefaults,
   setFromLoad,
   applyToLoad,
   createLoad,
 } = useElementLoadForm(loadType, elementId);
 
-defineExpose({ lcs, resetPositionToDefault, setFromLoad, applyToLoad, createLoad });
+defineExpose({ lcs, applyTypeDefaults, setFromLoad, applyToLoad, createLoad });
 </script>

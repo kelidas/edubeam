@@ -34,7 +34,7 @@
 
 <script setup lang="ts">
 import HelpTip from '../HelpTip.vue';
-import { computed, ref, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useProjectStore } from '../../store/project';
 import { useAppStore } from '../../store/app';
 import { closeModal } from 'jenesius-vue-modal';
@@ -47,20 +47,20 @@ const projectStore = useProjectStore();
 
 const props = defineProps<{ label?: string | number }>();
 
+const appStore = useAppStore();
+
 const open = ref(true);
 const valid = ref(false);
-const loadType = ref('udl');
+/** The influence workspace is only ever about imposed deformations, so it opens on one. */
+const loadType = ref(appStore.workspace === 'influence' ? 'concentrated_deformation' : 'udl');
 const loadElementId = ref(String(props.label ?? [...projectStore.solver.domain.elements.values()][0].label));
-
-const appStore = useAppStore();
 
 const formRef = ref<InstanceType<typeof ElementLoadFields> | null>(null);
 
 /**
  * An imposed deformation exists to solve influence lines and is not a load anyone puts on a
- * structure, so the load case viewer does not offer it. The influence workspace reaches it through
- * its own dialog; the list stays conditional rather than trimmed so this one still works if it is
- * ever opened there.
+ * structure, so it is offered only in the workspace that is about influence lines - which is also
+ * the workspace this dialog opens on it in.
  */
 const loadTypes = computed(() => [
   { label: t('loadType.udl'), value: 'udl' },
@@ -75,8 +75,11 @@ const loadTypes = computed(() => [
 watch(loadType, (newVal) => {
   if (!formRef.value) return;
   if (newVal === 'trapezoidal') formRef.value.lcs = true;
-  if (['concentrated', 'concentrated_deformation'].includes(newVal)) formRef.value.resetPositionToDefault();
+  formRef.value.applyTypeDefaults();
 });
+
+// the influence workspace opens straight on a deformation, which never passes through the watch
+onMounted(() => formRef.value?.applyTypeDefaults());
 
 const addElementLoad = () => {
   if (!valid.value || !formRef.value) return;

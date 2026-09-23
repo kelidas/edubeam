@@ -20,6 +20,11 @@ const identity = (_store: AppStore, value: number) => value;
 interface LoadTypeConfig {
   mainLabel: string;
   momentLabel: string;
+  /**
+   * What the three inputs are called, where the letter and the axis are not simply written together.
+   * An imposed deformation names them for the movements they are, as every textbook does.
+   */
+  axisLabels?: readonly [string, string, string];
   getMainUnits: (store: AppStore) => string;
   getMomentUnits: (store: AppStore) => string;
   /** model value (SI) -> value shown in the input */
@@ -42,8 +47,10 @@ export const LOAD_CONFIG: Record<string, LoadTypeConfig> = {
     fromMoment: (store, v) => store.convertInverseMoment(v),
   },
   concentrated_deformation: {
-    mainLabel: 'D',
-    momentLabel: 'R',
+    // the movement of one face of the section against the other, which is what a delta says
+    mainLabel: 'Δ',
+    momentLabel: 'Δφ',
+    axisLabels: ['Δu', 'Δw', 'Δφ'],
     getMainUnits: (store) => store.units.Length,
     getMomentUnits: (store) => store.units.Angle,
     toMain: (store, v) => store.convertLength(v),
@@ -93,6 +100,9 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
 
   const mainLabel = computed(() => config.value.mainLabel);
   const momentLabel = computed(() => config.value.momentLabel);
+  const labelX = computed(() => config.value.axisLabels?.[0] ?? `${mainLabel.value}x`);
+  const labelZ = computed(() => config.value.axisLabels?.[1] ?? `${mainLabel.value}z`);
+  const labelMy = computed(() => config.value.axisLabels?.[2] ?? `${momentLabel.value}y`);
   const mainUnits = computed(() => config.value.getMainUnits(appStore));
   const momentUnits = computed(() => config.value.getMomentUnits(appStore));
 
@@ -150,6 +160,17 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
     if (!target.value) return;
     const l = target.value.computeGeo().l;
     position.value = String(appStore.convertLength(Math.max(Math.min(Math.floor(l / 2), 5.0), l / 10)));
+  };
+
+  /**
+   * What a newly chosen load type starts at, wherever zero is not the useful answer.
+   *
+   * An imposed deformation is almost always a unit rotation: that is the Muller-Breslau influence
+   * line for a bending moment, which is what anyone reaching for this is drawing.
+   */
+  const applyTypeDefaults = () => {
+    if (['concentrated', 'concentrated_deformation'].includes(loadTypeRef.value)) resetPositionToDefault();
+    if (loadTypeRef.value === 'concentrated_deformation') my.value = '1';
   };
 
   /** Fills the inputs (display units) from an existing load (model units). */
@@ -287,8 +308,9 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
   return {
     appStore,
     projectStore,
-    mainLabel,
-    momentLabel,
+    labelX,
+    labelZ,
+    labelMy,
     mainUnits,
     momentUnits,
     target,
@@ -305,7 +327,7 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
     position,
     lcs,
     previewLoad,
-    resetPositionToDefault,
+    applyTypeDefaults,
     setFromLoad,
     applyToLoad,
     createLoad,

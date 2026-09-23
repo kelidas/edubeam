@@ -30,7 +30,7 @@
 import { ref, computed, onMounted, watch } from 'vue';
 import { useProjectStore } from '@/store/project';
 import { closeModal } from 'jenesius-vue-modal';
-import { loadType as LT } from '@/utils';
+import { loadType as LT, executeModelMutationWithUndo } from '@/utils';
 import ElementLoadFields from './ElementLoadFields.vue';
 
 const props = defineProps<{ index: number }>();
@@ -59,7 +59,10 @@ onMounted(() => {
 const editElementLoad = () => {
   if (!valid.value || !formRef.value) return;
 
-  formRef.value.applyToLoad(load.value);
+  // changing a load changes the model, so it belongs on the undo stack like adding one does
+  executeModelMutationWithUndo(() => {
+    formRef.value!.applyToLoad(load.value);
+  });
 
   projectStore.solve();
   projectStore.clearSelection();
