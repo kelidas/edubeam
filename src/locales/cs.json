@@ -180,8 +180,7 @@
     "results": "Výsledky",
     "settings": "Nastavení",
     "influence": "Příčinkové čáry",
-    "viewer": "Konstrukce",
-    "influenceHint": "Příčinkové čáry kinematickou metodou: v řezu se uvolní vazba jednotkovou deformací a výsledná deformovaná konstrukce je hledaná příčinková čára (Müller-Breslau)."
+    "viewer": "Konstrukce"
   },
   "sideSettings": {
     "showDeformedShape": "Deformovaný tvar",
@@ -360,7 +359,11 @@
     },
     "previousButton": "Předchozí",
     "nextButton": "Další",
-    "finishButton": "Dokončit prohlídku"
+    "finishButton": "Dokončit prohlídku",
+    "influence": {
+      "title": "Příčinkové čáry",
+      "description": "Samostatné pracovní prostředí, kde se příčinkové čáry kreslí kinematickou metodou: v řezu se uvolní vazba jednotkovou deformací a výsledná deformovaná konstrukce je hledaná příčinková čára (Müller-Breslau)."
+    }
   },
   "welcome": {
     "title": "Vítejte v <span class=\"edubeam\">edubeamu</span>! 🚀",

@@ -75,6 +75,13 @@ const steps = computed(() => [
       description: t('tour.bottomBar.description'),
     },
   },
+  {
+    attachTo: { element: '#tab-influence' },
+    content: {
+      title: t('tour.influence.title'),
+      description: t('tour.influence.description'),
+    },
+  },
 ]);
 
 onMounted(() => window.addEventListener('beforeunload', warnBeforeLeaving));

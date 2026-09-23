@@ -3,17 +3,14 @@
     <div v-if="!appStore.inViewerMode">
       <div class="" style="border-bottom: 1px solid rgba(0, 0, 0, 0.12)">
         <v-tabs v-model="appStore.tab" height="36" bg-color="secondary">
-          <v-tab v-for="(item, index) in appStore.tabs" :key="item.title" :class="{ 'pr-0': item.closable }">
+          <!-- named after the workspace it opens, so the tour can point at one of them -->
+          <v-tab
+            v-for="(item, index) in appStore.tabs"
+            :id="item.props.id ? `tab-${item.props.id}` : undefined"
+            :key="item.title"
+            :class="{ 'pr-0': item.closable }"
+          >
             {{ $t(item.title) }}
-            <!-- what the tab is for, where its name alone does not say it -->
-            <v-tooltip
-              v-if="item.hint"
-              activator="parent"
-              location="bottom"
-              max-width="320"
-              :text="$t(item.hint)"
-              :open-on-click="!deviceHasHover"
-            />
             <v-btn
               v-if="item.closable"
               icon="mdi-close"
@@ -56,7 +53,6 @@
 </template>
 
 <script setup lang="ts">
-import { deviceHasHover } from '@/utils/pointer';
 import { useAppStore } from '../store/app';
 import { useProjectStore } from '../store/project';
 
