@@ -2903,6 +2903,23 @@ defineExpose({ centerContent, fitContent });
       cursor: pointer;
     }
 
+    /* Thicker under the pointer, so the symbol answers before it is clicked. */
+    &:hover {
+      .release.plate,
+      .release.hinge {
+        stroke-width: 3px;
+      }
+
+      .release.roller {
+        stroke-width: 2.5px;
+      }
+
+      path.dislocation-rotation,
+      polyline.decoration.shaft {
+        stroke-width: 2.5px;
+      }
+    }
+
     &.selected {
       .release {
         stroke: rgb(0, 55, 149);
