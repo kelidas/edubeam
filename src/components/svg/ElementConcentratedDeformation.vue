@@ -185,6 +185,21 @@ const sides = computed(() => {
   const arcStep = MOMENT_SIDE_OFFSET / props.scale;
   const shaft = SHAFT / props.scale;
 
+  /*
+   * Which of the two ways across the arrows the near face takes.
+   *
+   * Where stepping across the arrows is also stepping along the beam - a slip across it - the near
+   * face belongs on the near side, whichever way the value points. Where it is not, which is a slip
+   * along the beam, either side will do and this settles on one.
+   */
+  const asideOf = (turn: number) => {
+    const away = (angle.value - 90 + turn) * (Math.PI / 180);
+
+    return { x: Math.sin(away), z: -Math.cos(away) };
+  };
+  const near = asideOf(0);
+  const flip = near.x * cos + near.z * sin > 1e-9 ? -1 : 1;
+
   return [
     // the face on the start side keeps the sense of the value, the other one opposes it
     { turn: 0, opposed: false },
@@ -196,8 +211,11 @@ const sides = computed(() => {
      * they point would be one line with a head at each end, which says nothing about which face is
      * which. Side by side, they read as the two faces passing each other - which is the movement.
      */
-    const aside = { x: Math.sin(away), z: -Math.cos(away) };
-    const at = { x: position.value.x + aside.x * step, z: position.value.z + aside.z * step };
+    const aside = asideOf(turn);
+    const at = {
+      x: position.value.x + aside.x * step * flip,
+      z: position.value.z + aside.z * step * flip,
+    };
 
     /*
      * The head goes at the far end of the shaft, not at the beam. An arrow drawn the other way says
