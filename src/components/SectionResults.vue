@@ -750,6 +750,28 @@ thead th + th {
   border-left: 1px solid #dddddd;
 }
 
+/*
+ * Columns of a fixed width, so they do not resize as the numbers in them change.
+ *
+ * A table sized to its content re-measures every time a value does: pointing along the beam rewrites
+ * the pinned row several times a second, and each rewrite nudged every column. The numbers are all
+ * of one kind and one width is enough for them, so the width is settled once and the table scrolls
+ * inside the widget when the widget is too narrow for it.
+ */
+table {
+  table-layout: fixed;
+  width: max-content;
+  min-width: 100%;
+}
+
+thead th {
+  width: 106px;
+}
+
+thead th:first-child {
+  width: 78px;
+}
+
 /* Room under the number for the bar, which is laid over the row's own background rather than in it. */
 .value {
   position: relative;
