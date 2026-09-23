@@ -308,7 +308,8 @@ const momentLabelPosition = computed(() => {
     <template v-for="(side, i) in eload.values[2] !== 0 ? sides : []" :key="`r-${i}`">
       <path class="decoration moment dislocation-rotation" :d="rotationArcs[i]" />
 
-      <polyline :points="`${side.arcX},${side.arcZ} ${side.arcX + 1e-6},${side.arcZ}`" class="handle moment" />
+      <!-- the circle itself is the thing to aim at, so the grab area follows it rather than its centre -->
+      <path class="handle moment" :d="rotationArcs[i]" />
     </template>
 
     <!--

@@ -2338,6 +2338,7 @@ const dynamicMarker = (label: string) => {
 
 // Computed dynamic markers
 const markerDislocationArrow = computed(() => dynamicMarker('dislocation_arrow'));
+const markerDislocationArrowSelected = computed(() => dynamicMarker('dislocation_arrow_selected'));
 const markerForce = computed(() => dynamicMarker('force'));
 const markerForceHover = computed(() => dynamicMarker('force_hover'));
 const markerForceSelected = computed(() => dynamicMarker('force_selected'));
@@ -2829,6 +2830,7 @@ defineExpose({ centerContent, fitContent });
         :style="{
           opacity: isFitted ? 1 : 0,
           '--marker-dislocation-arrow': markerDislocationArrow,
+          '--marker-dislocation-arrow-selected': markerDislocationArrowSelected,
           '--marker-force': markerForce,
           '--marker-force-hover': markerForceHover,
           '--marker-force-selected': markerForceSelected,
@@ -2909,24 +2911,6 @@ defineExpose({ centerContent, fitContent });
                   :convert-force="appStore.convertForce"
                   :font-size="viewerStore.fontSize"
                   :number-format="appStore.numberFormatter"
-                  @mousemove="onElementLoadHover($event, eload)"
-                  @mouseleave="hideTooltip"
-                  @pointerup="onElementLoadClick($event, index)"
-                  @dblclick="
-                    openModal(EditElementLoadDialog, { index });
-                    projectStore.clearSelection();
-                  "
-                />
-                <SVGElementConcentratedDeformation
-                  v-else-if="eload instanceof BeamConcentratedDeformation"
-                  :key="`element-cd-${index}`"
-                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
-                  :data-element-load-id="index"
-                  :eload="eload"
-                  :scale="scale"
-                  :convert-displacement="appStore.convertLength"
-                  :font-size="viewerStore.fontSize"
-                  :number-format="appStore.resultFormatter"
                   @mousemove="onElementLoadHover($event, eload)"
                   @mouseleave="hideTooltip"
                   @pointerup="onElementLoadClick($event, index)"
@@ -3094,6 +3078,35 @@ defineExpose({ centerContent, fitContent });
               "
             />
           </g>
+          <!--
+            The releases come after the beam, not with the other loads. A release sits on the axis -
+            a hinge, a sliding plate, two arcs about the section - so behind the beam it was cut in
+            half by the line and out of reach of a click, which landed on the beam's own grab area
+            instead. The load it belongs to is unchanged; only where it is drawn.
+          -->
+          <g v-if="!isZooming && useViewerStore().showLoads" data-fit-ignore="loads">
+            <template v-for="(eload, index) in viewerLoadCase.elementLoadList">
+              <SVGElementConcentratedDeformation
+                v-if="eload instanceof BeamConcentratedDeformation"
+                :key="`element-cd-${index}`"
+                :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
+                :data-element-load-id="index"
+                :eload="eload"
+                :scale="scale"
+                :convert-displacement="appStore.convertLength"
+                :font-size="viewerStore.fontSize"
+                :number-format="appStore.resultFormatter"
+                @mousemove="onElementLoadHover($event, eload)"
+                @mouseleave="hideTooltip"
+                @pointerup="onElementLoadClick($event, index)"
+                @dblclick="
+                  openModal(EditElementLoadDialog, { index });
+                  projectStore.clearSelection();
+                "
+              />
+            </template>
+          </g>
+
           <g class="nodes">
             <SVGNode
               v-for="(node, index) in projectStore.nodes"
@@ -3660,6 +3673,25 @@ defineExpose({ centerContent, fitContent });
       vector-effect: non-scaling-stroke;
       /* the head alone, in pixels; the force marker is a whole arrow, shaft and all */
       marker-end: var(--marker-dislocation-arrow);
+    }
+
+    /* A release is grabbed by the symbol, not by the number beside it. */
+    path.handle {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 20px;
+      cursor: pointer;
+    }
+
+    &.selected {
+      .release {
+        stroke: rgb(0, 55, 149);
+      }
+
+      path.dislocation-rotation {
+        stroke: rgb(0, 55, 149);
+        marker-end: var(--marker-dislocation-arrow-selected);
+      }
     }
 
     polyline {

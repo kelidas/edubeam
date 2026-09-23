@@ -629,6 +629,20 @@ const props = withDefaults(
       <path d="M 0 0 L 10 5 L 0 10 z" :fill="colors.loads" />
     </marker>
 
+    <!-- the same head in the selection colour, so a selected release turns blue all through -->
+    <marker
+      :id="`${id}-dislocation_arrow_selected`"
+      viewBox="0 0 10 10"
+      refX="5"
+      refY="5"
+      :markerWidth="12 / scale"
+      :markerHeight="12 / scale"
+      orient="auto-start-reverse"
+      markerUnits="userSpaceOnUse"
+    >
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="rgb(0, 55, 149)" />
+    </marker>
+
     <filter :id="`${id}-textLabel`" x="-2.5%" width="105%" y="0%" height="100%">
       <feFlood flood-color="white" flood-opacity="0.8" />
     </filter>

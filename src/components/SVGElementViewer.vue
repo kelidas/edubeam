@@ -278,6 +278,7 @@ const dynamicMarker = (label: string) => {
 
 // Computed dynamic markers
 const markerDislocationArrow = computed(() => dynamicMarker('dislocation_arrow'));
+const markerDislocationArrowSelected = computed(() => dynamicMarker('dislocation_arrow_selected'));
 const markerForce = computed(() => dynamicMarker('force'));
 const markerForceHover = computed(() => dynamicMarker('force_hover'));
 const markerForceSelected = computed(() => dynamicMarker('force_selected'));
@@ -347,6 +348,7 @@ defineExpose({ centerContent, fitContent, setView, update });
         :style="{
           opacity: panZoom?.fitted ? 1 : 0,
           '--marker-dislocation-arrow': markerDislocationArrow,
+          '--marker-dislocation-arrow-selected': markerDislocationArrowSelected,
           '--marker-force': markerForce,
           '--marker-force-hover': markerForceHover,
           '--marker-force-selected': markerForceSelected,
@@ -766,6 +768,25 @@ defineExpose({ centerContent, fitContent, setView, update });
       vector-effect: non-scaling-stroke;
       /* the head alone, in pixels; the force marker is a whole arrow, shaft and all */
       marker-end: var(--marker-dislocation-arrow);
+    }
+
+    /* A release is grabbed by the symbol, not by the number beside it. */
+    path.handle {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 20px;
+      cursor: pointer;
+    }
+
+    &.selected {
+      .release {
+        stroke: rgb(0, 55, 149);
+      }
+
+      path.dislocation-rotation {
+        stroke: rgb(0, 55, 149);
+        marker-end: var(--marker-dislocation-arrow-selected);
+      }
     }
 
     polyline {
