@@ -366,6 +366,10 @@
     "influence": {
       "title": "Influence lines",
       "description": "A workspace of its own, where influence lines are drawn by the kinematic method: release the section with a unit deformation and the deflected shape that follows is the influence line (Muller-Breslau)."
+    },
+    "viewer": {
+      "title": "Viewer",
+      "description": "The workspace the structure is built in: nodes, elements, supports and loads, and the results that follow from them - normal force, shear force, bending moment and the deflected shape."
     }
   },
   "welcome": {
