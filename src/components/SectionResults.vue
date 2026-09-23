@@ -744,9 +744,10 @@ const copy = () => {
 </template>
 
 <style scoped>
-table td + td,
-table th + td,
-thead th + th {
+/* The table is a child component's, so every rule for it has to reach past the scope. */
+:deep(table td + td),
+:deep(table th + td),
+:deep(thead th + th) {
   border-left: 1px solid #dddddd;
 }
 
@@ -758,18 +759,20 @@ thead th + th {
  * of one kind and one width is enough for them, so the width is settled once and the table scrolls
  * inside the widget when the widget is too narrow for it.
  */
-table {
+:deep(table) {
   table-layout: fixed;
   width: max-content;
   min-width: 100%;
 }
 
-thead th {
+:deep(thead th) {
   width: 106px;
+  min-width: 106px;
 }
 
-thead th:first-child {
+:deep(thead th:first-child) {
   width: 78px;
+  min-width: 78px;
 }
 
 /* Room under the number for the bar, which is laid over the row's own background rather than in it. */
