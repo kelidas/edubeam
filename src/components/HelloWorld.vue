@@ -68,18 +68,13 @@ const projStore = useProjectStore();
 
 <style scoped>
 /*
- * Switching tabs leaves both panes in the flow for a frame or two, and a column splits the height
- * between them. The arriving drawing then measures half the room it is about to get, fits itself to
- * that, and is corrected once the pane it replaces goes - which is the flicker between the
- * workspaces. Stacked instead, the one arriving has its full size from its first frame.
+ * Vuetify keeps the pane being left displayed for two frames after it stops being the active one.
+ * Both are then in the flow at once: a column splits the height between them, so the arriving
+ * drawing measures half the room it is about to get and fits itself to that, and both drawings are
+ * painted over each other while it lasts. That is the flicker between the workspaces. One pane at a
+ * time, and the one arriving has the room and the picture to itself from its first frame.
  */
-#workspaceWindow :deep(.v-window__container) {
-  position: relative;
-  height: 100%;
-}
-
-#workspaceWindow > :deep(.v-window__container) > .v-window-item {
-  position: absolute;
-  inset: 0;
+#workspaceWindow > :deep(.v-window__container) > .v-window-item:not(.v-window-item--active) {
+  display: none;
 }
 </style>
