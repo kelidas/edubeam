@@ -424,11 +424,36 @@ const scalableResults = computed(() =>
 
 type ResultScaleKey = 'deformedShape' | 'rotation' | 'normalForce' | 'shearForce' | 'bendingMoment';
 
-/** One wheel notch, one button press: a quarter up or down, never past a factor of a thousand. */
-const stepResultScale = (key: ResultScaleKey, direction: number) => {
-  const next = results.resultScale[key] * (direction > 0 ? 1.25 : 1 / 1.25);
+/** A quarter up or down per step, and never past a factor of a thousand either way. */
+const STEP = 1.25;
 
-  results.resultScale[key] = Math.min(Math.max(next, 1e-3), 1e3);
+const setResultScale = (key: ResultScaleKey, value: number) => {
+  results.resultScale[key] = Math.min(Math.max(value, 1e-3), 1e3);
+};
+
+/** One button press: one step. */
+const stepResultScale = (key: ResultScaleKey, direction: number) => {
+  setResultScale(key, results.resultScale[key] * (direction > 0 ? STEP : 1 / STEP));
+};
+
+/** What one notch of a mouse wheel reports, and what a line and a page are worth in its place. */
+const WHEEL_NOTCH = 100;
+const WHEEL_LINE = 16;
+const WHEEL_PAGE = 400;
+
+/**
+ * A wheel notch and a touchpad swipe are the same event carrying very different numbers: a notch
+ * arrives once and reads about a hundred, a swipe arrives as a stream of ones and twos. Stepping
+ * once per event let the touchpad run away - a single flick ran through a dozen steps - so the step
+ * follows the distance instead. A notch is still a quarter, and a swipe is as much of one as it
+ * covers, which is what makes a touchpad the finer control rather than the wilder one.
+ */
+const scaleResultByWheel = (key: ResultScaleKey, event: WheelEvent) => {
+  const distance = event.deltaY * (event.deltaMode === 1 ? WHEEL_LINE : event.deltaMode === 2 ? WHEEL_PAGE : 1);
+  // a fast wheel can arrive as one large number; a few notches at once is as much as anyone means by it
+  const notches = Math.max(-3, Math.min(3, -distance / WHEEL_NOTCH));
+
+  setResultScale(key, results.resultScale[key] * STEP ** notches);
 };
 
 const fitReserve = computed(() => Math.max(viewerStore.resultsScalePx_, LOAD_DECORATION_PX) + viewerStore.fontSize + 8);
@@ -2298,7 +2323,7 @@ defineExpose({ centerContent, fitContent });
             v-for="row in scalableResults"
             :key="row.key"
             class="d-flex align-center justify-end ga-2"
-            @wheel.prevent="stepResultScale(row.key, $event.deltaY < 0 ? 1 : -1)"
+            @wheel.prevent="scaleResultByWheel(row.key, $event)"
           >
             <span class="text-no-wrap px-1" v-html="row.label"></span>
             <v-btn icon variant="tonal" class="scale-step" @click="stepResultScale(row.key, -1)">
