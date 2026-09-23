@@ -53,9 +53,29 @@ provide('onboardingWrapper', onboardingWrapper);
 
 const file = ref(null);
 
+/**
+ * A step that points into the drawing needs the drawing on screen.
+ *
+ * The tour used to run only on a first visit, with the drawing open behind it. Started from the
+ * menu it can begin from any tab, and from one that is not a drawing its first steps had nothing to
+ * attach to: the bubbles piled up in the corner of the window pointing at nothing. So a step that
+ * needs the drawing asks for it first.
+ */
+const showDrawing = async () => {
+  const drawing = appStore.tabs.findIndex((tab) => tab.props.id === 'viewer');
+
+  if (drawing < 0 || appStore.tab === drawing) return;
+
+  appStore.tab = drawing;
+  await nextTick();
+};
+
+const onDrawing = { beforeStep: showDrawing };
+
 const steps = computed(() => [
   {
     attachTo: { element: '#viewerControls' },
+    on: onDrawing,
     content: {
       title: t('tour.viewerControls.title'),
       description: t('tour.viewerControls.description'),
@@ -63,6 +83,7 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#viewerSettings' },
+    on: onDrawing,
     content: {
       title: t('tour.viewerSettings.title'),
       description: t('tour.viewerSettings.description'),
@@ -70,6 +91,7 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#bottomBar' },
+    on: onDrawing,
     content: {
       title: t('tour.bottomBar.title'),
       description: t('tour.bottomBar.description'),
@@ -77,6 +99,7 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#viewerStatus' },
+    on: onDrawing,
     content: {
       title: t('tour.viewerStatus.title'),
       description: t('tour.viewerStatus.description'),
