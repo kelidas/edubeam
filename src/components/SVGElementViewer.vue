@@ -774,7 +774,9 @@ defineExpose({ centerContent, fitContent, setView, update });
     path.handle {
       fill: none;
       stroke: transparent;
-      stroke-width: 20px;
+      /* in pixels of the screen, as every other stroke here is - the drawing itself is in metres */
+      vector-effect: non-scaling-stroke;
+      stroke-width: 12px;
       cursor: pointer;
     }
 
