@@ -3,8 +3,7 @@
     "influence": "Influence lines",
     "viewer": "Viewer",
     "settings": "Settings",
-    "results": "Results",
-    "influenceHint": "Influence lines by the kinematic method: release the section with a unit deformation and the deflected shape that follows is the influence line (Muller-Breslau)."
+    "results": "Results"
   },
   "common": {
     "label": "Label",
@@ -343,7 +342,11 @@
     },
     "previousButton": "Previous",
     "nextButton": "Next",
-    "finishButton": "Finish"
+    "finishButton": "Finish",
+    "influence": {
+      "title": "Influence lines",
+      "description": "A workspace of its own, where influence lines are drawn by the kinematic method: release the section with a unit deformation and the deflected shape that follows is the influence line (Muller-Breslau)."
+    }
   },
   "welcome": {
     "title": "Welcome to <span class=\"edubeam\">edubeam</span>! 🚀",
