@@ -413,6 +413,13 @@ const app_commit = APP_COMMIT;
       :steps="steps"
       :options="{
         popper: {
+          /*
+           * Laid out against the window, not the document. Absolutely positioned, a bubble that
+           * lands low can make the page taller than the window, and the page then scrolls to show
+           * it - the app slides up, the bars at the top go off screen and a strip of blank appears
+           * under it. Fixed, a bubble cannot move the page at all.
+           */
+          strategy: 'fixed',
           modifiers: [
             {
               name: 'offset',
