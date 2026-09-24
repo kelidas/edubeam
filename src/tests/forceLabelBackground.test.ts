@@ -7,11 +7,10 @@ const ELEMENT = readFileSync(join(process.cwd(), 'src/components/svg/Element.vue
 /**
  * The plate behind a label is a white flood over the whole box of the text, not an outline around
  * the glyphs. Where the internal force labels sit - out beyond their own diagram, against the page
- * - white on white cannot be seen. An influence line is drawn filled and its values sit on top of
- * that fill, so there the same plate reads as a white card laid over the shape.
+ * - white on white cannot be seen, and it keeps a value legible where two diagrams cross.
  *
  * Read from the source: what this is about is which elements are drawn, and a mounted component
- * would need a solved influence line and a laid-out viewer to show any of them.
+ * would need a solved model and a laid-out viewer to show any of them.
  */
 const labelGroup = (name: string) => {
   const at = ELEMENT.indexOf(`class="${name}`);
@@ -25,18 +24,16 @@ const labelGroup = (name: string) => {
 };
 
 describe('the plate behind a label', () => {
-  it('is not drawn behind a deflection value', () => {
-    expect(labelGroup('deflection-label')).not.toContain('filter-text-label');
-  });
-
-  it('is still drawn behind an internal force value, where it cannot be seen', () => {
-    // removing it there would be a change to the main viewer, which reads well as it is
+  it('is drawn behind an internal force value, where it cannot be seen', () => {
     expect(labelGroup('moment-label')).toContain('filter-text-label');
   });
 
-  it('leaves the deflection value itself, written once', () => {
-    const occurrences = ELEMENT.split('class="deflection-label').length - 1;
-
-    expect(occurrences).toBe(1);
+  /**
+   * The deflected shape carries no values of its own: it is the structure drawn where it moved to
+   * rather than a quantity plotted along an axis, so a number written against it says less than the
+   * section results widget does, and said it wrongly off a straight beam.
+   */
+  it('has nothing to sit behind on the deflected shape, which carries no values', () => {
+    expect(ELEMENT).not.toContain('deflection-label');
   });
 });

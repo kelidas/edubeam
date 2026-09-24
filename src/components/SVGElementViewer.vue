@@ -454,7 +454,6 @@ defineExpose({ centerContent, fitContent, setView, update });
               :convert-force="props.convertForce"
               :convert-moment="props.convertMoment"
               :convert-length="props.convertLength"
-              :deformation-number-format="props.deformationNumberFormat"
               :font-size="props.fontSize"
               :number-format="props.numberFormat"
             />
@@ -482,7 +481,6 @@ defineExpose({ centerContent, fitContent, setView, update });
               :convert-force="props.convertForce"
               :convert-moment="props.convertMoment"
               :convert-length="props.convertLength"
-              :deformation-number-format="props.deformationNumberFormat"
               :font-size="props.fontSize"
               :number-format="props.numberFormat"
             />
@@ -714,10 +712,6 @@ defineExpose({ centerContent, fitContent, setView, update });
 
   .prescribed polyline {
     stroke: v-bind('colors.loads');
-  }
-
-  text.deflection-label {
-    fill: v-bind('colors.deformedShape');
   }
 
   .nodal-load {
