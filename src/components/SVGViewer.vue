@@ -2872,8 +2872,6 @@ defineExpose({ centerContent, fitContent });
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
-              :deformation-number-format="appStore.resultFormatter"
-              :show-deflection-labels="isInfluenceViewer"
               :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
@@ -2919,8 +2917,6 @@ defineExpose({ centerContent, fitContent });
               :convert-force="appStore.convertForce"
               :convert-moment="appStore.convertMoment"
               :convert-length="appStore.convertLength"
-              :deformation-number-format="appStore.resultFormatter"
-              :show-deflection-labels="isInfluenceViewer"
               :smooth-deformed-shape="!isInfluenceViewer"
               :font-size="viewerStore.fontSize"
               :number-format="appStore.numberFormatter"
@@ -3067,8 +3063,6 @@ defineExpose({ centerContent, fitContent });
                 :convert-force="appStore.convertForce"
                 :convert-moment="appStore.convertMoment"
                 :convert-length="appStore.convertLength"
-                :deformation-number-format="appStore.resultFormatter"
-                :show-deflection-labels="isInfluenceViewer"
                 :smooth-deformed-shape="!isInfluenceViewer"
                 :font-size="viewerStore.fontSize"
                 :number-format="appStore.numberFormatter"
@@ -3396,10 +3390,6 @@ defineExpose({ centerContent, fitContent });
     polyline.fibers {
       stroke: #666;
       stroke-width: 1px;
-    }
-
-    text.deflection-label {
-      fill: v-bind('viewerStore.colors.deformedShape');
     }
 
     .rotation polyline {
