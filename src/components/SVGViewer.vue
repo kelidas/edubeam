@@ -3678,5 +3678,25 @@ defineExpose({ centerContent, fitContent });
     width: 40px !important;
     height: 40px !important;
   }
+
+  /* the strip in the corner that says how the drawing is read, and the scale rows above it */
+  #viewerStatus .v-chip {
+    height: 32px;
+  }
+
+  #viewerStatus .v-btn {
+    width: 32px !important;
+    height: 32px !important;
+  }
+
+  #viewerStatus .v-icon {
+    font-size: 20px;
+  }
+
+  #resultScales .scale-step {
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+  }
 }
 </style>
