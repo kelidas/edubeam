@@ -514,7 +514,8 @@ const onUpdate = throttle((zooming: boolean) => {
  * that hovers needs none of this and keeps Vuetify's own behaviour.
  */
 const cornerTip = reactive({ grid: false, snap: false, scale: false });
-const TIP_SHOWN_FOR = 2500;
+/** Long enough to read three words, short enough not to sit in the way. */
+const TIP_SHOWN_FOR = 1200;
 let tipTimer: ReturnType<typeof setTimeout> | undefined;
 
 const flashTip = (which: keyof typeof cornerTip) => {
