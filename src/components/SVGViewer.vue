@@ -50,7 +50,7 @@ import { createDimensionId, ensureDimensionId } from '@/utils/id';
 import { selectionSubtitle } from '@/utils/selectionDetails';
 import { boundsFromPoints } from '@/utils/fitBounds';
 import { placePopupNearAnchor, type AnchorRect } from '@/utils/popupPlacement';
-import { deviceHasHover } from '@/utils/pointer';
+import { pointerIsTouch, deviceHasHover } from '@/utils/pointer';
 import {
   Node,
   DofID,
@@ -2366,7 +2366,7 @@ defineExpose({ centerContent, fitContent });
           <div class="d-flex align-center ga-1">
             <v-chip density="compact" class="d-flex pa-0 overflow-hidden">
               <!-- Grid toggle -->
-              <v-tooltip text="Toggle grid (G)" location="top">
+              <v-tooltip text="Toggle grid (G)" location="top" :disabled="pointerIsTouch">
                 <template #activator="{ props: tooltipProps }">
                   <v-btn
                     v-bind="tooltipProps"
@@ -2382,7 +2382,7 @@ defineExpose({ centerContent, fitContent });
                 </template>
               </v-tooltip>
               <!-- Snap to grid -->
-              <v-tooltip text="Toggle snap to grid (S)" location="top">
+              <v-tooltip text="Toggle snap to grid (S)" location="top" :disabled="pointerIsTouch">
                 <template #activator="{ props: tooltipProps }">
                   <v-btn
                     v-bind="tooltipProps"
@@ -2403,7 +2403,7 @@ defineExpose({ centerContent, fitContent });
             Shows and hides the scale rows above. It sits with the units because both are the same
             kind of thing: a small standing statement about how the drawing is being read.
           -->
-          <v-tooltip :text="$t('settings.results_scale')" location="top">
+          <v-tooltip :text="$t('settings.results_scale')" location="top" :disabled="pointerIsTouch">
             <template #activator="{ props: tooltipProps }">
               <v-chip
                 v-bind="tooltipProps"
