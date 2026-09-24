@@ -100,6 +100,12 @@ const steps = computed(() => [
   {
     attachTo: { element: '#viewerStatus' },
     on: onDrawing,
+    /*
+     * Above it, into the drawing. The strip sits in the bottom corner of the canvas with the bottom
+     * bar under it, and left to itself the bubble tries to fit beside them - which on a small screen
+     * is nowhere, so it hangs off the window.
+     */
+    options: { popper: { placement: 'top-end' } },
     content: {
       title: t('tour.viewerStatus.title'),
       description: t('tour.viewerStatus.description'),
@@ -445,7 +451,7 @@ const app_commit = APP_COMMIT;
     >
       <template #default="{ previous, next, step, exit, isFirst, isLast, index }">
         <VOnboardingStep>
-          <div class="bg-white shadow rounded-lg" style="max-width: 400px">
+          <div class="bg-white shadow rounded-lg" style="max-width: min(400px, calc(100vw - 32px))">
             <div class="px-4 py-5 sm:p-6">
               <div class="sm:flex sm:items-center sm:justify-between">
                 <div v-if="step.content">
