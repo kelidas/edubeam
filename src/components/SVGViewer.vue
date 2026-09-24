@@ -504,29 +504,6 @@ const onUpdate = throttle((zooming: boolean) => {
   if (grid.value) grid.value.refreshGrid(zooming);
 }, 1000 / 10);
 
-/**
- * A tooltip over the drawing, shown for a moment by a tap.
- *
- * On a touch screen these opened on a tap and then stayed: the way to dismiss one is to touch
- * something else, and the drawing - the obvious place to touch next - prevents the default on
- * touchend, so no click is ever produced there and nothing tells the tooltip to close. A pointer
- * that hovers needs none of this and keeps Vuetify's own behaviour.
- */
-const cornerTip = reactive({ grid: false, snap: false, scale: false });
-/** Long enough to read three words, short enough not to sit in the way. */
-const TIP_SHOWN_FOR = 1200;
-let tipTimer: ReturnType<typeof setTimeout> | undefined;
-
-const flashTip = (which: keyof typeof cornerTip) => {
-  if (deviceHasHover.value) return;
-
-  (Object.keys(cornerTip) as (keyof typeof cornerTip)[]).forEach((key) => (cornerTip[key] = false));
-  cornerTip[which] = true;
-
-  clearTimeout(tipTimer);
-  tipTimer = setTimeout(() => (cornerTip[which] = false), TIP_SHOWN_FOR);
-};
-
 const toggleGridVisibility = () => {
   viewerStore.showGrid = !viewerStore.showGrid;
   nextTick(() => grid.value?.refreshGrid(true));
@@ -2389,7 +2366,7 @@ defineExpose({ centerContent, fitContent });
           <div class="d-flex align-center ga-1">
             <v-chip density="compact" class="d-flex pa-0 overflow-hidden">
               <!-- Grid toggle -->
-              <v-tooltip v-model="cornerTip.grid" text="Toggle grid (G)" location="top">
+              <v-tooltip text="Toggle grid (G)" location="top">
                 <template #activator="{ props: tooltipProps }">
                   <v-btn
                     v-bind="tooltipProps"
@@ -2398,17 +2375,14 @@ defineExpose({ centerContent, fitContent });
                     variant="text"
                     rounded="0"
                     :class="viewerStore.showGrid ? 'text-black' : 'text-grey'"
-                    @click="
-                      toggleGridVisibility();
-                      flashTip('grid');
-                    "
+                    @click="toggleGridVisibility()"
                   >
                     <div>G</div>
                   </v-btn>
                 </template>
               </v-tooltip>
               <!-- Snap to grid -->
-              <v-tooltip v-model="cornerTip.snap" text="Toggle snap to grid (S)" location="top">
+              <v-tooltip text="Toggle snap to grid (S)" location="top">
                 <template #activator="{ props: tooltipProps }">
                   <v-btn
                     v-bind="tooltipProps"
@@ -2417,10 +2391,7 @@ defineExpose({ centerContent, fitContent });
                     variant="text"
                     rounded="0"
                     :class="viewerStore.snapToGrid ? 'text-black' : 'text-grey'"
-                    @click="
-                      toggleSnapToGrid();
-                      flashTip('snap');
-                    "
+                    @click="toggleSnapToGrid()"
                   >
                     <div>S</div>
                   </v-btn>
@@ -2432,7 +2403,7 @@ defineExpose({ centerContent, fitContent });
             Shows and hides the scale rows above. It sits with the units because both are the same
             kind of thing: a small standing statement about how the drawing is being read.
           -->
-          <v-tooltip v-model="cornerTip.scale" :text="$t('settings.results_scale')" location="top">
+          <v-tooltip :text="$t('settings.results_scale')" location="top">
             <template #activator="{ props: tooltipProps }">
               <v-chip
                 v-bind="tooltipProps"
@@ -2440,10 +2411,7 @@ defineExpose({ centerContent, fitContent });
                 class="pa-0 justify-center"
                 :class="results.showScalePanel ? 'text-black' : 'text-grey'"
                 style="min-width: 28px"
-                @click="
-                  results.showScalePanel = !results.showScalePanel;
-                  flashTip('scale');
-                "
+                @click="results.showScalePanel = !results.showScalePanel"
               >
                 <v-icon size="16" icon="mdi-arrow-expand-vertical" />
               </v-chip>
