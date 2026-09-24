@@ -93,8 +93,6 @@ const props = withDefaults(
     deformationNumberFormat?: Intl.NumberFormat;
     resultLabelMode?: 'axis' | 'horizontal';
     numberFormat?: Intl.NumberFormat;
-    /** deformations need more precision than the 2-decimal default format */
-    deformationNumberFormat?: Intl.NumberFormat;
     zoomEnabled?: boolean;
     fontSize?: number;
   }>(),
@@ -144,7 +142,6 @@ const props = withDefaults(
     deformationNumberFormat: () => new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }),
     resultLabelMode: 'axis',
     numberFormat: () => new Intl.NumberFormat(),
-    deformationNumberFormat: () => new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }),
     zoomEnabled: false,
     fontSize: 13,
   }
