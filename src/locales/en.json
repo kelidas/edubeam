@@ -354,6 +354,10 @@
     "viewerStatus": {
       "title": "Grid, scale and units",
       "description": "The corner where the drawing says how it is to be read: the grid and whether points snap to it, how far the result diagrams are stretched, and the units every number on screen is in."
+    },
+    "menu": {
+      "title": "Everything else",
+      "description": "Opening and saving a project, the image export, a link that carries the whole structure, the example models - and this tour, whenever you want it again."
     }
   },
   "welcome": {

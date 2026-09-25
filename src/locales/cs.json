@@ -350,6 +350,10 @@
     "viewerStatus": {
       "title": "Rastr, měřítko a jednotky",
       "description": "Roh, ve kterém výkres říká, jak se má číst: rastr a přichytávání k němu, jak moc jsou průběhy výsledků roztažené, a jednotky, ve kterých jsou všechna čísla na obrazovce."
+    },
+    "menu": {
+      "title": "Všechno ostatní",
+      "description": "Otevření a uložení projektu, export obrázku, odkaz nesoucí celou konstrukci, ukázkové modely – a také tahle prohlídka, kdykoli ji budete chtít znovu."
     }
   },
   "welcome": {
