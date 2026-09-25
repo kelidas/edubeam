@@ -757,15 +757,7 @@
                   class="inline-edit"
                   style="width: 60px"
                   @keydown="checkNumber($event)"
-                  @change="
-                    changeSetArrayItem(
-                      item.ref,
-                      'values',
-                      3,
-                      $event.target as HTMLInputElement,
-                      appStore.convertInverseLength
-                    )
-                  "
+                  @change="setLoadPosition(item.ref, $event.target as HTMLInputElement)"
                 />
                 <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
               </div>
@@ -1653,14 +1645,14 @@ const { t } = useI18n();
 const appStore = useAppStore();
 
 /**
- * Where along its beam a concentrated load sits.
+ * Where along its beam a concentrated load or deformation sits.
  *
  * There is no such place as past the end: the solver splits the beam at that distance, and a split
  * outside it leaves a segment of negative length. Typed past either end it goes to that end, and the
  * box is rewritten to say where it went - the dialogs refuse such a value and print why, but an
  * inline box has nowhere to put a reason.
  */
-const setLoadPosition = (load: BeamConcentratedLoad, el: HTMLInputElement) => {
+const setLoadPosition = (load: BeamConcentratedLoad | BeamConcentratedDeformation, el: HTMLInputElement) => {
   const beam = useProjectStore().solver.domain.elements.get(load.target) as Beam2D | undefined;
   const length = beam ? beam.computeGeo().l : 0;
   // parseFloat2 reads anything it cannot understand as zero, which would send the load to the
