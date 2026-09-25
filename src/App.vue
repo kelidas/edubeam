@@ -83,7 +83,18 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#viewerSettings' },
-    on: onDrawing,
+    /*
+     * The panel is behind the gear and is not in the page at all while it is shut, so the step had
+     * nothing to attach to and the bubble stayed where the one before it was - pointing at the
+     * viewer buttons and saying something else. Open it, and leave it open: it is what this step is
+     * about, and shutting it again behind the reader would be stranger than finding it open.
+     */
+    on: {
+      beforeStep: async () => {
+        await showDrawing();
+        viewerStore.settingsOpen = true;
+      },
+    },
     content: {
       title: t('tour.viewerSettings.title'),
       description: t('tour.viewerSettings.description'),
@@ -124,6 +135,27 @@ const steps = computed(() => [
     content: {
       title: t('tour.influence.title'),
       description: t('tour.influence.description'),
+    },
+  },
+  {
+    // the menu itself, opened: pointed at the button instead, the bubble landed under the menu
+    attachTo: { element: '#mainMenu' },
+    /*
+     * The menu slides in, and a bubble placed while it is still moving is placed against a box that
+     * is not where it will be - which put it over the menu instead of beside it. Wait for the slide.
+     */
+    on: {
+      beforeStep: async () => {
+        appStore.drawerOpen = true;
+        await nextTick();
+        await new Promise((settled) => setTimeout(settled, 350));
+      },
+    },
+    // beside the menu, not over it: the menu is what the step is showing
+    options: { popper: { placement: 'right-start' } },
+    content: {
+      title: t('tour.menu.title'),
+      description: t('tour.menu.description'),
     },
   },
 ]);
@@ -456,7 +488,7 @@ const app_commit = APP_COMMIT;
         },
       }"
     >
-      <template #default="{ previous, next, step, exit, isFirst, isLast, index }">
+      <template #default="{ previous, next, step, exit, isFirst, isLast }">
         <VOnboardingStep>
           <div class="bg-white shadow rounded-lg" style="max-width: min(400px, calc(100vw - 32px))">
             <div class="px-4 py-5 sm:p-6">
@@ -470,6 +502,16 @@ const app_commit = APP_COMMIT;
                   </div>
                 </div>
                 <div class="mt-5 space-x-4 sm:mt-0 sm:ml-6 sm:flex sm:flex-shrink-0 sm:items-center relative">
+                  <!-- a tour nobody can leave is a trap; the menu will start it again -->
+                  <v-btn
+                    type="button"
+                    icon="mdi-close"
+                    size="x-small"
+                    variant="text"
+                    class="mr-1"
+                    :title="$t('tour.skipTour')"
+                    @click="exit"
+                  />
                   <template v-if="!isFirst">
                     <v-btn type="button" flat color="grey-lighten-3" @click="previous">
                       {{ $t('tour.previousButton') }}
@@ -530,7 +572,7 @@ const app_commit = APP_COMMIT;
       </v-btn>
     </v-app-bar>
 
-    <v-navigation-drawer v-model="appStore.drawerOpen" temporary>
+    <v-navigation-drawer id="mainMenu" v-model="appStore.drawerOpen" temporary>
       <!-- <v-list-item prepend-avatar="https://randomuser.me/api/portraits/women/9.jpg" title="Jane Doe"></v-list-item> -->
 
       <v-divider></v-divider>
