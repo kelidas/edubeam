@@ -149,6 +149,8 @@ const steps = computed(() => [
         await nextTick();
         await new Promise((settled) => setTimeout(settled, 350));
       },
+      // and put it away again: the reader did not open it, and it covers a quarter of the screen
+      afterStep: () => (appStore.drawerOpen = false),
     },
     // beside the menu, not over it: the menu is what the step is showing
     options: { popper: { placement: 'right-start' } },
@@ -350,6 +352,28 @@ const openExamples = () => {
   openModal(Examples);
 };
 
+/**
+ * The way out, from any step.
+ *
+ * The slot hands out an `exit`, but that only emits an event - the tour carries on. Ending it is
+ * `finish` on the wrapper, which also runs the step's own afterStep, so what the tour opened is put
+ * away.
+ */
+const endTour = () => useVOnboarding(onboardingWrapper).finish();
+
+/**
+ * The tour is offered once, on a first visit, and the answer is kept. Anyone who waved it away then
+ * had no way back to it, so it sits in the menu as well. Starting it puts it back on its first step,
+ * whether it ran before or not; the drawer closes because the tour points at what it covers.
+ */
+const startTour = () => {
+  appStore.drawerOpen = false;
+
+  const { start } = useVOnboarding(onboardingWrapper);
+
+  nextTick(() => start());
+};
+
 const openExportImage = () => {
   openModal(ExportImage);
 };
@@ -466,7 +490,7 @@ const app_commit = APP_COMMIT;
         },
       }"
     >
-      <template #default="{ previous, next, step, exit, isFirst, isLast }">
+      <template #default="{ previous, next, step, isFirst, isLast }">
         <VOnboardingStep>
           <div class="bg-white shadow rounded-lg" style="max-width: min(400px, calc(100vw - 32px))">
             <div class="px-4 py-5 sm:p-6">
@@ -488,7 +512,7 @@ const app_commit = APP_COMMIT;
                     variant="text"
                     class="mr-1"
                     :title="$t('tour.skipTour')"
-                    @click="exit"
+                    @click="endTour"
                   />
                   <template v-if="!isFirst">
                     <v-btn type="button" flat color="grey-lighten-3" @click="previous">
