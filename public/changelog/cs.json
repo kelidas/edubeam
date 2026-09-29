@@ -1,6 +1,21 @@
 {
   "releases": [
     {
+      "version": "1.4.0",
+      "title": "Příčinkové čáry, výsledky v řezech a matice",
+      "date": "30. září 2026",
+      "highlights": [
+        "Příčinkové čáry mají vlastní pracovní prostředí. V řezu se uvolní vazba jednotkovým přetvořením a výsledný deformovaný tvar je hledaná příčinková čára (Müller-Breslau); každé prostředí si drží vlastní výsledky i jejich měřítka.",
+        "Nové zatížení, osamělé přetvoření: vynucený posun, rozevření nebo pootočení, nakreslené jako vazba, kterou uvolňuje - kloub, kluzná deska nebo válečky - se šipkami o velikosti přetvoření.",
+        "Výsledky v řezech přečtou N, V, M, u, w a φ v libovolném místě prvku: ukážete na nosník, nastavíte krok a v místě skoku se zobrazí obě hodnoty.",
+        "Matice a vektory prvku: matice tuhosti, koncové síly a kondenzované tvary, s řádky a sloupci pojmenovanými podle uzlů.",
+        "Mezi výsledky přibylo pootočení φ(x) a měřítko každého diagramu - u, w, φ, N, V a M - se nastavuje samostatně v rohu výkresu.",
+        "Výběr lze přesunout, nejen kopírovat, a odstup vložení se dá zadat číslem.",
+        "A dále: tooltip po dotyku na dotykové obrazovce již nezůstává zobrazený, vzdálenost osamělého zatížení zůstává na nosníku a průvodce ukáže obě pracovní prostředí."
+      ],
+      "tag": "Nejnovější"
+    },
+    {
       "version": "1.3.0",
       "title": "Nedávné konstrukce, mechanismy a symboly podpor",
       "date": "29. září 2026",
@@ -28,8 +43,7 @@
           "alt": "Symboly podpor v dialogu uzlu",
           "caption": "Symboly podpor"
         }
-      ],
-      "tag": "Nejnovější"
+      ]
     },
     {
       "version": "1.2.0",

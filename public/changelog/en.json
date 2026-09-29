@@ -1,6 +1,28 @@
 {
   "releases": [
     {
+      "version": "1.4.0",
+      "title": "Influence Lines, Section Results & Matrices",
+      "date": "September 30, 2026",
+      "highlights": [
+        "Influence lines have a workspace of their own. Release a section with a unit deformation and the deflected shape that follows is the influence line (Muller-Breslau); each workspace keeps its own diagrams and their scales.",
+        "A new load, concentrated deformation: an imposed slip, gap or rotation, drawn as the release it stands for - a hinge, a sliding plate or rollers - with arrows the size of the movement.",
+        "Section results read N, V, M, u, w and φ anywhere along an element: point along the beam, set the step, and where a diagram jumps both values are shown.",
+        "Matrices and vectors of an element: the stiffness matrix, the end forces and the condensed forms, with rows and columns named after the nodes.",
+        "The rotation φ(x) joins the result diagrams, and the scale of each diagram - u, w, φ, N, V and M - is now set on its own in the corner of the drawing.",
+        "Move a selection instead of copying it, and type the offset a paste lands at.",
+        "Also: a tooltip no longer sticks after a tap on a touch screen, the distance of a concentrated load is kept on the beam, and the tour points out both workspaces."
+      ],
+      "tag": "Latest",
+      "contributors": [
+        {
+          "name": "kelidas",
+          "commits": 106,
+          "url": "https://github.com/kelidas"
+        }
+      ]
+    },
+    {
       "version": "1.3.0",
       "title": "Recent Structures, Mechanisms & Support Symbols",
       "date": "September 29, 2026",
@@ -29,7 +51,6 @@
           "caption": "Support symbols"
         }
       ],
-      "tag": "Latest",
       "contributors": [
         {
           "name": "Jan Vorisek",
