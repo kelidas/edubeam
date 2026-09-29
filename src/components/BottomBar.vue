@@ -22,7 +22,9 @@
         </v-tab>
       </v-tabs>
       <div class="bg-primary d-flex align-center">
-        <HelpTip :topic="activeHelpTopic" location="top left" size="small" density="comfortable" align="center" />
+        <span id="bottomBarHelp" class="d-flex">
+          <HelpTip :topic="activeHelpTopic" location="top left" size="small" density="comfortable" align="center" />
+        </span>
         <v-btn
           color="primary"
           density="compact"
@@ -64,8 +66,8 @@
         </div>
         <v-data-table-virtual
           v-if="appStore.bottomBarTab === 'tab-nodes'"
-          item-height="36"
           :key="settledHeight"
+          item-height="36"
           class="fixed-left-col"
           :headers="headers.nodes"
           :items="nodes"
@@ -135,20 +137,16 @@
                 />
               </div>
               <div class="inline-edit-group mr-2">
-                <label :for="`coords2-${item.label}`" class="input-before">z</label>
+                <label :for="`coords2-${item.label}`" class="input-before">{{ appStore.axes.v }}</label>
                 <input
                   :id="`coords2-${item.label}`"
-                  :value="float2String(appStore.convertLength(item.coords[2]))"
+                  :value="float2String(appStore.vertical(appStore.convertLength(item.coords[2])))"
                   class="inline-edit"
                   style="width: 60px"
                   @keydown="checkNumber($event)"
                   @change="
-                    changeSetArrayItem(
-                      item,
-                      'coords',
-                      2,
-                      $event.target as HTMLInputElement,
-                      appStore.convertInverseLength
+                    changeSetArrayItem(item, 'coords', 2, $event.target as HTMLInputElement, (v) =>
+                      appStore.vertical(appStore.convertInverseLength(v))
                     )
                   "
                 />
@@ -156,7 +154,10 @@
             </div>
           </template>
           <template #item.bcs="{ item }">
-            <div class="d-flex">
+            <div class="d-flex align-center">
+              <div class="mr-2">
+                <SupportPicker compact :bcs="item.bcs" @select="(type) => setSupportType(item, type)" />
+              </div>
               <div class="inline-edit-group">
                 <label :for="`bcs0-${item.label}`" class="input-before">D<sub>x</sub></label>
                 <div class="inline-edit">
@@ -170,7 +171,9 @@
                 </div>
               </div>
               <div class="inline-edit-group mx-2">
-                <label :for="`bcs1-${item.label}`" class="input-before">D<sub>z</sub></label>
+                <label :for="`bcs1-${item.label}`" class="input-before"
+                  >D<sub>{{ appStore.axes.v }}</sub></label
+                >
                 <div class="inline-edit">
                   <v-checkbox-btn
                     :id="`bcs1-${item.label}`"
@@ -182,7 +185,9 @@
                 </div>
               </div>
               <div class="inline-edit-group">
-                <label :for="`bcs2-${item.label}`" class="input-before">R<sub>y</sub></label>
+                <label :for="`bcs2-${item.label}`" class="input-before"
+                  >R<sub>{{ appStore.axes.r }}</sub></label
+                >
                 <div class="inline-edit">
                   <v-checkbox-btn
                     :id="`bcs2-${item.label}`"
@@ -197,7 +202,7 @@
                 <label :for="`lcs-${item.label}`" class="input-before" :title="$t('nodes.lcsAngle')">&alpha;</label>
                 <input
                   :id="`lcs-${item.label}`"
-                  :value="float2String(nodeLcsAngle(item))"
+                  :value="float2String(appStore.angle(nodeLcsAngle(item)))"
                   class="inline-edit"
                   style="width: 44px"
                   :title="$t('nodes.lcsAngle')"
@@ -269,6 +274,7 @@
             <v-icon small>mdi-plus</v-icon> {{ $t('elements.addElement') }}
           </v-btn>
           <v-btn
+            id="addElementUsingMouse"
             v-tooltip="{ text: $t('common.addUsingMouse'), location: 'bottom', openOnClick: !deviceHasHover }"
             size="small"
             variant="flat"
@@ -283,8 +289,8 @@
 
         <v-data-table-virtual
           v-if="appStore.bottomBarTab === 'tab-elements'"
-          item-height="36"
           :key="settledHeight"
+          item-height="36"
           :headers="headers.elements"
           class="fixed-left-col"
           :items="elements"
@@ -507,8 +513,8 @@
         </div>
         <v-data-table-virtual
           v-if="appStore.bottomBarTab === 'tab-loads'"
-          item-height="36"
           :key="settledHeight"
+          item-height="36"
           :headers="headers.loads"
           :items="loads"
           :row-props="loadRowProps"
@@ -595,25 +601,25 @@
                 <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Force)"></div>
               </div>
               <div class="inline-edit-group load mr-2">
-                <span class="input-before">F<sub>z</sub></span>
+                <span class="input-before"
+                  >F<sub>{{ appStore.axes.v }}</sub></span
+                >
                 <input
-                  :value="appStore.convertForce(item.ref.values[2])"
+                  :value="appStore.vertical(appStore.convertForce(item.ref.values[2]))"
                   class="inline-edit"
                   @keydown="checkNumber($event)"
                   @change="
-                    changeSetArrayItem(
-                      item.ref,
-                      'values',
-                      2,
-                      $event.target as HTMLInputElement,
-                      appStore.convertInverseForce
+                    changeSetArrayItem(item.ref, 'values', 2, $event.target as HTMLInputElement, (v) =>
+                      appStore.vertical(appStore.convertInverseForce(v))
                     )
                   "
                 />
                 <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Force)"></div>
               </div>
               <div class="inline-edit-group load">
-                <span class="input-before">M<sub>y</sub></span>
+                <span class="input-before"
+                  >M<sub>{{ appStore.axes.r }}</sub></span
+                >
                 <input
                   :value="appStore.convertMoment(item.ref.values[4])"
                   class="inline-edit"
@@ -635,14 +641,14 @@
             <div v-if="item.type === 'prescribed'" class="d-flex">
               <div
                 class="inline-edit-group load mr-2"
-                :class="{ disabled: !canPrescribeDof(item.ref, DofID.Dx) }"
+                :class="{ disabled: !isDofSupported(item.ref.target, DofID.Dx) }"
                 style="width: 128px"
               >
                 <label class="input-before">D<sub>x</sub></label>
                 <input
                   :value="appStore.convertLength(item.ref.prescribedValues[0])"
                   class="inline-edit"
-                  :disabled="!canPrescribeDof(item.ref, DofID.Dx)"
+                  :disabled="!isDofSupported(item.ref.target, DofID.Dx)"
                   @keydown="checkNumber($event)"
                   @change="
                     changeSetArrayItem(
@@ -658,22 +664,20 @@
               </div>
               <div
                 class="inline-edit-group load mr-2"
-                :class="{ disabled: !canPrescribeDof(item.ref, DofID.Dz) }"
+                :class="{ disabled: !isDofSupported(item.ref.target, DofID.Dz) }"
                 style="width: 128px"
               >
-                <span class="input-before">D<sub>z</sub></span>
+                <span class="input-before"
+                  >D<sub>{{ appStore.axes.v }}</sub></span
+                >
                 <input
-                  :value="appStore.convertLength(item.ref.prescribedValues[2])"
+                  :value="appStore.vertical(appStore.convertLength(item.ref.prescribedValues[2]))"
                   class="inline-edit"
-                  :disabled="!canPrescribeDof(item.ref, DofID.Dz)"
+                  :disabled="!isDofSupported(item.ref.target, DofID.Dz)"
                   @keydown="checkNumber($event)"
                   @change="
-                    changeSetArrayItem(
-                      item.ref,
-                      'prescribedValues',
-                      2,
-                      $event.target as HTMLInputElement,
-                      appStore.convertInverseLength
+                    changeSetArrayItem(item.ref, 'prescribedValues', 2, $event.target as HTMLInputElement, (v) =>
+                      appStore.vertical(appStore.convertInverseLength(v))
                     )
                   "
                 />
@@ -681,14 +685,16 @@
               </div>
               <div
                 class="inline-edit-group load"
-                :class="{ disabled: !canPrescribeDof(item.ref, DofID.Ry) }"
+                :class="{ disabled: !isDofSupported(item.ref.target, DofID.Ry) }"
                 style="width: 128px"
               >
-                <span class="input-before">R<sub>y</sub></span>
+                <span class="input-before"
+                  >R<sub>{{ appStore.axes.r }}</sub></span
+                >
                 <input
                   :value="item.ref.prescribedValues[4]"
                   class="inline-edit"
-                  :disabled="!canPrescribeDof(item.ref, DofID.Ry)"
+                  :disabled="!isDofSupported(item.ref.target, DofID.Ry)"
                   @keydown="checkNumber($event)"
                   @change="
                     changeSetArrayItem(item.ref, 'prescribedValues', 4, $event.target as HTMLInputElement, (v) => v)
@@ -808,38 +814,30 @@
                   <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.ForceDistance)"></div>
                 </div>
                 <div class="inline-edit-group load mr-2">
-                  <span class="input-before" v-html="'f<sub>z1</sub>'"></span>
+                  <span class="input-before" v-html="`f<sub>${appStore.axes.v}1</sub>`"></span>
                   <input
-                    :value="appStore.convertForceDistance(item.ref.startValues[1])"
+                    :value="appStore.vertical(appStore.convertForceDistance(item.ref.startValues[1]))"
                     class="inline-edit"
                     style="width: 60px"
                     @keydown="checkNumber($event)"
                     @change="
-                      changeSetArrayItem(
-                        item.ref,
-                        'startValues',
-                        1,
-                        $event.target as HTMLInputElement,
-                        appStore.convertInverseForceDistance
+                      changeSetArrayItem(item.ref, 'startValues', 1, $event.target as HTMLInputElement, (v) =>
+                        appStore.vertical(appStore.convertInverseForceDistance(v))
                       )
                     "
                   />
                   <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.ForceDistance)"></div>
                 </div>
                 <div class="inline-edit-group load mr-2">
-                  <span class="input-before" v-html="'f<sub>z2</sub>'"></span>
+                  <span class="input-before" v-html="`f<sub>${appStore.axes.v}2</sub>`"></span>
                   <input
-                    :value="appStore.convertForceDistance(item.ref.endValues[1])"
+                    :value="appStore.vertical(appStore.convertForceDistance(item.ref.endValues[1]))"
                     class="inline-edit"
                     style="width: 60px"
                     @keydown="checkNumber($event)"
                     @change="
-                      changeSetArrayItem(
-                        item.ref,
-                        'endValues',
-                        1,
-                        $event.target as HTMLInputElement,
-                        appStore.convertInverseForceDistance
+                      changeSetArrayItem(item.ref, 'endValues', 1, $event.target as HTMLInputElement, (v) =>
+                        appStore.vertical(appStore.convertInverseForceDistance(v))
                       )
                     "
                   />
@@ -869,17 +867,21 @@
                         'values',
                         0,
                         $event.target as HTMLInputElement,
-                        elementLoadFromMain(item.ref)
+                        elementLoadInverseConverter(item.ref, 0)
                       )
                     "
                   />
                   <div class="input-after" v-html="formatMeasureAsHTML(elementLoadMainUnits(item.ref))"></div>
                 </div>
                 <div class="inline-edit-group load mr-2">
-                  <span v-if="loadType(item.ref) === 'udl'" class="input-before">f<sub>z</sub></span>
-                  <span v-else-if="loadType(item.ref) === 'concentrated'" class="input-before">F<sub>z</sub></span>
+                  <span v-if="loadType(item.ref) === 'udl'" class="input-before"
+                    >f<sub>{{ appStore.axes.v }}</sub></span
+                  >
+                  <span v-else-if="loadType(item.ref) === 'concentrated'" class="input-before"
+                    >F<sub>{{ appStore.axes.v }}</sub></span
+                  >
                   <span v-else-if="loadType(item.ref) === 'concentrated_deformation'" class="input-before"
-                    >D<sub>z</sub></span
+                    >D<sub>{{ appStore.axes.v }}</sub></span
                   >
                   <span
                     v-else-if="loadType(item.ref) === 'temperature'"
@@ -901,9 +903,7 @@
                         'values',
                         1,
                         $event.target as HTMLInputElement,
-                        loadType(item.ref) === 'temperature'
-                          ? elementLoadFromMoment(item.ref)
-                          : elementLoadFromMain(item.ref)
+                        elementLoadInverseConverter(item.ref, 1)
                       )
                     "
                   />
@@ -924,8 +924,12 @@
                 v-if="item.ref instanceof BeamConcentratedLoad || item.ref instanceof BeamConcentratedDeformation"
                 class="inline-edit-group load mr-2"
               >
-                <span v-if="item.ref instanceof BeamConcentratedLoad" class="input-before">M<sub>y</sub></span>
-                <span v-else class="input-before">R<sub>y</sub></span>
+                <span v-if="item.ref instanceof BeamConcentratedLoad" class="input-before"
+                  >M<sub>{{ appStore.axes.r }}</sub></span
+                >
+                <span v-else class="input-before"
+                  >R<sub>{{ appStore.axes.r }}</sub></span
+                >
                 <input
                   :value="elementLoadToMoment(item.ref, item.ref.values[2])"
                   class="inline-edit"
@@ -1079,8 +1083,8 @@
 
         <v-data-table-virtual
           v-if="appStore.bottomBarTab === 'tab-mats'"
-          item-height="36"
           :key="settledHeight"
+          item-height="36"
           :headers="headers.materials"
           class="fixed-left-col"
           :items="materials"
@@ -1215,8 +1219,8 @@
 
         <v-data-table-virtual
           v-if="appStore.bottomBarTab === 'tab-cs'"
-          item-height="36"
           :key="settledHeight"
+          item-height="36"
           :headers="headers.crossSections"
           class="fixed-left-col"
           :items="crossSections"
@@ -1385,8 +1389,8 @@
           <v-window-item value="nodes" :transition="false" :reverse-transition="false">
             <v-data-table-virtual
               v-if="appStore.bottomBarTab === 'tab-results'"
-              item-height="36"
               :key="settledHeight"
+              item-height="36"
               :headers="headers.results"
               :items="nodes"
               density="compact"
@@ -1441,7 +1445,9 @@
                     <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
                   </div>
                   <div class="inline-edit-group mr-2">
-                    <label class="input-before">D<sub>z</sub></label>
+                    <label class="input-before"
+                      >D<sub>{{ appStore.axes.v }}</sub></label
+                    >
                     <div
                       v-if="
                         projStore.loadCase.solved &&
@@ -1450,7 +1456,9 @@
                       class="inline-edit fw pl-1"
                       v-html="
                         appStore.formatResultHTML(
-                          appStore.convertLength(item.getUnknowns(useProjectStore().loadCase, [DofID.Dz]))
+                          appStore.vertical(
+                            appStore.convertLength(item.getUnknowns(useProjectStore().loadCase, [DofID.Dz]))
+                          )
                         )
                       "
                     />
@@ -1458,7 +1466,9 @@
                     <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
                   </div>
                   <div class="inline-edit-group mr-2">
-                    <label class="input-before">R<sub>y</sub></label>
+                    <label class="input-before"
+                      >R<sub>{{ appStore.axes.r }}</sub></label
+                    >
                     <div
                       v-if="
                         projStore.loadCase.solved &&
@@ -1477,8 +1487,8 @@
           <v-window-item value="elements" :transition="false" :reverse-transition="false">
             <v-data-table-virtual
               v-if="appStore.bottomBarTab === 'tab-results'"
-              item-height="36"
               :key="settledHeight"
+              item-height="36"
               :headers="headers.results2"
               :items="useProjectStore().loadCase.solved ? elements : []"
               density="compact"
@@ -1532,7 +1542,11 @@
                       class="inline-edit fw pl-1"
                       v-html="
                         appStore.formatResultHTML(
-                          nameBeamForce(i) === 'M' ? appStore.convertMoment(f.value) : appStore.convertForce(f.value)
+                          nameBeamForce(i) === 'M'
+                            ? appStore.convertMoment(f.value)
+                            : i % 3 === 1
+                              ? appStore.vertical(appStore.convertForce(f.value))
+                              : appStore.convertForce(f.value)
                         )
                       "
                     />
@@ -1567,8 +1581,6 @@ import {
   Element,
   Material,
   CrossSection,
-  Solver,
-  Domain,
   LoadCase,
   BeamElementUniformEdgeLoad,
   BeamElementTrapezoidalEdgeLoad,
@@ -1578,7 +1590,7 @@ import {
   NodalLoad,
 } from 'ts-fem';
 
-import { onMounted, computed, markRaw, nextTick, reactive, ref, watch } from 'vue';
+import { onMounted, computed, reactive, ref, watch } from 'vue';
 import { useProjectStore } from '../store/project';
 import { useAppStore } from '../store/app';
 import { MouseMode } from '../mouse';
@@ -1614,6 +1626,8 @@ import { formatExpValueAsHTML, formatMeasureAsHTML } from '../SVGUtils';
 import { buildResultsTsv, downloadResultsCsv, resultUnitsFromStore } from '../utils/exportResults';
 
 import HelpTip from './HelpTip.vue';
+import SupportPicker from './SupportPicker.vue';
+import { setSupportType } from '@/utils/supports';
 import type { HelpTopicKey } from '../utils/helpTopics';
 
 import { openModal } from 'jenesius-vue-modal';
@@ -1711,9 +1725,6 @@ const elementLoadMomentUnits = (load: Load) => loadConfig(load).getMomentUnits(a
 
 // A displacement can only be prescribed on a DOF the node actually constrains, so the
 // other components stay read-only here just as they are in the add/edit dialogs.
-const canPrescribeDof = (load: PrescribedDisplacement, dof: DofID) =>
-  projStore.solver.domain.nodes.get(load.target)?.bcs.has(dof) ?? false;
-
 onMounted(() => {
   window.addEventListener('keydown', (e) => {
     if (e.key == 'Escape' || e.keyCode === 13) {
@@ -1872,18 +1883,21 @@ const elementLoadDisplayValue = (load: ElementLoadValues, index: number) => {
   const type = loadType(load);
 
   if (type === 'temperature') return appStore.convertTemperature(load.values[index]);
-  if (type === 'udl') return appStore.convertForceDistance(load.values[index]);
+  // Index 1 is the vertical (z) component of a force load.
+  const orient = index === 1 ? appStore.vertical : (v: number) => v;
+  if (type === 'udl') return orient(appStore.convertForceDistance(load.values[index]));
 
-  return appStore.convertForce(load.values[index]);
+  return orient(appStore.convertForce(load.values[index]));
 };
 
-const elementLoadInverseConverter = (load: ElementLoadValues) => {
+const elementLoadInverseConverter = (load: ElementLoadValues, index: number) => {
   const type = loadType(load);
 
   if (type === 'temperature') return appStore.convertInverseTemperature;
-  if (type === 'udl') return appStore.convertInverseForceDistance;
+  const orient = index === 1 ? appStore.vertical : (v: number) => v;
+  if (type === 'udl') return (v: number) => orient(appStore.convertInverseForceDistance(v));
 
-  return appStore.convertInverseForce;
+  return (v: number) => orient(appStore.convertInverseForce(v));
 };
 
 const materials = computed(() => {
@@ -1942,9 +1956,9 @@ const nodeLoadChips = (item: Node): NodeLoadChip[] => {
     if (DofID.Dx in nl.values && Math.abs(nl.values[DofID.Dx]) > 1e-12)
       tmp.push('F<sub>x</sub> = ' + appStore.convertForce(nl.values[DofID.Dx]));
     if (DofID.Dz in nl.values && Math.abs(nl.values[DofID.Dz]) > 1e-12)
-      tmp.push('F<sub>z</sub> = ' + appStore.convertForce(nl.values[DofID.Dz]));
+      tmp.push(`F<sub>${appStore.axes.v}</sub> = ` + appStore.vertical(appStore.convertForce(nl.values[DofID.Dz])));
     if (DofID.Ry in nl.values && Math.abs(nl.values[DofID.Ry]) > 1e-12)
-      tmp.push('M<sub>y</sub> = ' + appStore.convertMoment(nl.values[DofID.Ry]));
+      tmp.push(`M<sub>${appStore.axes.r}</sub> = ` + appStore.convertMoment(nl.values[DofID.Ry]));
 
     chips.push({ index, type: 'force', text: tmp.join(', ') });
   });
@@ -1958,8 +1972,9 @@ const nodeLoadChips = (item: Node): NodeLoadChip[] => {
     if (DofID.Dx in values && Math.abs(values[DofID.Dx]) > 1e-12)
       tmp.push('D<sub>x</sub> = ' + appStore.convertLength(values[DofID.Dx]));
     if (DofID.Dz in values && Math.abs(values[DofID.Dz]) > 1e-12)
-      tmp.push('D<sub>z</sub> = ' + appStore.convertLength(values[DofID.Dz]));
-    if (DofID.Ry in values && Math.abs(values[DofID.Ry]) > 1e-12) tmp.push('R<sub>y</sub> = ' + values[DofID.Ry]);
+      tmp.push(`D<sub>${appStore.axes.v}</sub> = ` + appStore.vertical(appStore.convertLength(values[DofID.Dz])));
+    if (DofID.Ry in values && Math.abs(values[DofID.Ry]) > 1e-12)
+      tmp.push(`R<sub>${appStore.axes.r}</sub> = ` + values[DofID.Ry]);
 
     chips.push({ index, type: 'displacement', text: tmp.join(', ') });
   });
@@ -2007,16 +2022,19 @@ const formatElementLoadsAtElement = (item: Beam2D): [number, string][] => {
         tmp.push(`${ff}<sub>x</sub> = ${toMain(startFx)} → ${toMain(endFx)}`);
       }
       if (Math.abs(startFz) > 1e-12 || Math.abs(endFz) > 1e-12) {
-        tmp.push(`${ff}<sub>z</sub> = ${toMain(startFz)} → ${toMain(endFz)}`);
+        const startText = appStore.vertical(toMain(startFz));
+        const endText = appStore.vertical(toMain(endFz));
+        tmp.push(`${ff}<sub>${appStore.axes.v}</sub> = ${startText} → ${endText}`);
       }
     } else if ('values' in nl.ref) {
       if (Math.abs(nl.ref.values[0]) > 1e-12) tmp.push(ff + '<sub>x</sub> = ' + toMain(nl.ref.values[0]));
-      if (Math.abs(nl.ref.values[1]) > 1e-12) tmp.push(ff + '<sub>z</sub> = ' + toMain(nl.ref.values[1]));
+      if (Math.abs(nl.ref.values[1]) > 1e-12)
+        tmp.push(`${ff}<sub>${appStore.axes.v}</sub> = ` + appStore.vertical(toMain(nl.ref.values[1])));
       // without this a moment-only load renders an empty chip
       if (nl.type === 'concentrated' && Math.abs(nl.ref.values[2]) > 1e-12)
-        tmp.push('M<sub>y</sub> = ' + toMoment(nl.ref.values[2]));
+        tmp.push(`M<sub>${appStore.axes.r}</sub> = ` + toMoment(nl.ref.values[2]));
       if (nl.type === 'concentrated_deformation' && Math.abs(nl.ref.values[2]) > 1e-12)
-        tmp.push('R<sub>y</sub> = ' + toMoment(nl.ref.values[2]));
+        tmp.push(`R<sub>${appStore.axes.r}</sub> = ` + toMoment(nl.ref.values[2]));
     }
     return [nl.index, tmp.join(', ')];
   });
@@ -2035,12 +2053,12 @@ const addElementUsingMouse = () => {
 
   // check if we have material and CS to assign
   if (projStore.solver.domain.materials.size === 0) {
-    alert('Please add some material first.');
+    alert(t('warnings.addMaterialFirst'));
     return;
   }
 
   if (projStore.solver.domain.crossSections.size === 0) {
-    alert('Please add some cross section first.');
+    alert(t('warnings.addCrossSectionFirst'));
     return;
   }
 
@@ -2148,7 +2166,7 @@ const headers = reactive({
       title: 'dofs.bcs',
       help: 'supports',
       key: 'bcs',
-      width: 260,
+      width: 296,
       sortable: false,
     },
     {

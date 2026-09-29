@@ -18,6 +18,7 @@ import { useProjectStore } from '../store/project';
 import { Command, IKeyValue, undoRedoManager } from '../CommandManager';
 import { useViewerStore } from '../store/viewer';
 import { useAppStore } from '../store/app';
+import { useRecentStructuresStore, type RecentStructureReason } from '../store/recentStructures';
 
 import { loadType } from './loadType';
 import { ensureDimensionId, createDimensionId } from './id';
@@ -25,6 +26,7 @@ import { deserializeModel, parseSerializedModel, serializeModel } from './serial
 import { deserializeShape, serializeShape } from './sectionProperties';
 import { createDimensionPoint, createDimensionPointFromNode, type DimensionPoint } from '@/types/dimension';
 import { applyNodeLcsAngle, nodeLcsAngle } from './nodalLcs';
+import { angle, axisLetters } from './axisConvention';
 
 export type EntityWithLabel = { label: string & { [key: string]: unknown } };
 
@@ -77,18 +79,7 @@ const captureProjectSnapshot = (): ProjectSnapshot => {
 const restoreProjectSnapshot = (snapshot: ProjectSnapshot) => {
   const projectStore = useProjectStore();
 
-  for (const loadCase of projectStore.solver.loadCases) {
-    loadCase.solved = false;
-    loadCase.prescribedBC = [];
-    loadCase.nodalLoadList = [];
-    loadCase.elementLoadList = [];
-  }
-
-  projectStore.solver.domain.elements.clear();
-  projectStore.solver.domain.nodes.clear();
-  projectStore.solver.domain.materials.clear();
-  projectStore.solver.domain.crossSections.clear();
-  projectStore.dimensions = [];
+  resetModel();
 
   if (snapshot.model && !deserializeModel(snapshot.model, projectStore.solver, projectStore.dimensions)) {
     console.error('Could not restore project snapshot');
@@ -148,6 +139,51 @@ export const executeModelMutationWithUndo = (mutate: () => void) => {
   );
 
   undoRedoManager.executeCommand(setCommand);
+};
+
+/**
+ * Empties the model. Materials and cross sections stay unless asked for, as the clear dialog
+ * offers keeping them.
+ */
+export const resetModel = ({ materials = true, crossSections = true } = {}) => {
+  const projectStore = useProjectStore();
+
+  for (const loadCase of projectStore.solver.loadCases) {
+    loadCase.solved = false;
+    loadCase.prescribedBC = [];
+    loadCase.nodalLoadList = [];
+    loadCase.elementLoadList = [];
+  }
+
+  projectStore.solver.domain.elements.clear();
+  projectStore.solver.domain.nodes.clear();
+  if (materials) projectStore.solver.domain.materials.clear();
+  if (crossSections) projectStore.solver.domain.crossSections.clear();
+  projectStore.dimensions = [];
+};
+
+/**
+ * Replaces the whole model - clearing it, or loading a link, a file or an example over it - as
+ * one undoable step, with the model it replaces saved to the recent structures so it survives a
+ * reload too. If `replace` throws, the previous model is put back before the error is rethrown,
+ * so a broken import never leaves a half-cleared model behind.
+ *
+ * Returns whether the previous model was saved; an empty or untouched starter model is not.
+ */
+export const replaceModel = (reason: RecentStructureReason, replace: () => void): boolean => {
+  const before = captureProjectSnapshot();
+
+  try {
+    executeModelMutationWithUndo(replace);
+  } catch (e) {
+    if (before.model !== null) restoreProjectSnapshot(before);
+    throw e;
+  }
+
+  const after = serializeModel(useProjectStore().solver, useProjectStore().dimensions);
+  if (after === before.model) return false;
+
+  return useRecentStructuresStore().remember(before.model, reason);
 };
 
 /**
@@ -639,14 +675,17 @@ export const setNodeLcsAngle = (node: Node | undefined, degrees: number) => {
   });
 };
 
-/** The same, driven by an inline field: an unreadable entry puts the shown angle back. */
+/**
+ * The same, driven by an inline field showing the angle in the chosen axis convention: an
+ * unreadable entry puts the shown angle back.
+ */
 export const changeNodeLcsAngle = (node: Node | undefined, el: HTMLInputElement) => {
   if (el.value === '') el.value = '0';
 
   const degrees = parseFloat(el.value.replace(/\s/g, '').replace(',', '.'));
-  if (!Number.isFinite(degrees)) return restoreRenderedValue(el, nodeLcsAngle(node));
+  if (!Number.isFinite(degrees)) return restoreRenderedValue(el, angle(nodeLcsAngle(node)));
 
-  setNodeLcsAngle(node, degrees);
+  setNodeLcsAngle(node, angle(degrees));
 };
 
 export const changeLabel = (map: string, item: EntityWithLabel, el?: HTMLInputElement) => {
@@ -657,7 +696,7 @@ export const changeLabel = (map: string, item: EntityWithLabel, el?: HTMLInputEl
 
   //if (isNaN(parseInt(el.value))) return;
   if (useProjectStore().solver.domain[map].has(el.value)) {
-    alert('ERROR: Label ' + el.value + ' already used!');
+    alert(i18n.global.t('warnings.labelInUse', { label: el.value }));
     el.value = item.label;
     return;
   }
@@ -668,7 +707,7 @@ export const changeLabel = (map: string, item: EntityWithLabel, el?: HTMLInputEl
   useProjectStore().solver.domain[map].set(item.label, item);
 
   if (map === 'nodes') {
-    for (const [key, element] of useProjectStore().solver.domain.elements) {
+    for (const element of useProjectStore().solver.domain.elements.values()) {
       const idtomodify = element.nodes.findIndex((nid) => nid == prevId);
       if (idtomodify > -1) {
         element.nodes[idtomodify] = item.label;
@@ -697,7 +736,7 @@ export const changeLabel = (map: string, item: EntityWithLabel, el?: HTMLInputEl
   }
 
   if (map === 'materials') {
-    for (const [key, element] of useProjectStore().solver.domain.elements) {
+    for (const element of useProjectStore().solver.domain.elements.values()) {
       if (element.mat == prevId) {
         element.mat = item.label;
       }
@@ -705,7 +744,7 @@ export const changeLabel = (map: string, item: EntityWithLabel, el?: HTMLInputEl
   }
 
   if (map === 'crossSections') {
-    for (const [key, element] of useProjectStore().solver.domain.elements) {
+    for (const element of useProjectStore().solver.domain.elements.values()) {
       if (element.cs == prevId) {
         element.cs = item.label;
       }
@@ -938,10 +977,10 @@ export const deletePrescribedDisplacement = (load: unknown, _id?: number, trackH
 
 export const nameBeamForce = (dof: number) => {
   if (dof === 0) return 'X';
-  if (dof === 1) return 'Z';
+  if (dof === 1) return axisLetters().v.toUpperCase();
   if (dof === 2) return 'M';
   if (dof === 3) return 'X';
-  if (dof === 4) return 'Z';
+  if (dof === 4) return axisLetters().v.toUpperCase();
   if (dof === 5) return 'M';
   return '';
 };

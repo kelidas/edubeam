@@ -13,8 +13,11 @@ import Qty from 'js-quantities';
 import { isMobile, suggestLanguage } from '@/utils';
 import { formatResultAsHTML, formatResultAsText, type ResultNumberStyle } from '@/utils/numberDisplay';
 import { customForceConversion, customPressureConversion } from '@/utils/unitConversions';
+import { angle, axisConvention, axisLetters, vertical } from '@/utils/axisConvention';
 import { useProjectStore } from './project';
 import { useClipboardStore } from './clipboard';
+
+export type SettingsTab = 'lang' | 'appearance' | 'controls';
 
 export const useAppStore = defineStore(
   'app',
@@ -57,7 +60,7 @@ export const useAppStore = defineStore(
     });
 
     // TODO: We really don't need to solve anything, but this triggers most of the reactivity we need
-    watch(units, (newUnits) => {
+    watch(units, () => {
       useProjectStore().solve();
     });
 
@@ -144,7 +147,22 @@ export const useAppStore = defineStore(
     const convertTemperature = (value: number) => _convertTemperature(value);
     const convertInverseTemperature = (value: number) => _convertInverseTemperature(value);
 
+    // Vertical components and angles pass through `vertical` and `angle` on their way to and
+    // from the screen, after unit conversion; `axes` holds the letters to label them with.
+    const axes = computed(() => axisLetters(axisConvention.value));
+
+    watch(axisConvention, () => {
+      if (useAppStore().bottomBarOpen) {
+        useAppStore().bottomBarOpen = false;
+        nextTick(() => {
+          useAppStore().bottomBarOpen = true;
+        });
+      }
+    });
+
     const onboardingFinished = ref(false);
+    /** The "draw your first beam" task is running; see utils/firstBeam.ts. */
+    const firstBeamActive = ref(false);
     const lastSeenChangelogVersion = ref('');
 
     watch(locale, (newLocale) => {
@@ -225,8 +243,8 @@ export const useAppStore = defineStore(
       useProjectStore().solveNow();
     });
 
-    const openSettings = () => {
-      openModal(SettingsModal);
+    const openSettings = (tab: SettingsTab = 'lang') => {
+      openModal(SettingsModal, { tab });
       /*const si = tabs.value.findIndex((t) => t.title === "tabView.settings");
 
       // If settings already open, switch to it
@@ -241,12 +259,21 @@ export const useAppStore = defineStore(
 
     const panButton = ref(-1);
 
-    const test = ref(20);
+    // Everything the settings dialog edits except the language, which is a person's choice rather
+    // than a preference to fall back from.
+    const resetSettings = () => {
+      numberStyle.value = 'scientific';
+      Object.assign(units, { Length: 'm', Area: 'm2', AreaM2: 'm4', Mass: 'kg', Force: 'kN', Pressure: 'MPa' });
+      momentUnits.value = { force: 'kN', length: 'm' };
+      axisConvention.value = 'z-down';
+      panButton.value = -1;
+    };
 
     return {
       inViewerMode,
 
       onboardingFinished,
+      firstBeamActive,
       drawerOpen,
       rightDrawerOpen,
       bottomBarOpen,
@@ -269,6 +296,7 @@ export const useAppStore = defineStore(
       mouseMode,
       mouse,
       openSettings,
+      resetSettings,
 
       panButton,
 
@@ -289,6 +317,11 @@ export const useAppStore = defineStore(
       convertInverseForceDistance,
       convertTemperature,
       convertInverseTemperature,
+
+      axisConvention,
+      axes,
+      vertical,
+      angle,
 
       lastSeenChangelogVersion,
     };
@@ -313,6 +346,7 @@ export const useAppStore = defineStore(
         'units.ThermalExpansion',
         'units.Angle',
         'momentUnits',
+        'axisConvention',
       ],
       debug: true,
     },

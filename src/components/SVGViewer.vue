@@ -2,11 +2,13 @@
 import { closeModal, openModal } from 'jenesius-vue-modal';
 import SvgPanZoom from './SVGPanZoom.vue';
 import SvgGrid from './SVGGrid.vue';
+import Crosshair from './Crosshair.vue';
 import SvgViewerDefs from './SVGViewerDefs.vue';
 import { useProjectStore } from '../store/project';
 import { ref, onMounted, onActivated, computed, nextTick, watch, reactive, onUnmounted, provide } from 'vue';
 import { useViewerStore } from '../store/viewer';
 import { useAppStore } from '@/store/app';
+import { startFirstBeam } from '@/utils/startFirstBeam';
 
 import AddElementDialog from './dialogs/AddElement.vue';
 import AddNodeDialog from './dialogs/AddNode.vue';
@@ -25,6 +27,7 @@ import SVGElementConcentratedDeformation from './svg/ElementConcentratedDeformat
 import SVGNodalLoad from './svg/NodalLoad.vue';
 import SVGPrescribedDisplacement from './svg/PrescribedDisplacement.vue';
 import SVGNode from './svg/Node.vue';
+import SVGSolveIssues from './svg/SolveIssues.vue';
 import SVGElement from './svg/Element.vue';
 import SVGElementTemperatureLoad from './svg/ElementTemperatureLoad.vue';
 import SVGDimensioning from './svg/Dimensioning.vue';
@@ -35,6 +38,7 @@ import HoveredElement from './HoveredElement.vue';
 import ElementMatrices from './ElementMatrices.vue';
 import { intersectedKey } from '@/types/hover';
 import PlacingPreview from './PlacingPreview.vue';
+import FirstBeamTask from './FirstBeamTask.vue';
 import { placingKey } from '@/types/placing';
 
 import {
@@ -150,6 +154,7 @@ const resolvedResultLabelMode = computed(() => props.resultLabelMode ?? viewerSt
 
 const panZoom = ref<InstanceType<typeof SvgPanZoom> | null>(null);
 const grid = ref<InstanceType<typeof SvgGrid> | null>(null);
+const crosshair = ref<InstanceType<typeof Crosshair> | null>(null);
 
 const svg = ref<SVGSVGElement>();
 const viewport = ref<SVGGElement>();
@@ -368,34 +373,93 @@ const solve = () => {
   });
 };
 
-const hasSolveDiagnosticsIssues = computed(
-  () => projectStore.solveDiagnostics.errors.length > 0 || projectStore.solveDiagnostics.warnings.length > 0
+const isModelEmpty = computed(
+  () => projectStore.nodes.length === 0 && !appStore.firstBeamActive && !appStore.inViewerMode
 );
 
-const hasBlockingSolveIssues = computed(() => projectStore.solveDiagnostics.errors.length > 0);
+/**
+ * Why there are no results, if anything. A model still being drawn gets the next step in
+ * neutral colours, not an error: a beam without supports is unfinished, not wrong. The first
+ * beam task asks for the supports itself, so there the chip stays out of its way.
+ */
+const solveBanner = computed(() => {
+  const { errors, incomplete } = projectStore.solveDiagnostics;
 
-const solveDiagnosticsSummary = computed(() => {
-  const errors = projectStore.solveDiagnostics.errors.length;
-  const warnings = projectStore.solveDiagnostics.warnings.length;
+  if (errors.length > 0) {
+    // A single error says what it is; a count only helps once there are several.
+    const text =
+      errors.length === 1
+        ? (errors[0].summary ?? errors[0].message)
+        : t('solveDiagnostics.summaryErrors', { errors: errors.length });
 
-  if (errors > 0 && warnings > 0) {
-    return `Model has ${errors} error(s) and ${warnings} warning(s).`;
+    // The exclamation mark the other viewer alerts use; `$error` is a cross that reads as "close".
+    return { type: 'error' as const, icon: '$warning', text };
   }
 
-  if (errors > 0) {
-    return `Model has ${errors} error(s).`;
+  if (incomplete.length > 0 && !appStore.firstBeamActive) {
+    // Only a chip: this is where every model passes through, so it should not shout.
+    const text =
+      incomplete.length === 1
+        ? (incomplete[0].summary ?? incomplete[0].message)
+        : t('solveDiagnostics.summaryIncomplete', { count: incomplete.length });
+
+    return { type: 'incomplete' as const, icon: 'mdi-information-outline', text };
   }
 
-  return `Model has ${warnings} warning(s).`;
+  return null;
+});
+
+/** The errors on screen, by what they are and where, so a re-solve of the same model matches. */
+const errorsKey = computed(() =>
+  projectStore.solveDiagnostics.errors
+    .map((issue) => `${issue.code}|${[...(issue.nodes ?? [])].sort().join(',')}`)
+    .join(';')
+);
+
+/**
+ * The errors whose banner was closed. Closing only folds it into a chip: an error is why there
+ * are no results, so it never goes away entirely, but on a small screen the banner has to make
+ * room. A different error unfolds it again; any other edit leaves it folded.
+ */
+const collapsedErrorsKey = ref<string | null>(null);
+const errorsCollapsed = computed(() => collapsedErrorsKey.value === errorsKey.value);
+
+/**
+ * Warnings get a banner of their own. They do not stop the solve, and some are on purpose - a
+ * spare node kept for later - so they can be closed, also while an error is shown.
+ */
+const warningBanner = computed(() => {
+  const warnings = projectStore.visibleWarnings;
+  if (warnings.length === 0) return null;
+
+  return warnings.length === 1
+    ? warnings[0].message
+    : t('solveDiagnostics.summaryWarnings', { warnings: warnings.length });
+});
+
+/** Whether the canvas has a motion to show, and so the banner an outline to hide. */
+const hasFreeMotion = computed(() => projectStore.solveDiagnostics.errors.some((issue) => issue.motion));
+
+const motionToggleLabel = computed(() =>
+  t(viewerStore.showMechanisms ? 'solveDiagnostics.hideMotion' : 'solveDiagnostics.showMotion')
+);
+
+/** While the pointer is on the message, the canvas keeps showing the motion it describes. */
+const holdFreeMotion = ref(false);
+
+/**
+ * An unfinished model shows how it can move only once it is loaded. Loads usually come after
+ * the supports, so loading a structure that is still not held means results are expected, and
+ * the motion explains why there are none. Before that the student is simply still drawing.
+ */
+const modelHasLoads = computed(() => {
+  const loadCase = projectStore.solver.loadCases[0];
+
+  return loadCase.nodalLoadList.length + loadCase.elementLoadList.length + loadCase.prescribedBC.length > 0;
 });
 
 const openSolveDiagnostics = () => {
-  if (!hasSolveDiagnosticsIssues.value) return;
-
-  openModal(SolveDiagnosticsDialog, {
-    diagnostics: projectStore.solveDiagnostics,
-    blocked: hasBlockingSolveIssues.value,
-  });
+  openModal(SolveDiagnosticsDialog, { diagnostics: projectStore.solveDiagnostics });
 };
 
 const centerContent = () => {
@@ -431,11 +495,23 @@ const LOAD_DECORATION_PX = 60;
  */
 const scalableResults = computed(() =>
   [
-    { key: 'deformedShape' as const, label: 'u,&nbsp;w', shown: results.showDeformedShape },
+    {
+      key: 'deformedShape' as const,
+      label: `u<sub>x</sub>,&nbsp;u<sub>${appStore.axes.v}</sub>`,
+      shown: results.showDeformedShape,
+    },
     { key: 'rotation' as const, label: '\u03c6&nbsp;(x)', shown: results.showRotation },
     { key: 'normalForce' as const, label: 'N&nbsp;(x)', shown: results.showNormalForce },
-    { key: 'shearForce' as const, label: 'V<sub>z</sub>&nbsp;(x)', shown: results.showShearForce },
-    { key: 'bendingMoment' as const, label: 'M<sub>y</sub>&nbsp;(x)', shown: results.showBendingMoment },
+    {
+      key: 'shearForce' as const,
+      label: `V<sub>${appStore.axes.v}</sub>&nbsp;(x)`,
+      shown: results.showShearForce,
+    },
+    {
+      key: 'bendingMoment' as const,
+      label: `M<sub>${appStore.axes.r}</sub>&nbsp;(x)`,
+      shown: results.showBendingMoment,
+    },
   ].filter((row) => row.shown)
 );
 
@@ -503,6 +579,10 @@ const onUpdate = throttle((zooming: boolean) => {
   invalidatePointerMatrix();
   if (zooming) hideTooltip();
   if (grid.value) grid.value.refreshGrid(zooming);
+
+  // The view moved under a resting mouse, so the model point beneath it changed without a report.
+  if (lastPointerType === 'mouse') updatePointerPosition({ clientX: appStore.mouse.x, clientY: appStore.mouse.y });
+  crosshair.value?.refresh();
 }, 1000 / 10);
 
 const toggleGridVisibility = () => {
@@ -627,7 +707,7 @@ const placeNode = (label: number | string) => {
     [...addNodeBcs.value]
   );
 
-  applyNodeLcsAngle(node, parseFloat2(addNodeAngle.value));
+  applyNodeLcsAngle(node, appStore.angle(parseFloat2(addNodeAngle.value)));
 
   return node;
 };
@@ -845,16 +925,18 @@ const buildElementLoadDetails = (el: BeamElementLoad): EntityDetails => {
 
     if (Math.abs(el.startValues[1]) > 1e-32 || Math.abs(el.endValues[1]) > 1e-32) {
       rows.push(
-        `${ff}<sub>z</sub> = ${convertIntensity(el.startValues[1])} → ${convertIntensity(el.endValues[1])} ${uu}`
+        `${ff}<sub>${appStore.axes.v}</sub> = ${appStore.vertical(convertIntensity(el.startValues[1]))} → ` +
+          `${appStore.vertical(convertIntensity(el.endValues[1]))} ${uu}`
       );
     }
   } else if (el instanceof BeamElementUniformEdgeLoad || el instanceof BeamConcentratedLoad) {
     if (Math.abs(el.values[0]) > 1e-32) rows.push(`${ff}<sub>x</sub> = ${convertIntensity(el.values[0])} ${uu}`);
 
-    if (Math.abs(el.values[1]) > 1e-32) rows.push(`${ff}<sub>z</sub> = ${convertIntensity(el.values[1])} ${uu}`);
+    if (Math.abs(el.values[1]) > 1e-32)
+      rows.push(`${ff}<sub>${appStore.axes.v}</sub> = ${appStore.vertical(convertIntensity(el.values[1]))} ${uu}`);
 
     if (el instanceof BeamConcentratedLoad && Math.abs(el.values[2]) > 1e-32) {
-      rows.push(`M<sub>y</sub> = ${appStore.convertMoment(el.values[2])} ${appStore.units.Moment}`);
+      rows.push(`M<sub>${appStore.axes.r}</sub> = ${appStore.convertMoment(el.values[2])} ${appStore.units.Moment}`);
     }
   } else if (el instanceof BeamConcentratedDeformation) {
     // deformations are lengths and rotations, not forces
@@ -863,11 +945,13 @@ const buildElementLoadDetails = (el: BeamElementLoad): EntityDetails => {
     }
 
     if (Math.abs(el.values[1]) > 1e-32) {
-      rows.push(`D<sub>z</sub> = ${appStore.convertLength(el.values[1])} ${appStore.units.Length}`);
+      rows.push(
+        `D<sub>${appStore.axes.v}</sub> = ${appStore.vertical(appStore.convertLength(el.values[1]))} ${appStore.units.Length}`
+      );
     }
 
     if (Math.abs(el.values[2]) > 1e-32) {
-      rows.push(`R<sub>y</sub> = ${el.values[2]} ${appStore.units.Angle}`);
+      rows.push(`R<sub>${appStore.axes.r}</sub> = ${el.values[2]} ${appStore.units.Angle}`);
     }
   }
 
@@ -882,11 +966,13 @@ const buildNodalLoadDetails = (el: NodalLoad): EntityDetails => {
   }
 
   if (Math.abs(el.values[2]) > 1e-32) {
-    rows.push(`F<sub>z</sub> = ${appStore.convertForce(el.values[2])} ${appStore.units.Force}`);
+    rows.push(
+      `F<sub>${appStore.axes.v}</sub> = ${appStore.vertical(appStore.convertForce(el.values[2]))} ${appStore.units.Force}`
+    );
   }
 
   if (Math.abs(el.values[4]) > 1e-32) {
-    rows.push(`M<sub>y</sub> = ${appStore.convertMoment(el.values[4])} ${appStore.units.Moment}`);
+    rows.push(`M<sub>${appStore.axes.r}</sub> = ${appStore.convertMoment(el.values[4])} ${appStore.units.Moment}`);
   }
 
   return { title: t('loads.nodalLoad'), body: rows.join('<br>') };
@@ -900,11 +986,14 @@ const buildPrescribedBCDetails = (el: PrescribedDisplacement): EntityDetails => 
   }
 
   if (Math.abs(el.prescribedValues[2]) > 1e-32) {
-    rows.push(`D<sub>z</sub> = ${appStore.convertLength(el.prescribedValues[2])} ${appStore.units.Length}`);
+    rows.push(
+      `D<sub>${appStore.axes.v}</sub> = ${appStore.vertical(appStore.convertLength(el.prescribedValues[2]))} ` +
+        appStore.units.Length
+    );
   }
 
   if (Math.abs(el.prescribedValues[4]) > 1e-32) {
-    rows.push(`R<sub>y</sub> = ${el.prescribedValues[4]} ${appStore.units.Angle}`);
+    rows.push(`R<sub>${appStore.axes.r}</sub> = ${el.prescribedValues[4]} ${appStore.units.Angle}`);
   }
 
   return { title: t('loads.prescribedDisplacement'), body: rows.join('<br>') };
@@ -922,14 +1011,14 @@ const buildNodeDetails = (node: Node): EntityDetails => {
     );
 
     rows.push(
-      `u<sub>z</sub> = ${appStore.formatResultHTML(
+      `u<sub>${appStore.axes.v}</sub> = ${appStore.formatResultHTML(
         // @ts-expect-error It return value for single Dof
-        node.getUnknowns(viewerLoadCase.value, [DofID.Dz])
+        appStore.vertical(node.getUnknowns(viewerLoadCase.value, [DofID.Dz]))
       )} m`
     );
 
     rows.push(
-      `φ<sub>y</sub> = ${appStore.formatResultHTML(
+      `φ<sub>${appStore.axes.r}</sub> = ${appStore.formatResultHTML(
         // @ts-expect-error It return value for single Dof
         node.getUnknowns(viewerLoadCase.value, [DofID.Ry])
       )} rad`
@@ -1498,7 +1587,7 @@ const cancelDimensionPointDrag = () => {
  * between a pointerdown and the pointerup that follows it, and a touch lands on a child element
  * far more often than a mouse does, which put placed nodes anywhere but under the finger.
  */
-const updatePointerPosition = (e: PointerEvent) => {
+const updatePointerPosition = (e: Pick<PointerEvent, 'clientX' | 'clientY'>) => {
   appStore.mouse.x = e.clientX;
   appStore.mouse.y = e.clientY;
 
@@ -2424,11 +2513,11 @@ defineExpose({ centerContent, fitContent });
         </div>
 
         <!-- how the drawing is being read: the grid, the scale of the diagrams, the units -->
-        <div id="viewerStatus" class="d-flex ga-1 align-center">
+        <div id="gridAndUnits" class="d-flex ga-1 align-center">
           <div class="d-flex align-center ga-1">
             <v-chip density="compact" class="d-flex pa-0 overflow-hidden">
               <!-- Grid toggle -->
-              <v-tooltip text="Toggle grid (G)" location="top" :disabled="pointerIsTouch">
+              <v-tooltip :text="$t('viewer.toggleGrid')" location="top" :disabled="pointerIsTouch">
                 <template #activator="{ props: tooltipProps }">
                   <v-btn
                     v-bind="tooltipProps"
@@ -2444,7 +2533,7 @@ defineExpose({ centerContent, fitContent });
                 </template>
               </v-tooltip>
               <!-- Snap to grid -->
-              <v-tooltip text="Toggle snap to grid (S)" location="top" :disabled="pointerIsTouch">
+              <v-tooltip :text="$t('viewer.toggleSnap')" location="top" :disabled="pointerIsTouch">
                 <template #activator="{ props: tooltipProps }">
                   <v-btn
                     v-bind="tooltipProps"
@@ -2480,7 +2569,7 @@ defineExpose({ centerContent, fitContent });
             </template>
           </v-tooltip>
 
-          <v-chip class="justify-end" density="compact" @click="appStore.openSettings()">
+          <v-chip class="justify-end" density="compact" @click="appStore.openSettings('lang')">
             <div class="d-flex ga-1">
               <span v-html="formatMeasureAsHTML(appStore.units.Length)"></span>
               <span v-html="formatMeasureAsHTML(appStore.units.Area)"></span>
@@ -2499,7 +2588,7 @@ defineExpose({ centerContent, fitContent });
         density="comfortable"
         class="mr-1"
         rounded="lg"
-        title="Undo"
+        :title="$t('common.undo')"
         @click="undoModelChange()"
       ></v-btn>
       <v-btn
@@ -2508,7 +2597,7 @@ defineExpose({ centerContent, fitContent });
         density="comfortable"
         class="mr-1"
         rounded="lg"
-        title="Redo"
+        :title="$t('common.redo')"
         @click="redoModelChange()"
       ></v-btn>
     </div>
@@ -2526,7 +2615,7 @@ defineExpose({ centerContent, fitContent });
         density="comfortable"
         class="mr-1"
         rounded="lg"
-        title="Box select"
+        :title="$t('viewer.boxSelect')"
         :color="touchSelectArmed ? 'primary' : 'default'"
         @click="touchSelectArmed = !touchSelectArmed"
       ></v-btn>
@@ -2536,25 +2625,27 @@ defineExpose({ centerContent, fitContent });
         density="comfortable"
         class="mr-1"
         rounded="lg"
-        title="Center content"
+        :title="$t('viewer.centerContent')"
         @click="centerContent"
       ></v-btn>
       <v-btn
+        id="fitContentButton"
         icon="mdi:mdi-fit-to-screen-outline"
         size="32"
         density="comfortable"
         class="mr-1"
         rounded="lg"
-        title="Fit content to screen"
+        :title="$t('viewer.fitContent')"
         @click="fitContent"
       >
       </v-btn>
       <v-btn
+        id="viewerSettingsToggle"
         icon="mdi:mdi-cog"
         size="32"
         density="comfortable"
         rounded="lg"
-        title="Settings"
+        :title="$t('common.settings')"
         :color="viewerStore.settingsOpen ? 'primary' : 'default'"
         @click="viewerStore.settingsOpen = !viewerStore.settingsOpen"
       ></v-btn>
@@ -2585,8 +2676,20 @@ defineExpose({ centerContent, fitContent });
       <!-- What the next placement gets; the mode stays open, so the options live with it -->
       <div v-if="appStore.mouseMode === MouseMode.ADD_NODE" class="d-flex align-center ga-3">
         <v-checkbox-btn v-model="addNodeBcs" :value="DofID.Dx" density="compact" label="Dx" class="flex-grow-0" />
-        <v-checkbox-btn v-model="addNodeBcs" :value="DofID.Dz" density="compact" label="Dz" class="flex-grow-0" />
-        <v-checkbox-btn v-model="addNodeBcs" :value="DofID.Ry" density="compact" label="Ry" class="flex-grow-0" />
+        <v-checkbox-btn
+          v-model="addNodeBcs"
+          :value="DofID.Dz"
+          density="compact"
+          :label="`D${appStore.axes.v}`"
+          class="flex-grow-0"
+        />
+        <v-checkbox-btn
+          v-model="addNodeBcs"
+          :value="DofID.Ry"
+          density="compact"
+          :label="`R${appStore.axes.r}`"
+          class="flex-grow-0"
+        />
         <v-text-field
           v-model="addNodeAngle"
           :title="$t('nodes.lcsAngle')"
@@ -2661,7 +2764,7 @@ defineExpose({ centerContent, fitContent });
         </template>
         <template #label>
           <span class="label">{{ $t('nodes.addNode') }}</span>
-          <span class="ml-auto text-right" style="font-size: 10px">Hold Ctrl to add using mouse</span>
+          <span class="ml-auto text-right" style="font-size: 10px">{{ $t('viewer.holdCtrl') }}</span>
         </template>
       </context-menu-item>
       <context-menu-item
@@ -2673,7 +2776,7 @@ defineExpose({ centerContent, fitContent });
         </template>
         <template #label>
           <span class="label">{{ $t('elements.addElement') }}</span>
-          <span class="ml-auto text-right" style="font-size: 10px">Hold Ctrl to add using mouse</span>
+          <span class="ml-auto text-right" style="font-size: 10px">{{ $t('viewer.holdCtrl') }}</span>
         </template>
       </context-menu-item>
       <context-menu-item @click="appStore.mouseMode = MouseMode.ADD_DIMLINE">
@@ -2762,16 +2865,92 @@ defineExpose({ centerContent, fitContent });
 
     <div class="text-body-2 warning ga-1 d-flex flex-column pr-6">
       <div style="width: fit-content">
+        <!-- An empty canvas is where every model starts, not a mistake. -->
+        <v-alert v-if="isModelEmpty" icon="mdi-vector-polyline-plus" density="compact" type="info">
+          <template #text>
+            <div class="d-flex align-center flex-wrap">
+              {{ $t('emptyModel.message') }}
+              <v-btn variant="text" density="compact" size="small" @click="startFirstBeam">{{
+                $t('welcome.drawFirstBeam')
+              }}</v-btn>
+            </div>
+          </template>
+        </v-alert>
+        <v-chip
+          v-else-if="solveBanner?.type === 'incomplete'"
+          color="info"
+          variant="flat"
+          size="small"
+          :prepend-icon="solveBanner.icon"
+          :title="solveBanner.text"
+          @click="openSolveDiagnostics"
+          @mouseenter="holdFreeMotion = true"
+          @mouseleave="holdFreeMotion = false"
+        >
+          {{ $t('solveDiagnostics.incompleteChip') }}
+        </v-chip>
+        <v-chip
+          v-else-if="solveBanner && errorsCollapsed"
+          color="error"
+          variant="flat"
+          size="small"
+          :prepend-icon="solveBanner.icon"
+          :title="solveBanner.text"
+          @click="collapsedErrorsKey = null"
+          @mouseenter="holdFreeMotion = true"
+          @mouseleave="holdFreeMotion = false"
+        >
+          {{ $t('solveDiagnostics.blockedTitle') }}
+        </v-chip>
         <v-alert
-          v-if="hasSolveDiagnosticsIssues"
-          icon="$warning"
+          v-else-if="solveBanner"
+          :model-value="true"
+          :icon="solveBanner.icon"
           density="compact"
-          :type="hasBlockingSolveIssues ? 'error' : 'warning'"
+          :type="solveBanner.type"
+          closable
+          :close-label="$t('solveDiagnostics.collapseErrors')"
+          @click:close="collapsedErrorsKey = errorsKey"
+          @mouseenter="holdFreeMotion = true"
+          @mouseleave="holdFreeMotion = false"
         >
           <template #text>
-            <div class="d-flex align-center">
-              {{ solveDiagnosticsSummary }}
-              <v-btn variant="text" density="compact" size="small" @click="openSolveDiagnostics">Show details</v-btn>
+            <div class="d-flex align-center flex-wrap">
+              {{ solveBanner.text }}
+              <v-btn variant="text" density="compact" size="small" @click="openSolveDiagnostics">{{
+                $t('solveDiagnostics.showDetails')
+              }}</v-btn>
+              <v-btn
+                v-if="hasFreeMotion"
+                variant="text"
+                density="compact"
+                size="small"
+                :icon="viewerStore.showMechanisms ? 'mdi-eye-off-outline' : 'mdi-eye-outline'"
+                :title="motionToggleLabel"
+                :aria-label="motionToggleLabel"
+                @click="viewerStore.showMechanisms = !viewerStore.showMechanisms"
+              />
+            </div>
+          </template>
+        </v-alert>
+      </div>
+      <div style="width: fit-content">
+        <v-alert
+          v-if="warningBanner"
+          :model-value="true"
+          icon="$warning"
+          density="compact"
+          type="warning"
+          closable
+          :close-label="$t('solveDiagnostics.dismissWarnings')"
+          @click:close="projectStore.dismissWarnings()"
+        >
+          <template #text>
+            <div class="d-flex align-center flex-wrap">
+              {{ warningBanner }}
+              <v-btn variant="text" density="compact" size="small" @click="openSolveDiagnostics">{{
+                $t('solveDiagnostics.showDetails')
+              }}</v-btn>
             </div>
           </template>
         </v-alert>
@@ -2779,7 +2958,7 @@ defineExpose({ centerContent, fitContent });
       <div style="width: fit-content">
         <v-alert v-if="projectStore.materials.length === 0" icon="$warning" density="compact" type="error">
           <template #text>
-            <div class="d-flex align-center">
+            <div class="d-flex align-center flex-wrap">
               {{ $t('warnings.noMaterialsDefined') }}
               <v-btn variant="text" density="compact" size="small" @click="openModal(AddMaterialDialog)">{{
                 $t('common.addNew')
@@ -2791,7 +2970,7 @@ defineExpose({ centerContent, fitContent });
       <div style="width: fit-content">
         <v-alert v-if="projectStore.crossSections.length === 0" icon="$warning" density="compact" type="error">
           <template #text>
-            <div class="d-flex align-center">
+            <div class="d-flex align-center flex-wrap">
               {{ $t('warnings.noCrossSectionsDefined') }}
               <v-btn variant="text" density="compact" size="small" @click="openModal(AddCrossSectionDialog)">
                 {{ $t('common.addNew') }}
@@ -2812,9 +2991,16 @@ defineExpose({ centerContent, fitContent });
       />
     </svg>
 
+    <Crosshair
+      v-if="!appStore.inViewerMode"
+      ref="crosshair"
+      :target="svg"
+      :viewport="viewport"
+      :rulers="viewerStore.showGrid"
+    />
+
     <SvgPanZoom
       ref="panZoom"
-      :on-update="onUpdate"
       :padding="16"
       :mobile-padding="12"
       :touch="appStore.mouseMode !== MouseMode.MOVING && appStore.mouseMode !== MouseMode.SELECTING"
@@ -2824,6 +3010,7 @@ defineExpose({ centerContent, fitContent });
       :fit-reserve="fitReserve"
       center-after-fit
       style="overflow: visible; z-index: 50; min-height: 0"
+      @update="onUpdate"
     >
       <svg
         ref="svg"
@@ -3131,6 +3318,7 @@ defineExpose({ centerContent, fitContent });
               @nodepointerup="onNodeClick"
             />
           </g>
+          <SVGSolveIssues v-if="!isZooming" :scale="scale" :show-incomplete="modelHasLoads" :hold="holdFreeMotion" />
           <g>
             <SVGDimensioning
               v-for="dim in normalizedDimensions"
@@ -3228,6 +3416,11 @@ defineExpose({ centerContent, fitContent });
 
     <SelectionBox />
 
+    <FirstBeamTask
+      v-if="appStore.firstBeamActive && !appStore.inViewerMode"
+      @drawn="if (appStore.mouseMode === MouseMode.ADD_ELEMENT) cancelActiveMode();"
+    />
+
     <div
       v-if="projectStore.selection.type !== null"
       ref="selectionPanel"
@@ -3269,7 +3462,7 @@ defineExpose({ centerContent, fitContent });
       </div>
     </div>
 
-    <div v-if="viewerStore.settingsOpen" class="" style="position: absolute; right: 24px; top: 64px; z-index: 600">
+    <div v-if="viewerStore.settingsOpen" class="display-options">
       <div id="viewerSettings" class="d-flex flex-sm-column pa-1 overflow-y-auto ga-2 align-end justify-end">
         <div
           color="grey-lighten-5"
@@ -3306,23 +3499,29 @@ defineExpose({ centerContent, fitContent });
           </v-checkbox>
           <v-checkbox
             v-model="results.showShearForce"
-            label="Vz (x)"
+            :label="`V${appStore.axes.v} (x)`"
             hide-details
             density="compact"
             class="inline-checkbox mr-2 flex-shrink-0 text-no-wrap"
             :disabled="useProjectStore().model === 'EigenValueDynamicSolver'"
           >
-            <template #label>V<sub>z</sub>&nbsp;(x)</template>
+            <template #label
+              >V<sub>{{ appStore.axes.v }}</sub
+              >&nbsp;(x)</template
+            >
           </v-checkbox>
           <v-checkbox
             v-model="results.showBendingMoment"
-            label="My (x)"
+            :label="`M${appStore.axes.r} (x)`"
             hide-details
             density="compact"
             class="inline-checkbox mr-2 flex-shrink-0 text-no-wrap"
             :disabled="useProjectStore().model === 'EigenValueDynamicSolver'"
           >
-            <template #label>M<sub>y</sub>&nbsp;(x)</template>
+            <template #label
+              >M<sub>{{ appStore.axes.r }}</sub
+              >&nbsp;(x)</template
+            >
           </v-checkbox>
           <v-checkbox
             v-model="results.showReactions"
@@ -3367,9 +3566,9 @@ defineExpose({ centerContent, fitContent });
           />
         </div>
       </div>
-      <div class="text-right text-sm-body-2 d-flex align-center justify-end">
+      <div class="text-right text-sm-body-2 d-flex align-center justify-end display-options-links">
         <HelpTip topic="diagrams" location="bottom end" />
-        <button class="text-decoration-underline bg-white" @click="appStore.openSettings()">
+        <button class="text-decoration-underline bg-white" @click="appStore.openSettings('appearance')">
           {{ $t('sideSettings.more_settings') }}
         </button>
       </div>
@@ -3378,6 +3577,24 @@ defineExpose({ centerContent, fitContent });
 </template>
 
 <style lang="scss" scoped>
+/*
+ * The display options float over the top of the viewer, where the model's messages sit too.
+ * Only the panels themselves take the pointer; the gaps around them, which on a phone fall
+ * right across the messages, let taps through to what is underneath.
+ */
+.display-options {
+  position: absolute;
+  right: 24px;
+  top: 64px;
+  z-index: 600;
+  pointer-events: none;
+}
+
+.display-options #viewerSettings > *,
+.display-options-links > * {
+  pointer-events: auto;
+}
+
 /*
  * The plain variant reserves 8px above the text for a floating label this field does not use,
  * which drops the angle below the Dx/Dz/Ry labels sitting next to it in the banner.

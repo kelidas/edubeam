@@ -7,7 +7,6 @@ import { ref, onMounted, computed, watch, provide } from 'vue';
 import { throttle } from '../utils/throttle';
 import {
   Node,
-  DofID,
   Beam2D,
   Element,
   NodalLoad,
@@ -19,7 +18,7 @@ import {
   BeamConcentratedDeformation,
   PrescribedDisplacement,
 } from 'ts-fem';
-import { Matrix, max, min } from 'mathjs';
+import { max, min } from 'mathjs';
 
 import SVGElementLoad from './svg/ElementLoad.vue';
 import SVGElementConcentratedLoad from './svg/ElementConcentratedLoad.vue';
@@ -31,7 +30,7 @@ import SVGElement from './svg/Element.vue';
 import SVGElementTemperatureLoad from './svg/ElementTemperatureLoad.vue';
 import SVGDimensioning from './svg/Dimensioning.vue';
 import { loadType } from '../utils/loadType';
-import { boundsFromPoints, type ViewBox } from '@/utils/fitBounds';
+import { boundsFromPoints, type Padding, type ViewBox } from '@/utils/fitBounds';
 import type { DimensionRenderableNode } from '@/types/dimension';
 
 const props = withDefaults(
@@ -50,8 +49,8 @@ const props = withDefaults(
     showShearForce?: boolean;
     showMoments?: boolean;
     showReactions?: boolean;
-    elements: Element[];
-    nodes: Node[];
+    elements?: Element[];
+    nodes?: Node[];
     nodalLoads?: NodalLoad[];
     elementLoads?: BeamElementLoad[];
     prescribedDisplacements?: PrescribedDisplacement[];
@@ -66,8 +65,11 @@ const props = withDefaults(
     resultsScalePx?: number;
     /** Decorations excluded from the fit (their room comes from `fitReservePx`). */
     fitIgnore?: string;
-    /** Pixels kept free around the structure on every side; defaults to results + loads + a label. */
-    fitReservePx?: number;
+    /**
+     * Pixels kept free around the structure, on every side or per side; defaults to results + loads
+     * + a label all round.
+     */
+    fitReservePx?: number | Partial<Padding>;
     /**
      * The viewer never draws results or loads, so the fit reserves no room for them.
      * Without it a small preview (the widget header is 64x48) spends most of its box on
@@ -331,7 +333,6 @@ defineExpose({ centerContent, fitContent, setView, update });
 
     <SvgPanZoom
       ref="panZoom"
-      :on-update="onUpdate"
       :padding="props.padding"
       :mobile-padding="props.mobilePadding"
       :zoom-enabled="props.zoomEnabled"
@@ -339,6 +340,7 @@ defineExpose({ centerContent, fitContent, setView, update });
       :fit-ignore="props.fitIgnore"
       :fit-reserve="fitReserve"
       style="overflow: visible; z-index: 50; min-height: 0"
+      @update="onUpdate"
     >
       <svg
         ref="svg"

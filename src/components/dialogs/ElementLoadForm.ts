@@ -100,9 +100,14 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
 
   const mainLabel = computed(() => config.value.mainLabel);
   const momentLabel = computed(() => config.value.momentLabel);
+  /*
+   * The vertical axis is z down or y up, whichever the reader chose, and rotations turn about the
+   * other one. The letters follow that; the local names of an imposed deformation do not, since
+   * they are read along the element rather than along the drawing.
+   */
   const labelX = computed(() => config.value.axisLabels?.[0] ?? `${mainLabel.value}x`);
-  const labelZ = computed(() => config.value.axisLabels?.[1] ?? `${mainLabel.value}z`);
-  const labelMy = computed(() => config.value.axisLabels?.[2] ?? `${momentLabel.value}y`);
+  const labelZ = computed(() => config.value.axisLabels?.[1] ?? `${mainLabel.value}${appStore.axes.v}`);
+  const labelMy = computed(() => config.value.axisLabels?.[2] ?? `${momentLabel.value}${appStore.axes.r}`);
   const mainUnits = computed(() => config.value.getMainUnits(appStore));
   const momentUnits = computed(() => config.value.getMomentUnits(appStore));
 
@@ -125,12 +130,13 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
   const toMoment = (value: number) => config.value.toMoment(appStore, value);
 
   const realFx = computed(() => fromMain(fx.value));
-  const realFz = computed(() => fromMain(fz.value));
+  // `vertical` is its own inverse, so the same call serves both ways
+  const realFz = computed(() => appStore.vertical(fromMain(fz.value)));
   const realMy = computed(() => fromMoment(my.value));
   const realTrapStartFx = computed(() => fromMain(trapStartFx.value));
-  const realTrapStartFz = computed(() => fromMain(trapStartFz.value));
+  const realTrapStartFz = computed(() => appStore.vertical(fromMain(trapStartFz.value)));
   const realTrapEndFx = computed(() => fromMain(trapEndFx.value));
-  const realTrapEndFz = computed(() => fromMain(trapEndFz.value));
+  const realTrapEndFz = computed(() => appStore.vertical(fromMain(trapEndFz.value)));
   const realTc = computed(() => fromMain(tc.value));
   const realTbt = computed(() => fromMoment(tbt.value));
   const realDist = computed(() => appStore.convertInverseLength(parseFloat2(position.value)));
@@ -177,17 +183,17 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
   const setFromLoad = (load: BeamElementLoad) => {
     if (load instanceof BeamElementUniformEdgeLoad || load instanceof BeamConcentratedLoad) {
       fx.value = String(toMain(load.values[0]));
-      fz.value = String(toMain(load.values[1]));
+      fz.value = String(toMain(appStore.vertical(load.values[1])));
     }
     if (load instanceof BeamConcentratedDeformation) {
       fx.value = String(toMain(load.values[0]));
-      fz.value = String(toMain(load.values[1]));
+      fz.value = String(toMain(appStore.vertical(load.values[1])));
     }
     if (load instanceof BeamElementTrapezoidalEdgeLoad) {
       trapStartFx.value = String(toMain(load.startValues[0]));
-      trapStartFz.value = String(toMain(load.startValues[1]));
+      trapStartFz.value = String(toMain(appStore.vertical(load.startValues[1])));
       trapEndFx.value = String(toMain(load.endValues[0]));
-      trapEndFz.value = String(toMain(load.endValues[1]));
+      trapEndFz.value = String(toMain(appStore.vertical(load.endValues[1])));
     }
     if (load instanceof BeamConcentratedLoad || load instanceof BeamConcentratedDeformation) {
       my.value = String(toMoment(load.values[2]));

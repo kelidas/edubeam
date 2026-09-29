@@ -65,6 +65,14 @@ Under the hood Edubeam combines a Timoshenko beam formulation, axial truss eleme
 
 Edubeam is optimized for desktops/laptops but also runs on tablets with mouse or pencil input.
 
+### Need 3D?
+
+Edubeam stays focused on 2D. For 3D frames, slabs and shells, have a look at [Elementarium](https://elementarium.app/?utm_source=edubeam&utm_medium=link&utm_campaign=readme).
+
+<a href="https://elementarium.app/?utm_source=edubeam&utm_medium=banner&utm_campaign=leaderboard&utm_content=readme">
+  <img src="docs/public/elementarium/leaderboard@2x.png" alt="Elementarium: take your frames into 3D. Slabs, shells and steel checks in your browser." width="728">
+</a>
+
 ## Development setup
 
 Requirements:
@@ -111,6 +119,7 @@ worker it is meant to replace. The trailing slash matters.
 | `npm run build`                     | Produce the production bundle                    |
 | `npm run test` / `npm run test:run` | Execute unit tests via Vitest                    |
 | `npm run lint`                      | Run ESLint with auto-fix                         |
+| `npm run contributors`              | List who has committed since the last release    |
 | `npm run docs:dev`                  | Launch the VitePress docs locally                |
 | `npm run docs:build`                | Build the static documentation site              |
 

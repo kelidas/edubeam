@@ -1,5 +1,4 @@
 import {
-  Node,
   LinearStaticSolver,
   Beam2D,
   BeamElementUniformEdgeLoad,
@@ -7,7 +6,6 @@ import {
   BeamConcentratedDeformation,
   BeamTemperatureLoad,
   BeamElementTrapezoidalEdgeLoad,
-  BeamConcentratedDeformation,
   LoadCase,
 } from 'ts-fem';
 import { createDimensionId, ensureDimensionId } from './id';
