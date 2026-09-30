@@ -46,7 +46,8 @@
     "reverse_orientation": "Inverter cota",
     "undo": "Desfazer",
     "redo": "Refazer",
-    "ok": "OK"
+    "ok": "OK",
+    "name": "Nome"
   },
   "nodes": {
     "addNode": "Adicionar nó",
@@ -92,7 +93,11 @@
     "temperatureDeltaTbt": "ΔT<sub>b</sub>-ΔT<sub>t</sub>",
     "temperatureDeltaTs": "ΔT<sub>c</sub>",
     "temperatureDeltaTsNoHTML": "ΔTc",
-    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt"
+    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt",
+    "active": "Ativa",
+    "switchOn": "Ativar esta carga",
+    "switchOff": "Desativar esta carga",
+    "someSwitchedOff": "{n} desativadas"
   },
   "tabs": {
     "nodes": "Nós",

@@ -46,7 +46,8 @@
     "reverse_orientation": "翻转标注",
     "undo": "撤销",
     "redo": "重做",
-    "ok": "确定"
+    "ok": "确定",
+    "name": "名称"
   },
   "nodes": {
     "addNode": "添加节点",
@@ -92,7 +93,11 @@
     "temperatureDeltaTbt": "ΔT<sub>b</sub>-ΔT<sub>t</sub>",
     "temperatureDeltaTs": "ΔT<sub>c</sub>",
     "temperatureDeltaTsNoHTML": "ΔTc",
-    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt"
+    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt",
+    "active": "启用",
+    "switchOn": "启用此荷载",
+    "switchOff": "停用此荷载",
+    "someSwitchedOff": "已停用 {n} 个"
   },
   "tabs": {
     "nodes": "节点",

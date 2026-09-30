@@ -510,6 +510,13 @@
           >
             <v-icon small>mdi-plus</v-icon> {{ $t('loads.addElementLoad') }}
           </v-btn>
+          <!--
+            Said where the loads are, because a switched-off load is easy to forget and the results
+            are then read as if the whole model were carrying.
+          -->
+          <v-chip v-if="switchedOffLoads > 0" size="small" color="warning" variant="tonal" class="ml-2">
+            {{ $t('loads.someSwitchedOff', { n: switchedOffLoads }) }}
+          </v-chip>
         </div>
         <v-data-table-virtual
           v-if="appStore.bottomBarTab === 'tab-loads'"
@@ -553,6 +560,32 @@
                 </th>
               </template>
             </tr>
+          </template>
+
+          <!--
+            Switched off, a load stays in the model with its numbers and simply does not reach the
+            solve; the row and the symbol on the drawing go grey so it is plain that it is there
+            and not counted. The name beside it is for telling several of them apart.
+          -->
+          <template #item.active="{ item }">
+            <v-checkbox-btn
+              :model-value="item.ref.active"
+              density="compact"
+              hide-details
+              :title="item.ref.active ? $t('loads.switchOff') : $t('loads.switchOn')"
+              @update:model-value="setLoadActive(item.ref, $event as boolean)"
+            />
+          </template>
+
+          <template #item.label="{ item }">
+            <div class="inline-edit-group load">
+              <input
+                :value="item.ref.label"
+                class="inline-edit"
+                :placeholder="$t('common.name')"
+                @change="setLoadLabel(item.ref, $event.target as HTMLInputElement)"
+              />
+            </div>
           </template>
 
           <template #item.type="{ item }">
@@ -1531,6 +1564,7 @@ import {
   checkNumber,
   deleteCrossSection,
   deleteElement,
+  executeModelMutationWithUndo,
   deleteElementLoad,
   deleteMaterial,
   deleteNodalLoad,
@@ -1662,6 +1696,9 @@ const elements = computed(() => {
   return [...sortDisplaySelected, ...sortDisplay];
 });
 
+/** How many loads are in the model but not counted, which is worth saying out loud. */
+const switchedOffLoads = computed(() => loads.value.filter((row) => !row.ref.active).length);
+
 const loads = computed(() => {
   const items = useProjectStore().solver.loadCases.values();
   const display: {
@@ -1730,10 +1767,39 @@ const isLoadSelected = (row: { type: string; index: number }) => {
 };
 
 function loadRowProps(item) {
-  if (isLoadSelected(item.item)) {
-    return { class: 'selected' };
-  }
+  const classes = [isLoadSelected(item.item) ? 'selected' : '', item.item.ref.active ? '' : 'load-off']
+    .filter(Boolean)
+    .join(' ');
+
+  return classes ? { class: classes } : undefined;
 }
+
+/**
+ * Switching a load off, and naming one.
+ *
+ * Both are changes to the model: they go through the undo history, and the first one changes what
+ * the solve will find, so the results are dropped and asked for again.
+ */
+const setLoadActive = (load: { active: boolean }, active: boolean) => {
+  executeModelMutationWithUndo(() => {
+    setUnsolved();
+    load.active = active;
+  });
+
+  solve();
+};
+
+const setLoadLabel = (load: { label: string }, el: HTMLInputElement) => {
+  const name = el.value.trim();
+
+  if (name === load.label) return;
+
+  executeModelMutationWithUndo(() => {
+    load.label = name;
+  });
+
+  el.value = name;
+};
 
 /**
  * The pencil beside a load row, opening the dialog that already serves it.
@@ -2103,6 +2169,12 @@ const headers = reactive({
   ],
   loads: [
     {
+      title: 'loads.active',
+      key: 'active',
+      width: 48,
+      sortable: false,
+    },
+    {
       title: 'common.type',
       key: 'type',
       width: 120,
@@ -2111,6 +2183,12 @@ const headers = reactive({
       title: 'common.target',
       key: 'target',
       width: 140,
+    },
+    {
+      title: 'common.name',
+      key: 'label',
+      width: 120,
+      sortable: false,
     },
     {
       title: 'common.components',
@@ -2233,3 +2311,16 @@ const headers = reactive({
   ],
 });
 </script>
+
+<style scoped lang="scss">
+/* A load switched off is still there to be read and edited; it just does not count. */
+:deep(tr.load-off) {
+  color: rgba(0, 0, 0, 0.42);
+
+  .inline-edit,
+  .input-before,
+  .input-after {
+    color: rgba(0, 0, 0, 0.42);
+  }
+}
+</style>

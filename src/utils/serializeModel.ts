@@ -15,6 +15,29 @@ import {
   type DimensionPoint,
 } from '@/types/dimension';
 
+/**
+ * What a load carries besides its numbers: whether it is switched on, and the name it goes by.
+ *
+ * Written only when it is not the default, so a model of loads that are all on and unnamed
+ * serialises to exactly what it did before - the shared link of such a model does not change.
+ */
+const loadMeta = (load: { active?: boolean; label?: string }) => {
+  const meta: { off?: 1; name?: string } = {};
+
+  if (load.active === false) meta.off = 1;
+  if (load.label) meta.name = load.label;
+
+  return Object.keys(meta).length ? [meta] : [];
+};
+
+/** The other side of it: anything the model does not say stays at the default. */
+const applyLoadMeta = (load: { active: boolean; label: string }, meta: unknown) => {
+  const carried = (meta ?? {}) as { off?: number; name?: string };
+
+  if (carried.off) load.active = false;
+  if (typeof carried.name === 'string') load.label = carried.name;
+};
+
 /** `btoa` only accepts Latin-1; encode as UTF-8 bytes first so labels in any script survive. */
 function objectToBase64(obj: unknown) {
   try {
@@ -164,33 +187,33 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
   ls.loadCases[0].elementLoadList
     .filter((el) => el instanceof BeamElementUniformEdgeLoad)
     .forEach((load: BeamElementUniformEdgeLoad) => {
-      eloads.push([load.target, load.values, load.lcs]);
+      eloads.push([load.target, load.values, load.lcs, ...loadMeta(load)]);
     });
 
   ls.loadCases[0].elementLoadList
     .filter((el) => el instanceof BeamConcentratedLoad)
     .forEach((load: BeamConcentratedLoad) => {
-      ecloads.push([load.target, load.values, load.lcs]);
+      ecloads.push([load.target, load.values, load.lcs, ...loadMeta(load)]);
     });
 
   ls.loadCases[0].elementLoadList
     .filter((el) => el instanceof BeamTemperatureLoad)
     .forEach((load: BeamTemperatureLoad) => {
-      etloads.push([load.target, load.values]);
+      etloads.push([load.target, load.values, ...loadMeta(load)]);
     });
 
   ls.loadCases[0].elementLoadList
     .filter((el) => el instanceof BeamElementTrapezoidalEdgeLoad)
     .forEach((load: BeamElementTrapezoidalEdgeLoad) => {
-      etraploads.push([load.target, load.startValues, load.endValues, load.lcs]);
+      etraploads.push([load.target, load.startValues, load.endValues, load.lcs, ...loadMeta(load)]);
     });
 
   ls.loadCases[0].nodalLoadList.forEach((load) => {
-    nloads.push([load.target, load.values]);
+    nloads.push([load.target, load.values, ...loadMeta(load)]);
   });
 
   ls.loadCases[0].prescribedBC.forEach((load) => {
-    pd.push([load.target, load.prescribedValues]);
+    pd.push([load.target, load.prescribedValues, ...loadMeta(load)]);
   });
 
   const obj: {
@@ -281,20 +304,20 @@ export const deserializeModel = (base64String: string, ls: LinearStaticSolver, d
   if ('el' in tmp) {
     for (const e of tmp.el) {
       const lcs = e[2] !== undefined ? e[2] : true;
-      ls.loadCases[0].createBeamElementUniformEdgeLoad(e[0], e[1], lcs);
+      applyLoadMeta(ls.loadCases[0].createBeamElementUniformEdgeLoad(e[0], e[1], lcs), e[3]);
     }
   }
 
   if ('ecl' in tmp) {
     for (const e of tmp.ecl) {
       const lcs = e[2] !== undefined ? e[2] : true;
-      ls.loadCases[0].createBeamConcentratedLoad(e[0], e[1], lcs);
+      applyLoadMeta(ls.loadCases[0].createBeamConcentratedLoad(e[0], e[1], lcs), e[3]);
     }
   }
 
   if ('etl' in tmp) {
     for (const e of tmp.etl) {
-      ls.loadCases[0].createBeamTemperatureLoad(e[0], e[1]);
+      applyLoadMeta(ls.loadCases[0].createBeamTemperatureLoad(e[0], e[1]), e[2]);
     }
   }
 
@@ -303,19 +326,19 @@ export const deserializeModel = (base64String: string, ls: LinearStaticSolver, d
       const lcs = e[3] !== undefined ? e[3] : true;
       const startValues = e[1] !== undefined ? e[1] : [0, 0];
       const endValues = e[2] !== undefined ? e[2] : startValues;
-      ls.loadCases[0].createBeamElementTrapezoidalEdgeLoad(e[0], startValues, endValues, lcs);
+      applyLoadMeta(ls.loadCases[0].createBeamElementTrapezoidalEdgeLoad(e[0], startValues, endValues, lcs), e[4]);
     }
   }
 
   if ('nl' in tmp) {
     for (const e of tmp.nl) {
-      ls.loadCases[0].createNodalLoad(e[0], e[1]);
+      applyLoadMeta(ls.loadCases[0].createNodalLoad(e[0], e[1]), e[2]);
     }
   }
 
   if ('pd' in tmp) {
     for (const e of tmp.pd) {
-      ls.loadCases[0].createPrescribedDisplacement(e[0], e[1]);
+      applyLoadMeta(ls.loadCases[0].createPrescribedDisplacement(e[0], e[1]), e[2]);
     }
   }
 

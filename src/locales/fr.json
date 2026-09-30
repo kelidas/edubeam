@@ -46,7 +46,8 @@
     "reverse_orientation": "Inverser la cote",
     "undo": "Annuler",
     "redo": "Rétablir",
-    "ok": "OK"
+    "ok": "OK",
+    "name": "Nom"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",
@@ -92,7 +93,11 @@
     "temperatureDeltaTbt": "ΔT<sub>b</sub>-ΔT<sub>t</sub>",
     "temperatureDeltaTs": "ΔT<sub>c</sub>",
     "temperatureDeltaTsNoHTML": "ΔTc",
-    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt"
+    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt",
+    "active": "Act.",
+    "switchOn": "Activer cette charge",
+    "switchOff": "Désactiver cette charge",
+    "someSwitchedOff": "{n} désactivée(s)"
   },
   "tabs": {
     "nodes": "Nœuds",

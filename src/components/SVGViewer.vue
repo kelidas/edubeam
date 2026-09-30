@@ -2776,7 +2776,7 @@ defineExpose({ centerContent, fitContent });
                 <SVGElementLoad
                   v-if="eload instanceof BeamElementUniformEdgeLoad || eload instanceof BeamElementTrapezoidalEdgeLoad"
                   :key="`element-udl-${index}`"
-                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
+                  :class="{ selected: projectStore.selection2.elementLoads.includes(index), 'load-off': !eload.active }"
                   :data-element-load-id="index"
                   :eload="eload"
                   :scale="scale"
@@ -2794,7 +2794,7 @@ defineExpose({ centerContent, fitContent });
                 <SVGElementTemperatureLoad
                   v-else-if="loadType(eload) === 'temperature'"
                   :key="`element-temperature-${index}`"
-                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
+                  :class="{ selected: projectStore.selection2.elementLoads.includes(index), 'load-off': !eload.active }"
                   :data-element-load-id="index"
                   :eload="eload"
                   :scale="scale"
@@ -2812,7 +2812,7 @@ defineExpose({ centerContent, fitContent });
                 <SVGElementConcentratedLoad
                   v-else-if="eload instanceof BeamConcentratedLoad"
                   :key="`element-cl-${index}`"
-                  :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
+                  :class="{ selected: projectStore.selection2.elementLoads.includes(index), 'load-off': !eload.active }"
                   :data-element-load-id="index"
                   :eload="eload"
                   :scale="scale"
@@ -2902,7 +2902,7 @@ defineExpose({ centerContent, fitContent });
             <SVGNodalLoad
               v-for="(nload, index) in useProjectStore().solver.loadCases[0].nodalLoadList"
               :key="`nodal-load-${index}`"
-              :class="{ selected: projectStore.selection2.nodalLoads.includes(index) }"
+              :class="{ selected: projectStore.selection2.nodalLoads.includes(index), 'load-off': !nload.active }"
               :nload="nload"
               :scale="scale"
               :convert-force="appStore.convertForce"
@@ -2920,7 +2920,7 @@ defineExpose({ centerContent, fitContent });
             <SVGPrescribedDisplacement
               v-for="(nload, index) in useProjectStore().solver.loadCases[0].prescribedBC"
               :key="`prescribed-bc-${index}`"
-              :class="{ selected: projectStore.selection2.prescribedBC.includes(index) }"
+              :class="{ selected: projectStore.selection2.prescribedBC.includes(index), 'load-off': !nload.active }"
               :nload="nload"
               :scale="scale"
               :convert-length="appStore.convertLength"
@@ -3242,6 +3242,15 @@ defineExpose({ centerContent, fitContent });
 }
 
 .svg-viewer :deep(*) {
+  /*
+   * A load switched off is drawn as faintly as it counts: still there, still where it was, plainly
+   * not part of the answer. Faded rather than hidden - a load that vanishes is a load nobody
+   * remembers switching off.
+   */
+  .load-off {
+    opacity: 0.3;
+  }
+
   .element-load.load-1d {
     text {
       fill: v-bind('viewerStore.colors.loads');
