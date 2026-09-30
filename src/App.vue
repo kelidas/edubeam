@@ -59,6 +59,21 @@ const steps = computed(() => [
     attachTo: { element: '#appMenu' },
     content: { title: t('tour.menu.title'), description: t('tour.menu.description') },
   },
+  // the two workspaces first: everything after this is shown in one of them
+  {
+    attachTo: { element: '#tab-viewer' },
+    content: {
+      title: t('tour.viewer.title'),
+      description: t('tour.viewer.description'),
+    },
+  },
+  {
+    attachTo: { element: '#tab-influence' },
+    content: {
+      title: t('tour.influence.title'),
+      description: t('tour.influence.description'),
+    },
+  },
   {
     attachTo: { element: '#undoRedo' },
     content: { title: t('tour.undoRedo.title'), description: t('tour.undoRedo.description') },
@@ -83,6 +98,8 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#bottomBar' },
+    // above the bar, which is the full width of the window and has nothing under it
+    options: { popper: { placement: 'top' } },
     content: {
       title: t('tour.bottomBar.title'),
       description: t('tour.bottomBar.description'),
@@ -90,22 +107,13 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#bottomBarHelp' },
+    /*
+     * Above it. The help icon sits in the bottom right corner of the bottom bar, and with the bar
+     * minimised there is nothing under it to push the bubble back onto the screen: left to itself
+     * the bubble hangs off the bottom of the window, which scrolls the whole app up to reach it.
+     */
+    options: { popper: { placement: 'top-end' } },
     content: { title: t('tour.help.title'), description: t('tour.help.description') },
-  },
-  // the two workspaces last, once what is in one of them has been shown
-  {
-    attachTo: { element: '#tab-viewer' },
-    content: {
-      title: t('tour.viewer.title'),
-      description: t('tour.viewer.description'),
-    },
-  },
-  {
-    attachTo: { element: '#tab-influence' },
-    content: {
-      title: t('tour.influence.title'),
-      description: t('tour.influence.description'),
-    },
   },
 ]);
 
@@ -360,6 +368,12 @@ const app_commit = APP_COMMIT;
       :steps="steps"
       :options="{
         popper: {
+          /*
+           * Laid out against the window, not the page. Positioned in the page, a bubble that lands
+           * low makes the app's own wrapper taller than the window, and moving to that step scrolls
+           * the wrapper to reach it - the tabs slide up under the app bar and the app jumps.
+           */
+          strategy: 'fixed',
           modifiers: [
             {
               name: 'offset',
