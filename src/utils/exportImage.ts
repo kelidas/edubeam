@@ -1009,7 +1009,13 @@ export const createExportRenderer = (viewer: Component): ExportRenderer => {
         host.style.height = `${height}px`;
       }
 
-      if (!app) await timed('mount', mount);
+      if (!app) {
+        // The props before the mount, not after it: the component sets up watchers on them as it
+        // mounts, and `watch(props.solver, …)` given `undefined` watches nothing for good - Vue
+        // says so, and the viewer then never notices a model that changes under it.
+        state.props = !window && fitWith ? fitWith : props;
+        await timed('mount', mount);
+      }
 
       let mode = window ? 'window' : 'fit';
       let overflow: Overflow | null = null;

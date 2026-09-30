@@ -17,6 +17,7 @@ import {
   BeamConcentratedLoad,
   BeamConcentratedDeformation,
   PrescribedDisplacement,
+  type LoadCase,
 } from 'ts-fem';
 import { max, min } from 'mathjs';
 
@@ -48,6 +49,7 @@ const props = withDefaults(
     showNormalForce?: boolean;
     showShearForce?: boolean;
     showMoments?: boolean;
+    showRotation?: boolean;
     showReactions?: boolean;
     elements?: Element[];
     nodes?: Node[];
@@ -111,6 +113,7 @@ const props = withDefaults(
     showNormalForce: false,
     showShearForce: false,
     showMoments: false,
+    showRotation: false,
     showReactions: false,
     elements: () => [],
     nodes: () => [],
@@ -169,6 +172,7 @@ const updateResultScales = () => {
   let maxNormalForce = 0;
   let maxBendingMoment = 0;
   let maxShearForce = 0;
+  let maxRotation = 0;
 
   for (const beam of props.solver.domain.elements.values()) {
     const def = (beam as Beam2D).computeGlobalDefl(props.solver.loadCases[0], 10);
@@ -184,12 +188,22 @@ const updateResultScales = () => {
     maxBendingMoment = Math.max(maxBendingMoment, Math.abs(max(m)), Math.abs(min(m)));
 
     maxShearForce = Math.max(maxShearForce, Math.abs(max(v)), Math.abs(min(v)));
+
+    // an older build of the library has no rotation to ask for, and then there is none to scale
+    const rotating = beam as Beam2D & { computeLocalRotation?: (lc: LoadCase, n: number) => number[] };
+
+    if (typeof rotating.computeLocalRotation === 'function') {
+      const phi = rotating.computeLocalRotation(props.solver.loadCases[0], 10);
+
+      maxRotation = Math.max(maxRotation, Math.abs(max(phi)), Math.abs(min(phi)));
+    }
   }
 
   defoScale.value = 1 / maxDefo;
   normalForceScale.value = 1 / maxNormalForce;
   bendingMomentScale.value = 1 / maxBendingMoment;
   shearForceScale.value = 1 / maxShearForce;
+  rotationScale.value = maxRotation > 1e-30 ? 1 / maxRotation : 0;
 };
 
 watch(props.solver, update);
@@ -199,11 +213,13 @@ watch(() => props.showDeformedShape, update);
 watch(() => props.showNormalForce, update);
 watch(() => props.showShearForce, update);
 watch(() => props.showMoments, update);
+watch(() => props.showRotation, update);
 
 const defoScale = ref(1);
 const normalForceScale = ref(1);
 const bendingMomentScale = ref(1);
 const shearForceScale = ref(1);
+const rotationScale = ref(1);
 
 const scale = computed(() => {
   if (panZoom.value) return panZoom.value.scale;
@@ -443,12 +459,14 @@ defineExpose({ centerContent, fitContent, setView, update });
               :show-normal-force="props.showNormalForce"
               :show-shear-force="props.showShearForce"
               :show-bending-moment="props.showMoments"
+              :show-rotation="props.showRotation"
               :show-label="props.showElementLabels"
               :load-case="props.solver.loadCases[0]"
               :deformed-shape-multiplier="defoScale * props.resultsScalePx"
               :normal-force-multiplier="normalForceScale * props.resultsScalePx"
               :shear-force-multiplier="shearForceScale * props.resultsScalePx"
               :bending-moment-multiplier="bendingMomentScale * props.resultsScalePx"
+              :rotation-multiplier="rotationScale * props.resultsScalePx"
               :result-label-mode="props.resultLabelMode"
               :convert-force="props.convertForce"
               :convert-moment="props.convertMoment"
@@ -470,12 +488,14 @@ defineExpose({ centerContent, fitContent, setView, update });
               :show-normal-force="props.showNormalForce"
               :show-shear-force="props.showShearForce"
               :show-bending-moment="props.showMoments"
+              :show-rotation="props.showRotation"
               :show-label="props.showElementLabels"
               :load-case="props.solver.loadCases[0]"
               :deformed-shape-multiplier="defoScale * props.resultsScalePx"
               :normal-force-multiplier="normalForceScale * props.resultsScalePx"
               :shear-force-multiplier="shearForceScale * props.resultsScalePx"
               :bending-moment-multiplier="bendingMomentScale * props.resultsScalePx"
+              :rotation-multiplier="rotationScale * props.resultsScalePx"
               :result-label-mode="props.resultLabelMode"
               :convert-force="props.convertForce"
               :convert-moment="props.convertMoment"
