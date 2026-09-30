@@ -582,6 +582,7 @@
               <input
                 :value="item.ref.label"
                 class="inline-edit"
+                style="width: 110px"
                 :placeholder="$t('common.name')"
                 @change="setLoadLabel(item.ref, $event.target as HTMLInputElement)"
               />
