@@ -54,53 +54,17 @@ const file = ref(null);
 const onboardingWrapper = ref(null);
 provide('onboardingWrapper', onboardingWrapper);
 
-/**
- * A step that points into the drawing needs the drawing on screen.
- *
- * The tour can be started from the menu at any time, and from a tab that is not the drawing its
- * steps have nothing to attach to: the bubbles pile into the corner of the window pointing at
- * nothing, because the pane they are about is hidden and everything in it measures zero.
- */
-const showDrawing = async () => {
-  const drawing = appStore.tabs.findIndex((tab) => tab.props.id === 'viewer');
-
-  if (drawing < 0 || appStore.tab === drawing) return;
-
-  appStore.tab = drawing;
-  await nextTick();
-};
-
-const onDrawing = { beforeStep: showDrawing };
-
 const steps = computed(() => [
   {
-    // the menu itself, opened: pointed at the button instead, the bubble landed under the menu
-    attachTo: { element: '#mainMenu' },
-    /*
-     * The menu slides in, and a bubble placed while it is still moving is placed against a box that
-     * is not where it will be - which put it over the menu instead of beside it. Wait for the slide.
-     */
-    on: {
-      beforeStep: async () => {
-        appStore.drawerOpen = true;
-        await nextTick();
-        await new Promise((settled) => setTimeout(settled, 350));
-      },
-      // and put it away again: the reader did not open it, and it covers a quarter of the screen
-      afterStep: () => (appStore.drawerOpen = false),
-    },
-    // beside the menu, not over it: the menu is what the step is showing
-    options: { popper: { placement: 'right-start' } },
+    attachTo: { element: '#appMenu' },
     content: { title: t('tour.menu.title'), description: t('tour.menu.description') },
   },
   {
     attachTo: { element: '#undoRedo' },
-    on: onDrawing,
     content: { title: t('tour.undoRedo.title'), description: t('tour.undoRedo.description') },
   },
   {
     attachTo: { element: '#viewerControls' },
-    on: onDrawing,
     content: {
       title: t('tour.viewerControls.title'),
       description: t('tour.viewerControls.description'),
@@ -108,7 +72,6 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#viewerSettings' },
-    on: onDrawing,
     content: {
       title: t('tour.viewerSettings.title'),
       description: t('tour.viewerSettings.description'),
@@ -116,18 +79,10 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#gridAndUnits' },
-    on: onDrawing,
-    /*
-     * Above it, into the drawing. The strip sits in the bottom corner of the canvas with the bottom
-     * bar under it, and left to itself the bubble tries to fit beside them - which on a small screen
-     * is nowhere, so it hangs off the window.
-     */
-    options: { popper: { placement: 'top-end' } },
     content: { title: t('tour.gridUnits.title'), description: t('tour.gridUnits.description') },
   },
   {
     attachTo: { element: '#bottomBar' },
-    on: onDrawing,
     content: {
       title: t('tour.bottomBar.title'),
       description: t('tour.bottomBar.description'),
@@ -135,7 +90,6 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#bottomBarHelp' },
-    on: onDrawing,
     content: { title: t('tour.help.title'), description: t('tour.help.description') },
   },
   // the two workspaces last, once what is in one of them has been shown
@@ -406,12 +360,6 @@ const app_commit = APP_COMMIT;
       :steps="steps"
       :options="{
         popper: {
-          /*
-           * Laid out against the window, not the document. Absolutely positioned, a bubble that
-           * lands low can make the page taller than the window, and the page then scrolls to show
-           * it - the app slides up and a strip of blank appears under it.
-           */
-          strategy: 'fixed',
           modifiers: [
             {
               name: 'offset',
@@ -501,7 +449,7 @@ const app_commit = APP_COMMIT;
       </v-btn>
     </v-app-bar>
 
-    <v-navigation-drawer id="mainMenu" v-model="appStore.drawerOpen" temporary>
+    <v-navigation-drawer v-model="appStore.drawerOpen" temporary>
       <!-- <v-list-item prepend-avatar="https://randomuser.me/api/portraits/women/9.jpg" title="Jane Doe"></v-list-item> -->
 
       <v-divider></v-divider>
