@@ -709,7 +709,7 @@ const copy = () => {
                 :x="atX(i * length)"
                 :y="axis.y - 14 * em"
                 text-anchor="middle"
-                dominant-baseline="central"
+                dy="0.35em"
                 :font-size="LABEL_SIZE"
                 fill="#000000"
               >
