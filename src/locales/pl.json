@@ -40,6 +40,7 @@
     "selectedElementsOnly": "Tylko wybrane pręty",
     "structureMatrix": "Macierz układu",
     "transformationHint": "wiersze lokalnie, kolumny globalnie",
+    "solverAxesHint": "Macierze pochodzą z solvera i są w jego osiach: x w prawo i z w dół, niezależnie od układu, w którym czytana jest reszta aplikacji.",
     "notSolved": "Jeszcze nie rozwiązano.",
     "normalForce": "Siła normalna",
     "shearForce": "Siła tnąca",

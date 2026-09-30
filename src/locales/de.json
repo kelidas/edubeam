@@ -40,6 +40,7 @@
     "selectedElementsOnly": "Nur gewählte Stäbe",
     "structureMatrix": "Systemmatrix",
     "transformationHint": "Zeilen lokal, Spalten global",
+    "solverAxesHint": "Die Matrizen sind die des Rechenkerns, in seinen Achsen: x nach rechts und z nach unten, unabhängig davon, in welchem System der Rest der Anwendung gelesen wird.",
     "notSolved": "Noch nicht gelöst.",
     "normalForce": "Normalkraft",
     "shearForce": "Querkraft",

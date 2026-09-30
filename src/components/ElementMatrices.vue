@@ -247,7 +247,14 @@ const copy = () => {
           <v-chip v-if="tab === 'forces' && appStore.workspace === 'influence'" size="x-small" color="primary" label>
             {{ $t('tabView.influence') }}
           </v-chip>
-          <span class="text-medium-emphasis ml-auto">SI</span>
+          <!--
+            The matrices are the solver's, and the solver has one system whatever the reader has
+            chosen: rows named w and phi are its w and phi, not the ones the tables outside are
+            written in. Said here rather than silently converted - a matrix turned over is a
+            different matrix, and this widget is for reading the method rather than a result.
+          -->
+          <span class="text-medium-emphasis ml-auto" :title="$t('common.solverAxesHint')">x →, z ↓</span>
+          <span class="text-medium-emphasis">SI</span>
           <v-btn
             icon="mdi-content-copy"
             size="small"

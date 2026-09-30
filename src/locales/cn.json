@@ -40,6 +40,7 @@
     "selectedElementsOnly": "仅选定杆件",
     "structureMatrix": "结构矩阵",
     "transformationHint": "行为局部，列为整体",
+    "solverAxesHint": "矩阵来自求解器，采用其自身的坐标轴：x 向右、z 向下，与应用其余部分所用的坐标系无关。",
     "notSolved": "尚未求解。",
     "normalForce": "轴力",
     "shearForce": "剪力",
