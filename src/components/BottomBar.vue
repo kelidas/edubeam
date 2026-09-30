@@ -589,29 +589,92 @@
             </div>
           </template>
 
+          <!--
+            A word for the type takes a column of its own width in every language; a mark that
+            reads the same as the symbol on the drawing takes a corner of one. The name is spelled
+            out in the title and for anyone not reading the shape - never the icon alone.
+          -->
           <template #item.type="{ item }">
-            <span v-if="item.type === 'node'" class="text-no-wrap">{{ $t('loads.nodalLoad') }}</span>
-            <span v-if="item.type === 'element'" class="text-no-wrap">
-              <template v-if="item.ref instanceof BeamElementUniformEdgeLoad">
-                {{ $t('loadType.udl') }}
-              </template>
-              <template v-else-if="item.ref instanceof BeamElementTrapezoidalEdgeLoad">
-                {{ $t('loadType.trapezoidal') }}
-              </template>
-              <template v-else-if="item.ref instanceof BeamConcentratedLoad">
-                {{ $t('loadType.concentrated') }}
-              </template>
-              <template v-else-if="item.ref instanceof BeamConcentratedDeformation">
-                {{ $t('loadType.concentrated_deformation') }}
-              </template>
-              <template v-else-if="loadType(item.ref) === 'temperature'">
-                {{ $t('loadType.temperature') }}
-              </template>
-              <template v-else-if="loadType(item.ref) === 'concentrated_deformation'">
-                {{ $t('loadType.concentrated_deformation') }}
-              </template>
+            <span class="load-type-icon" :title="loadTypeLabel(item)">
+              <svg v-if="loadTypeKey(item) === 'node'" viewBox="0 0 20 16" width="20" height="16" aria-hidden="true">
+                <line x1="10" y1="1" x2="10" y2="9" stroke="currentColor" stroke-width="1.5" />
+                <polygon points="10,12 7,6 13,6" fill="currentColor" />
+                <circle cx="10" cy="13" r="1.6" fill="currentColor" />
+              </svg>
+              <svg
+                v-else-if="loadTypeKey(item) === 'prescribed'"
+                viewBox="0 0 20 16"
+                width="20"
+                height="16"
+                aria-hidden="true"
+              >
+                <!-- a square rather than the force's dot, an open arrowhead rather than its filled one -->
+                <rect x="2.2" y="6" width="4.4" height="4.4" fill="currentColor" />
+                <line x1="7.3" y1="8.2" x2="15.5" y2="8.2" stroke="currentColor" stroke-width="1.5" />
+                <polygon points="18,8.2 13,5.3 13,11.1" fill="none" stroke="currentColor" stroke-width="1.5" />
+              </svg>
+              <svg
+                v-else-if="loadTypeKey(item) === 'udl'"
+                viewBox="0 0 20 16"
+                width="20"
+                height="16"
+                aria-hidden="true"
+              >
+                <line x1="2" y1="11" x2="18" y2="11" stroke="currentColor" stroke-width="1.2" />
+                <g v-for="x in [5, 10, 15]" :key="x">
+                  <line :x1="x" y1="3" :x2="x" y2="11" stroke="currentColor" stroke-width="1.2" />
+                  <polygon :points="`${x},11 ${x - 1.6},7.5 ${x + 1.6},7.5`" fill="currentColor" />
+                </g>
+              </svg>
+              <svg
+                v-else-if="loadTypeKey(item) === 'trapezoidal'"
+                viewBox="0 0 20 16"
+                width="20"
+                height="16"
+                aria-hidden="true"
+              >
+                <line x1="2" y1="11" x2="18" y2="11" stroke="currentColor" stroke-width="1.2" />
+                <path d="M 5 8 L 10 5 L 15 2" fill="none" stroke="currentColor" stroke-width="1.2" />
+                <g v-for="(y0, x) in { 5: 8, 10: 5, 15: 2 }" :key="x">
+                  <line :x1="x" :y1="y0" :x2="x" y2="11" stroke="currentColor" stroke-width="1.2" />
+                  <polygon :points="`${x},11 ${Number(x) - 1.5},8 ${Number(x) + 1.5},8`" fill="currentColor" />
+                </g>
+              </svg>
+              <svg
+                v-else-if="loadTypeKey(item) === 'concentrated'"
+                viewBox="0 0 20 16"
+                width="20"
+                height="16"
+                aria-hidden="true"
+              >
+                <line x1="2" y1="11" x2="18" y2="11" stroke="currentColor" stroke-width="1.2" />
+                <line x1="10" y1="1" x2="10" y2="11" stroke="currentColor" stroke-width="1.8" />
+                <polygon points="10,11 6.5,4.5 13.5,4.5" fill="currentColor" />
+              </svg>
+              <svg
+                v-else-if="loadTypeKey(item) === 'temperature'"
+                viewBox="0 0 20 16"
+                width="20"
+                height="16"
+                aria-hidden="true"
+              >
+                <line x1="10" y1="1.5" x2="10" y2="10" stroke="currentColor" stroke-width="1.5" />
+                <circle cx="10" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5" />
+                <line x1="10" y1="4" x2="10" y2="10" stroke="currentColor" stroke-width="2.6" />
+              </svg>
+              <svg
+                v-else-if="loadTypeKey(item) === 'concentrated_deformation'"
+                viewBox="0 0 20 16"
+                width="20"
+                height="16"
+                aria-hidden="true"
+              >
+                <line x1="10" y1="1" x2="10" y2="6.2" stroke="currentColor" stroke-width="1.5" />
+                <line x1="10" y1="9.8" x2="10" y2="15" stroke="currentColor" stroke-width="1.5" />
+                <circle cx="10" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.3" />
+              </svg>
+              <span class="sr-only">{{ loadTypeLabel(item) }}</span>
             </span>
-            <span v-if="item.type === 'prescribed'" class="text-no-wrap">{{ $t('loads.prescribedDisplacement') }}</span>
           </template>
 
           <template #item.load.values="{ item }">
@@ -1975,6 +2038,32 @@ const isLoadSelected = (row: { type: string; index: number }) => {
   return selection.nodalLoads.includes(row.index);
 };
 
+/**
+ * Which icon a row's type draws, and the word it stands for - the same $t keys the row used to
+ * write out in full, so the meaning does not fork between the tooltip and what the icon replaced.
+ */
+const loadTypeKey = (item: (typeof loads.value)[number]) => {
+  if (item.type === 'node') return 'node';
+  if (item.type === 'prescribed') return 'prescribed';
+
+  if (item.ref instanceof BeamElementUniformEdgeLoad) return 'udl';
+  if (item.ref instanceof BeamElementTrapezoidalEdgeLoad) return 'trapezoidal';
+  if (item.ref instanceof BeamConcentratedLoad) return 'concentrated';
+  if (item.ref instanceof BeamConcentratedDeformation) return 'concentrated_deformation';
+  if (loadType(item.ref) === 'temperature') return 'temperature';
+
+  return 'concentrated_deformation';
+};
+
+const loadTypeLabel = (item: (typeof loads.value)[number]) => {
+  const key = loadTypeKey(item);
+
+  if (key === 'node') return t('loads.nodalLoad');
+  if (key === 'prescribed') return t('loads.prescribedDisplacement');
+
+  return t(`loadType.${key}`);
+};
+
 function loadRowProps(item) {
   const classes = [isLoadSelected(item.item) ? 'selected' : '', item.item.ref.active ? '' : 'load-off']
     .filter(Boolean)
@@ -2390,20 +2479,20 @@ const headers = reactive({
       sortable: false,
     },
     {
+      title: 'common.name',
+      key: 'label',
+      width: 120,
+      sortable: false,
+    },
+    {
       title: 'common.type',
       key: 'type',
-      width: 120,
+      width: 44,
     },
     {
       title: 'common.target',
       key: 'target',
       width: 140,
-    },
-    {
-      title: 'common.name',
-      key: 'label',
-      width: 120,
-      sortable: false,
     },
     {
       title: 'common.components',
@@ -2528,13 +2617,23 @@ const headers = reactive({
 </script>
 
 <style scoped lang="scss">
+/* The icon that stands in for the type column's word, sized to the row and centred in it. */
+.load-type-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  color: rgba(0, 0, 0, 0.7);
+}
+
 /* A load switched off is still there to be read and edited; it just does not count. */
 :deep(tr.load-off) {
   color: rgba(0, 0, 0, 0.42);
 
   .inline-edit,
   .input-before,
-  .input-after {
+  .input-after,
+  .load-type-icon {
     color: rgba(0, 0, 0, 0.42);
   }
 }
