@@ -4150,16 +4150,16 @@ defineExpose({ centerContent, fitContent });
   }
 
   /* the strip in the corner that says how the drawing is read, and the scale rows above it */
-  #viewerStatus .v-chip {
+  #gridAndUnits .v-chip {
     height: 32px;
   }
 
-  #viewerStatus .v-btn {
+  #gridAndUnits .v-btn {
     width: 32px !important;
     height: 32px !important;
   }
 
-  #viewerStatus .v-icon {
+  #gridAndUnits .v-icon {
     font-size: 20px;
   }
 
