@@ -1,7 +1,13 @@
 <script setup lang="ts">
 import { openModal } from 'jenesius-vue-modal';
 import EditNodalLoadDialog from './dialogs/EditNodalLoad.vue';
-import { deleteNodalLoad, deletePrescribedDisplacement } from '@/utils';
+import {
+  deleteNodalLoad,
+  deletePrescribedDisplacement,
+  executeModelMutationWithUndo,
+  setUnsolved,
+  solve,
+} from '@/utils';
 import { useProjectStore } from '@/store/project';
 import { computed } from 'vue';
 
@@ -16,6 +22,31 @@ const loadIndex = computed(() => {
   const index = Number(projectStore.selection.label);
   return Number.isNaN(index) ? null : index;
 });
+
+/** Whichever list this one lives in, it is the same switch as the one in the loads table. */
+const load = computed(() => {
+  if (loadIndex.value === null) return null;
+
+  const loadCase = projectStore.solver.loadCases[0];
+
+  return (
+    (isPrescribed.value ? loadCase.prescribedBC[loadIndex.value] : loadCase.nodalLoadList[loadIndex.value]) ?? null
+  );
+});
+
+const toggleActive = () => {
+  const target = load.value;
+
+  if (!target) return;
+
+  executeModelMutationWithUndo(() => {
+    setUnsolved();
+    target.active = !target.active;
+  });
+
+  solve();
+  projectStore.selection.type = null;
+};
 
 const editNodalLoad = () => {
   if (loadIndex.value === null) return;
@@ -50,6 +81,14 @@ const removeNodalLoad = () => {
         <div class="pr-2"><v-icon size="16" icon="mdi-pencil" /></div>
       </template>
       {{ $t('loads.editLoad') }}
+    </v-list-item>
+    <v-list-item v-if="load" link class="text-body-2" @click="toggleActive">
+      <template #prepend>
+        <div class="pr-2">
+          <v-icon size="16" :icon="load.active ? 'mdi-eye-off-outline' : 'mdi-eye-outline'" />
+        </div>
+      </template>
+      {{ load.active ? $t('loads.switchOff') : $t('loads.switchOn') }}
     </v-list-item>
     <v-divider />
     <v-list-item link class="text-body-2 text-error" @click="removeNodalLoad">

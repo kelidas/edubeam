@@ -61,7 +61,8 @@
     "move": "Přesunout",
     "undo": "Zpět",
     "redo": "Znovu",
-    "ok": "OK"
+    "ok": "OK",
+    "name": "Název"
   },
   "tabs": {
     "nodes": "Uzly",
@@ -179,7 +180,11 @@
     "temperatureDeltaTbt": "ΔT<sub>d</sub>-ΔT<sub>h</sub>",
     "temperatureDeltaTbtNoHTML": "ΔTd-ΔTh",
     "temperatureDeltaTs": "ΔT<sub>s</sub>",
-    "temperatureDeltaTsNoHTML": "ΔTs"
+    "temperatureDeltaTsNoHTML": "ΔTs",
+    "active": "Zap.",
+    "switchOn": "Zapnout toto zatížení",
+    "switchOff": "Vypnout toto zatížení",
+    "someSwitchedOff": "{n} vypnuto"
   },
   "material": {
     "alphaT": "α_T",

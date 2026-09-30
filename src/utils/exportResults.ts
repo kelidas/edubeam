@@ -149,9 +149,34 @@ export const buildElementResultRows = (solver: LinearStaticSolver, units: Result
   return rows;
 };
 
+/**
+ * What the numbers below were worked out without.
+ *
+ * A load switched off leaves no trace in the results themselves, so a table taken out of the app
+ * and read a week later would be read as the whole model carrying. The names of the loads that
+ * were off, or their kind where they have no name, are written above the tables instead.
+ */
+export const switchedOffLoads = (solver: LinearStaticSolver) => {
+  const off: string[] = [];
+
+  for (const loadCase of solver.loadCases) {
+    for (const load of [...loadCase.nodalLoadList, ...loadCase.elementLoadList, ...loadCase.prescribedBC]) {
+      if (load.active === false) off.push(load.label || String(load.target));
+    }
+  }
+
+  return off;
+};
+
 /** One CSV holding both tables, separated by a blank line so a spreadsheet keeps them apart. */
-export const buildResultsCsv = (solver: LinearStaticSolver, units: ResultUnits) =>
-  `${toCsv(buildNodeResultRows(solver, units))}\r\n\r\n${toCsv(buildElementResultRows(solver, units))}\r\n`;
+export const buildResultsCsv = (solver: LinearStaticSolver, units: ResultUnits) => {
+  const off = switchedOffLoads(solver);
+  const note = off.length ? `${toCsv([[`Loads switched off: ${off.join(', ')}`]])}\r\n\r\n` : '';
+
+  return `${note}${toCsv(buildNodeResultRows(solver, units))}\r\n\r\n${toCsv(
+    buildElementResultRows(solver, units)
+  )}\r\n`;
+};
 
 export const downloadResultsCsv = (
   solver: LinearStaticSolver,

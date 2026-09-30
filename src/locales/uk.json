@@ -67,7 +67,8 @@
     "move": "Перемістити",
     "undo": "Скасувати",
     "redo": "Повторити",
-    "ok": "OK"
+    "ok": "OK",
+    "name": "Назва"
   },
   "nodes": {
     "addNode": "Додати вузол",
@@ -113,7 +114,11 @@
     "temperatureDeltaTbt": "ΔT<sub>b</sub>-ΔT<sub>t</sub>",
     "temperatureDeltaTs": "ΔT<sub>c</sub>",
     "temperatureDeltaTsNoHTML": "ΔTc",
-    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt"
+    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt",
+    "active": "Увімк.",
+    "switchOn": "Увімкнути це навантаження",
+    "switchOff": "Вимкнути це навантаження",
+    "someSwitchedOff": "{n} вимкнено"
   },
   "tabs": {
     "nodes": "Вузли",

@@ -67,7 +67,8 @@
     "whatisnew": "มีอะไรใหม่?",
     "undo": "เลิกทำ",
     "redo": "ทำซ้ำ",
-    "ok": "ตกลง"
+    "ok": "ตกลง",
+    "name": "ชื่อ"
   },
   "nodes": {
     "addNode": "เพิ่มโหนด",
@@ -113,7 +114,11 @@
     "temperatureDeltaTbt": "ΔT<sub>b</sub>-ΔT<sub>t</sub>",
     "temperatureDeltaTs": "ΔT<sub>c</sub>",
     "temperatureDeltaTsNoHTML": "ΔTc",
-    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt"
+    "temperatureDeltaTbtNoHTML": "ΔTb-ΔTt",
+    "active": "เปิด",
+    "switchOn": "เปิดใช้น้ำหนักบรรทุกนี้",
+    "switchOff": "ปิดใช้น้ำหนักบรรทุกนี้",
+    "someSwitchedOff": "ปิดใช้ {n} รายการ"
   },
   "tabs": {
     "nodes": "โหนด",
