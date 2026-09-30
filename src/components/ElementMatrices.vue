@@ -8,8 +8,10 @@ import {
   assembleFrom,
   elementDofNames,
   ELEMENT_DOFS,
+  nodalLoadVector,
   occupied,
   only,
+  rightHandSide,
   structureDofNames,
   endForcesGlobal,
   endForcesLocal,
@@ -147,8 +149,29 @@ const view = computed(() => {
     // the same names as an element's own, so one element's 6x6 can be found inside the assembled one
     const names = grid.length ? structureDofNames(projectStore.solver) : [];
     const kept = hideEmpty.value ? occupied(grid) : grid.map((_, i) => i);
+    const kOnly = only(grid, kept);
 
-    return { grid: only(grid, kept), rows: kept.map((i) => names[i]), cols: kept.map((i) => names[i]) };
+    /*
+     * F and b are properties of the whole solved system, not of whichever elements happen to be
+     * picked - assembling them from a selection the way K can be would silently be a different,
+     * smaller structure's vectors. So they sit beside K only when K is the real thing.
+     */
+    if (grid.length === 0 || selectionOnly.value || !loadCase.value) {
+      return { grid: kOnly, rows: kept.map((i) => names[i]), cols: kept.map((i) => names[i]) };
+    }
+
+    const f = nodalLoadVector(projectStore.solver, loadCase.value);
+    const b = rightHandSide(projectStore.solver, loadCase.value);
+
+    // b has no entry past the free block; NaN marks that and the cell shows a dash for it
+    return {
+      grid: kOnly.map((row, r) => {
+        const i = kept[r];
+        return [...row, f[i]?.[0] ?? NaN, i < b.length ? b[i][0] : NaN];
+      }),
+      rows: kept.map((i) => names[i]),
+      cols: [...kept.map((i) => names[i]), 'F', 'b'],
+    };
   }
 
   return { grid: localStiffness(el!, condensed.value), rows: dofNames.value, cols: dofNames.value };
@@ -241,6 +264,9 @@ const copy = () => {
             :label="$t('common.hideEmptyRows')"
           />
           <span v-if="tab === 't'" class="text-medium-emphasis">{{ $t('common.transformationHint') }}</span>
+          <span v-if="tab === 'system' && !selectionOnly" class="text-medium-emphasis">{{
+            $t('common.loadVectorHint')
+          }}</span>
           <span v-if="dropped > 0" class="text-medium-emphasis">{{
             $t('common.emptyRowsHidden', { n: dropped })
           }}</span>
@@ -279,7 +305,8 @@ const copy = () => {
             <tr v-for="(row, i) in view.grid" :key="i">
               <th class="text-left px-2 text-medium-emphasis font-weight-regular">{{ view.rows[i] }}</th>
               <td v-for="(value, j) in row" :key="j" class="px-2" :class="{ 'bg-grey-lighten-4': square && i === j }">
-                {{ show(value) }}
+                <!-- b has no entry past the free block: NaN marks that, and it reads as a dash rather than a number -->
+                {{ Number.isNaN(value) ? '—' : show(value) }}
               </td>
             </tr>
           </tbody>

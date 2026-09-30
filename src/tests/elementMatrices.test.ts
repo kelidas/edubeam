@@ -7,8 +7,10 @@ import {
   assembleFrom,
   elementDofNames,
   ELEMENT_DOFS,
+  nodalLoadVector,
   occupied,
   only,
+  rightHandSide,
   structureDofNames,
   endForcesGlobal,
   endForcesLocal,
@@ -270,6 +272,89 @@ describe('the system matrix', () => {
         expect(k[i][j], `${i},${j}`).toBeCloseTo(k[j][i], 6);
       }
     }
+  });
+});
+
+describe('the nodal load vector and the right-hand side', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  /** A simply supported beam under a uniform load: nothing prescribed, so b is plainly f[free]. */
+  const buildLoaded = () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createNode('2', [L, 0, 0], [DofID.Dz]);
+    domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+    store.solver.loadCases[0].createBeamElementUniformEdgeLoad('b', [0, Q], true);
+
+    return store;
+  };
+
+  it('sums to the work-equivalent shear at a simply supported end', () => {
+    const store = buildLoaded();
+    store.solve();
+
+    const f = nodalLoadVector(store.solver, store.solver.loadCases[0]).flat();
+    // node 1's Dz is the second free unknown - Dx, free but unloaded, comes first
+    const atNode1Dz = store.solver.nodeCodeNumbers.get('1')![DofID.Dz];
+
+    // qL/2 at each end, the textbook value a uniform load's consistent nodal force reduces to
+    near(Math.abs(f[atNode1Dz]), (Q * L) / 2, 1e-3);
+  });
+
+  it('is exactly f on the free block when nothing is prescribed', () => {
+    const store = buildLoaded();
+    store.solve();
+
+    const f = nodalLoadVector(store.solver, store.solver.loadCases[0]).flat().slice(0, store.solver.neq);
+    const b = rightHandSide(store.solver, store.solver.loadCases[0]).flat();
+
+    expect(b).toEqual(f);
+  });
+
+  it('has no entry past the free block', () => {
+    const store = buildLoaded();
+    store.solve();
+
+    expect(rightHandSide(store.solver, store.solver.loadCases[0])).toHaveLength(store.solver.neq);
+  });
+
+  /**
+   * The strongest check there is: whatever b came out to, K(free,free)·r(free) has to equal it,
+   * because that is the equation `solve()` actually solved - checked against the solved r rather
+   * than against the formula this re-derives it with.
+   */
+  it('is what the free block was solved against', () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz, DofID.Ry]);
+    domain.createNode('2', [L, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+    // a support that has moved, so the free block is solved against more than f alone
+    store.solver.loadCases[0].createPrescribedDisplacement('2', { [DofID.Dz]: 0.02 });
+
+    store.solve();
+
+    const b = rightHandSide(store.solver, store.solver.loadCases[0]).flat();
+    const r = store.solver.loadCases[0].r.toArray() as number[];
+    const kFull = systemStiffness(store.solver, false);
+
+    const reconstructed = kFull
+      .slice(0, store.solver.neq)
+      .map((row) => row.slice(0, store.solver.neq).reduce((sum, k, j) => sum + k * r[j], 0));
+
+    b.forEach((value, i) => near(value, reconstructed[i], 1e-6));
+
+    // and it does differ from the plain load vector - the prescribed displacement is doing something
+    const f = nodalLoadVector(store.solver, store.solver.loadCases[0]).flat().slice(0, store.solver.neq);
+
+    expect(b).not.toEqual(f);
   });
 });
 

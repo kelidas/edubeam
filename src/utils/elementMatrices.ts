@@ -268,6 +268,54 @@ export const assembleFrom = (solver: Solver, elements: Beam2D[], reduced: boolea
   return grid.slice(0, solver.neq).map((row) => row.slice(0, solver.neq));
 };
 
+/** One column of an assembled matrix, as its own column vector. */
+const matrixColumn = (grid: Grid, index: number): Grid => grid.map((row) => [row[index]]);
+
+/**
+ * The assembled nodal load vector for one load case: every nodal load and every element load's
+ * own work-equivalent nodal forces, summed at each equation - before a support has taken anything
+ * out of it. The same length as the full structure matrix, prescribed equations included.
+ */
+export const nodalLoadVector = (solver: Solver, loadCase: LoadCase): Grid => {
+  const index = solver.loadCases.indexOf(loadCase);
+
+  if (index < 0) return [];
+
+  return matrixColumn(toGrid(solver.f), index);
+};
+
+/**
+ * What the free block of the structure matrix is actually solved against.
+ *
+ * `Kr = f` holds for every equation, but only the unknowns are solved for - the prescribed ones
+ * already have their answer. Moved to the other side, their contribution becomes a correction to
+ * the load: `b = f[free] - K[free, prescribed] · r[prescribed]`, which is exactly the right-hand
+ * side `solve()` hands to `lusolve` and never keeps afterwards. A zero prescribed displacement
+ * (the ordinary case) leaves nothing to correct, and b is f[free] alone.
+ *
+ * Defined only over the free block: a prescribed equation is not solved for, so there is no
+ * right-hand side entry for one.
+ */
+export const rightHandSide = (solver: Solver, loadCase: LoadCase): Grid => {
+  if (solver.neq === 0) return [];
+
+  const index = solver.loadCases.indexOf(loadCase);
+  if (index < 0) return [];
+
+  const f = matrixColumn(toGrid(solver.f), index).slice(0, solver.neq);
+
+  if (solver.pneq === 0) return f;
+
+  const prescribed = column(loadCase.r)
+    .slice(solver.neq, solver.neq + solver.pneq)
+    .map(([value]) => value);
+  const coupling = toGrid(solver.k)
+    .slice(0, solver.neq)
+    .map((row) => row.slice(solver.neq, solver.neq + solver.pneq));
+
+  return f.map(([value], i) => [value - coupling[i].reduce((sum, k, j) => sum + k * prescribed[j], 0)]);
+};
+
 /** Whether the structure has been assembled and solved, so there is anything to read. */
 export const hasSystemMatrix = (solver: Solver) => {
   try {

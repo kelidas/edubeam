@@ -40,6 +40,7 @@
     "selectedElementsOnly": "Solo barras seleccionadas",
     "structureMatrix": "Matriz de la estructura",
     "transformationHint": "filas local, columnas global",
+    "loadVectorHint": "F es el vector ensamblado de cargas nodales, b es aquello contra lo que se resuelve el bloque libre",
     "solverAxesHint": "Las matrices son las del solucionador, en sus ejes: x hacia la derecha y z hacia abajo, sea cual sea el sistema en el que se lee el resto de la aplicación.",
     "notSolved": "Aún no resuelto.",
     "normalForce": "Fuerza normal",

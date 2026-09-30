@@ -57,6 +57,7 @@
     "selectedElementsOnly": "Yalnızca seçili elemanlar",
     "structureMatrix": "Yapı matrisi",
     "transformationHint": "satırlar yerel, sütunlar global",
+    "loadVectorHint": "F, düğüm yüklerinin birleştirilmiş vektörüdür; b ise serbest bloğun çözüldüğü vektördür",
     "solverAxesHint": "Matrisler çözücünün kendi matrisleridir ve onun eksenlerindedir: x sağa, z aşağı - uygulamanın geri kalanı hangi sistemde okunursa okunsun.",
     "notSolved": "Henüz çözülmedi.",
     "sectionResults": "Kesit sonuçları",

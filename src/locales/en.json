@@ -40,6 +40,7 @@
     "selectedElementsOnly": "Selected elements only",
     "structureMatrix": "Structure matrix",
     "transformationHint": "rows local, columns global",
+    "loadVectorHint": "F is the assembled nodal load vector, b what the free block is solved against",
     "solverAxesHint": "The matrices are the solver's own, in its axes: x to the right and z downwards, whichever system the rest of the app is read in.",
     "notSolved": "Not solved yet.",
     "normalForce": "Normal force",

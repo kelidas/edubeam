@@ -40,6 +40,7 @@
     "selectedElementsOnly": "Barres sélectionnées seulement",
     "structureMatrix": "Matrice de la structure",
     "transformationHint": "lignes local, colonnes global",
+    "loadVectorHint": "F est le vecteur assemblé des charges nodales, b est ce contre quoi le bloc libre est résolu",
     "solverAxesHint": "Les matrices sont celles du solveur, dans ses axes : x vers la droite et z vers le bas, quel que soit le système dans lequel le reste de l'application est lu.",
     "notSolved": "Pas encore résolu.",
     "normalForce": "Effort normal",

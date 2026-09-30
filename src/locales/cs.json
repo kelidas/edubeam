@@ -32,6 +32,7 @@
     "selectedElementsOnly": "Jen vybrané pruty",
     "structureMatrix": "Matice soustavy",
     "transformationHint": "řádky lokálně, sloupce globálně",
+    "loadVectorHint": "F je sestavený vektor uzlových zatížení, b je to, vůči čemu se řeší volný blok",
     "solverAxesHint": "Matice jsou matice řešiče v jeho osách: x doprava a z dolů, bez ohledu na to, v jaké soustavě se čte zbytek aplikace.",
     "notSolved": "Zatím nevyřešeno.",
     "addUsingDialog": "Přidat dialogem",
