@@ -651,17 +651,9 @@
                 <line x1="10" y1="1" x2="10" y2="11" stroke="currentColor" stroke-width="1.8" />
                 <polygon points="10,11 6.5,4.5 13.5,4.5" fill="currentColor" />
               </svg>
-              <svg
-                v-else-if="loadTypeKey(item) === 'temperature'"
-                viewBox="0 0 20 16"
-                width="20"
-                height="16"
-                aria-hidden="true"
-              >
-                <line x1="10" y1="1.5" x2="10" y2="10" stroke="currentColor" stroke-width="1.5" />
-                <circle cx="10" cy="12" r="2.6" fill="none" stroke="currentColor" stroke-width="1.5" />
-                <line x1="10" y1="4" x2="10" y2="10" stroke="currentColor" stroke-width="2.6" />
-              </svg>
+              <!-- a letter rather than a pictogram: a thermometer at this size read as the nodal
+                   force's dot and shaft, and ΔT is already how the components beside it are named -->
+              <span v-else-if="loadTypeKey(item) === 'temperature'" class="load-type-glyph">ΔT</span>
               <svg
                 v-else-if="loadTypeKey(item) === 'concentrated_deformation'"
                 viewBox="0 0 20 16"
@@ -669,9 +661,10 @@
                 height="16"
                 aria-hidden="true"
               >
-                <line x1="10" y1="1" x2="10" y2="6.2" stroke="currentColor" stroke-width="1.5" />
-                <line x1="10" y1="9.8" x2="10" y2="15" stroke="currentColor" stroke-width="1.5" />
-                <circle cx="10" cy="8" r="2" fill="none" stroke="currentColor" stroke-width="1.3" />
+                <!-- the hinge the drawing itself marks a release with, at the section it opens -->
+                <line x1="10" y1="1" x2="10" y2="4.3" stroke="currentColor" stroke-width="1.5" />
+                <line x1="10" y1="11.7" x2="10" y2="15" stroke="currentColor" stroke-width="1.5" />
+                <circle cx="10" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.4" />
               </svg>
               <span class="sr-only">{{ loadTypeLabel(item) }}</span>
             </span>
@@ -2042,6 +2035,11 @@ const isLoadSelected = (row: { type: string; index: number }) => {
  * Which icon a row's type draws, and the word it stands for - the same $t keys the row used to
  * write out in full, so the meaning does not fork between the tooltip and what the icon replaced.
  */
+/** A displacement can only be prescribed in a DOF that is supported (constrained) at the target node. */
+const isDofSupported = (target: number, dof: DofID) => {
+  return projStore.solver.domain.nodes.get(target)?.bcs.has(dof) ?? false;
+};
+
 const loadTypeKey = (item: (typeof loads.value)[number]) => {
   if (item.type === 'node') return 'node';
   if (item.type === 'prescribed') return 'prescribed';
@@ -2624,6 +2622,13 @@ const headers = reactive({
   justify-content: center;
   width: 100%;
   color: rgba(0, 0, 0, 0.7);
+}
+
+/* the temperature glyph, set beside the drawn icons rather than as one itself */
+.load-type-glyph {
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
 }
 
 /* A load switched off is still there to be read and edited; it just does not count. */
