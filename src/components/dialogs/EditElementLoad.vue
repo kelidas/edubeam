@@ -133,6 +133,46 @@
                         </v-col>
                       </v-row>
                     </v-col>
+                    <!--
+                      Where the load sits on the element, as distances from its first node. Left
+                      empty it covers the whole element, which is what a trapezoidal load has
+                      always been; a uniform load over part of an element is this with the same
+                      value typed twice.
+                    -->
+                    <v-col cols="12">
+                      <v-row no-gutters>
+                        <v-col cols="12" md="6">
+                          <v-text-field
+                            v-model="trapezoidFrom"
+                            hide-details="auto"
+                            :rules="spanRules"
+                            :placeholder="$t('loads.wholeElement')"
+                            persistent-placeholder
+                            :suffix="appStore.units.Length"
+                            @keydown="checkNumber($event)"
+                          >
+                            <template #label>
+                              <span>x<sub>1</sub></span>
+                            </template>
+                          </v-text-field>
+                        </v-col>
+                        <v-col cols="12" md="6">
+                          <v-text-field
+                            v-model="trapezoidTo"
+                            hide-details="auto"
+                            :rules="spanRules"
+                            :placeholder="$t('loads.wholeElement')"
+                            persistent-placeholder
+                            :suffix="appStore.units.Length"
+                            @keydown="checkNumber($event)"
+                          >
+                            <template #label>
+                              <span>x<sub>2</sub></span>
+                            </template>
+                          </v-text-field>
+                        </v-col>
+                      </v-row>
+                    </v-col>
                   </template>
 
                   <v-col v-if="['udl', 'trapezoidal', 'concentrated'].includes(loadType)" cols="12" md="12">
@@ -202,6 +242,7 @@ import { onMounted } from 'vue';
 import { useAppStore } from '@/store/app';
 import { checkNumber, numberRules, parseFloat2, loadType as LT } from '@/utils';
 import {
+  Beam2D,
   BeamConcentratedLoad,
   BeamElementTrapezoidalEdgeLoad,
   BeamElementUniformEdgeLoad,
@@ -212,7 +253,10 @@ import { deviceHasHover } from '@/utils/pointer';
 import { formatMeasureAsHTML } from '@/SVGUtils';
 
 type EditableElementLoad =
-  BeamElementUniformEdgeLoad | BeamElementTrapezoidalEdgeLoad | BeamConcentratedLoad | BeamTemperatureLoad;
+  | BeamElementUniformEdgeLoad
+  | BeamElementTrapezoidalEdgeLoad
+  | BeamConcentratedLoad
+  | BeamTemperatureLoad;
 
 const projectStore = useProjectStore();
 const appStore = useAppStore();
@@ -292,6 +336,41 @@ const realTrapEndFx = computed(() => appStore.convertInverseForceDistance(parseF
 const realTrapEndFz = computed(() =>
   appStore.vertical(appStore.convertInverseForceDistance(parseFloat2(trapezoidEndFz.value)))
 );
+
+/**
+ * Where the load sits on the element, as distances from its first node.
+ *
+ * Empty means the whole element, which is what these loads were before they could be given a
+ * position - so a load nobody touches here is serialised, drawn and solved exactly as it was.
+ */
+const trapezoidFrom = ref('');
+const trapezoidTo = ref('');
+
+const targetLength = computed(() => {
+  const element = projectStore.solver.domain.elements.get(load.value.target) as Beam2D | undefined;
+
+  return element ? appStore.convertLength(element.computeGeo().l) : 0;
+});
+
+const spanRules = [
+  (value: string) => {
+    if (value === undefined || value === null || String(value).trim() === '') return true;
+
+    const typed = parseFloat2(String(value));
+
+    if (!Number.isFinite(typed)) return false;
+
+    return (typed >= 0 && typed <= targetLength.value + 1e-9) || `0 - ${targetLength.value}`;
+  },
+];
+
+/** What the model is given: a number where the box has one, and nothing where it is empty. */
+const spanValue = (typed: string) =>
+  String(typed).trim() === '' ? undefined : appStore.convertInverseLength(parseFloat2(String(typed)));
+
+const realTrapFrom = computed(() => spanValue(trapezoidFrom.value));
+const realTrapTo = computed(() => spanValue(trapezoidTo.value));
+
 const realDist = computed(() => appStore.convertInverseLength(parseFloat2(elementLoadPos.value)));
 const realTc = computed(() => appStore.convertInverseTemperature(parseFloat2(loadNodeValueTc.value)));
 const realTbt = computed(() => appStore.convertInverseTemperature(parseFloat2(loadNodeValueTbt.value)));
@@ -309,7 +388,9 @@ const previewLoad = computed(() => {
       domain,
       [realTrapStartFx.value, realTrapStartFz.value],
       [realTrapEndFx.value, realTrapEndFz.value],
-      elementLCS.value
+      elementLCS.value,
+      realTrapFrom.value,
+      realTrapTo.value
     );
   }
 
@@ -350,6 +431,8 @@ onMounted(() => {
     trapezoidStartFz.value = appStore.vertical(appStore.convertForceDistance(load.value.startValues[1])).toString();
     trapezoidEndFx.value = appStore.convertForceDistance(load.value.endValues[0]).toString();
     trapezoidEndFz.value = appStore.vertical(appStore.convertForceDistance(load.value.endValues[1])).toString();
+    trapezoidFrom.value = load.value.from === undefined ? '' : appStore.convertLength(load.value.from).toString();
+    trapezoidTo.value = load.value.to === undefined ? '' : appStore.convertLength(load.value.to).toString();
   }
 
   if (load.value instanceof BeamConcentratedLoad) {
@@ -386,7 +469,9 @@ const editNodalLoad = () => {
       load.value.target,
       [realTrapStartFx.value, realTrapStartFz.value],
       [realTrapEndFx.value, realTrapEndFz.value],
-      elementLCS.value
+      elementLCS.value,
+      realTrapFrom.value,
+      realTrapTo.value
     );
   }
 

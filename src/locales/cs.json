@@ -159,7 +159,8 @@
     "temperatureDeltaTbt": "ΔT<sub>d</sub>-ΔT<sub>h</sub>",
     "temperatureDeltaTbtNoHTML": "ΔTd-ΔTh",
     "temperatureDeltaTs": "ΔT<sub>s</sub>",
-    "temperatureDeltaTsNoHTML": "ΔTs"
+    "temperatureDeltaTsNoHTML": "ΔTs",
+    "wholeElement": "celý prvek"
   },
   "material": {
     "alphaT": "α_T",

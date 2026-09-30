@@ -15,6 +15,23 @@ import {
   type DimensionPoint,
 } from '@/types/dimension';
 
+/**
+ * Where a trapezoidal load sits on its element, when it does not cover all of it.
+ *
+ * Written only for a load that has been given a position, so a model of loads that cover their
+ * elements serialises to exactly what it did before - the shared link of such a model does not
+ * change.
+ */
+const loadSpan = (load: { from?: number; to?: number }) =>
+  load.from === undefined && load.to === undefined ? [] : [{ from: load.from, to: load.to }];
+
+/** The other side of it: a model that says nothing has loads that cover their elements. */
+const spanOf = (meta: unknown) => {
+  const carried = (meta ?? {}) as { from?: number; to?: number };
+
+  return [carried.from, carried.to] as const;
+};
+
 /** `btoa` only accepts Latin-1; encode as UTF-8 bytes first so labels in any script survive. */
 function objectToBase64(obj: unknown) {
   try {
@@ -182,7 +199,7 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
   ls.loadCases[0].elementLoadList
     .filter((el) => el instanceof BeamElementTrapezoidalEdgeLoad)
     .forEach((load: BeamElementTrapezoidalEdgeLoad) => {
-      etraploads.push([load.target, load.startValues, load.endValues, load.lcs]);
+      etraploads.push([load.target, load.startValues, load.endValues, load.lcs, ...loadSpan(load)]);
     });
 
   ls.loadCases[0].nodalLoadList.forEach((load) => {
@@ -303,7 +320,8 @@ export const deserializeModel = (base64String: string, ls: LinearStaticSolver, d
       const lcs = e[3] !== undefined ? e[3] : true;
       const startValues = e[1] !== undefined ? e[1] : [0, 0];
       const endValues = e[2] !== undefined ? e[2] : startValues;
-      ls.loadCases[0].createBeamElementTrapezoidalEdgeLoad(e[0], startValues, endValues, lcs);
+      const [from, to] = spanOf(e[4]);
+      ls.loadCases[0].createBeamElementTrapezoidalEdgeLoad(e[0], startValues, endValues, lcs, from, to);
     }
   }
 

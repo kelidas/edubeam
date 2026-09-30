@@ -758,6 +758,36 @@
                   />
                   <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.ForceDistance)"></div>
                 </div>
+                <!--
+                  Where the load sits on the element. Left empty it covers the whole of it, which
+                  is what a trapezoidal load has always been.
+                -->
+                <div class="inline-edit-group load mr-2">
+                  <span class="input-before" v-html="'x<sub>1</sub>'"></span>
+                  <input
+                    :value="loadSpanDisplay(item.ref, 'from')"
+                    class="inline-edit"
+                    style="width: 60px"
+                    :placeholder="$t('loads.wholeElement')"
+                    :title="loadSpanRange(item.ref)"
+                    @keydown="checkNumber($event)"
+                    @change="setLoadSpan(item.ref, 'from', $event.target as HTMLInputElement)"
+                  />
+                  <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+                </div>
+                <div class="inline-edit-group load mr-2">
+                  <span class="input-before" v-html="'x<sub>2</sub>'"></span>
+                  <input
+                    :value="loadSpanDisplay(item.ref, 'to')"
+                    class="inline-edit"
+                    style="width: 60px"
+                    :placeholder="$t('loads.wholeElement')"
+                    :title="loadSpanRange(item.ref)"
+                    @keydown="checkNumber($event)"
+                    @change="setLoadSpan(item.ref, 'to', $event.target as HTMLInputElement)"
+                  />
+                  <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+                </div>
               </template>
               <template v-else>
                 <div class="inline-edit-group load mr-2">
@@ -1531,6 +1561,7 @@ import {
   checkNumber,
   deleteCrossSection,
   deleteElement,
+  executeModelMutationWithUndo,
   deleteElementLoad,
   deleteMaterial,
   deleteNodalLoad,
@@ -1661,6 +1692,62 @@ const elements = computed(() => {
 
   return [...sortDisplaySelected, ...sortDisplay];
 });
+
+/**
+ * Where a trapezoidal load starts and stops on its element.
+ *
+ * Empty means the whole element, which is what these loads were before they could be given a
+ * position. Typed past either end it goes to that end, and the box is rewritten to say where it
+ * went; nonsense leaves it as it was.
+ */
+const elementLengthOf = (load: BeamElementTrapezoidalEdgeLoad) => {
+  const element = useProjectStore().solver.domain.elements.get(load.target) as Beam2D | undefined;
+
+  return element ? element.computeGeo().l : 0;
+};
+
+const loadSpanDisplay = (load: BeamElementTrapezoidalEdgeLoad, end: 'from' | 'to') =>
+  load[end] === undefined ? '' : appStore.convertLength(load[end] as number);
+
+const loadSpanRange = (load: BeamElementTrapezoidalEdgeLoad) =>
+  `0 - ${Math.round(appStore.convertLength(elementLengthOf(load)) * 1e3) / 1e3} ${appStore.units.Length}`;
+
+const setLoadSpan = (load: BeamElementTrapezoidalEdgeLoad, end: 'from' | 'to', el: HTMLInputElement) => {
+  const length = elementLengthOf(load);
+  const text = el.value.replace(/\s/g, '').replace(',', '.');
+
+  if (text === '') {
+    executeModelMutationWithUndo(() => {
+      setUnsolved();
+      load[end] = undefined;
+    });
+
+    solve();
+    el.value = '';
+    return;
+  }
+
+  const typed = appStore.convertInverseLength(parseFloat(text));
+
+  if (Number.isNaN(typed)) {
+    el.value = String(loadSpanDisplay(load, end));
+    return;
+  }
+
+  const placed = Math.min(Math.max(typed, 0), length);
+
+  executeModelMutationWithUndo(() => {
+    setUnsolved();
+    load[end] = placed;
+
+    // the other end follows rather than letting the load turn itself inside out
+    if (end === 'from' && load.to !== undefined && load.to < placed) load.to = placed;
+    if (end === 'to' && load.from !== undefined && load.from > placed) load.from = placed;
+  });
+
+  solve();
+  el.value = String(appStore.convertLength(placed));
+};
 
 const loads = computed(() => {
   const items = useProjectStore().solver.loadCases.values();

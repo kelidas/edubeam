@@ -20,9 +20,30 @@ const viewer_uuid = inject<string>('viewer_uuid', 'default-viewer');
 
 const target = computed(() => props.eload.domain.elements.get(props.eload.target) as Beam2D);
 const n1 = computed(() => props.eload.domain.nodes.get(target.value.nodes[0]) as Node);
-const n2 = computed(() => props.eload.domain.nodes.get(target.value.nodes[1]) as Node);
 
 const tolerance = 1e-12;
+
+/**
+ * Where the load begins and ends along the element.
+ *
+ * A load without a position covers the whole element, and then these are the two nodes - which is
+ * what everything below used to read straight off. Given a position, the same drawing is simply
+ * laid between two other points of the same line.
+ */
+const spanEnds = computed(() => {
+  const geo = target.value.computeGeo();
+  const l = geo.l;
+  const clamp = (distance: number) => Math.min(Math.max(distance, 0), l);
+  const first = clamp(props.eload.from ?? 0);
+  const second = clamp(props.eload.to ?? l);
+  const [a, b] = first <= second ? [first, second] : [second, first];
+  const at = (distance: number) => ({
+    x: n1.value.coords[0] + (geo.dx / l) * distance,
+    z: n1.value.coords[2] + (geo.dz / l) * distance,
+  });
+
+  return { a, b, length: b - a, start: at(a), end: at(b) };
+});
 
 const signWithTolerance = (value: number) => {
   if (Math.abs(value) <= tolerance) return 0;
@@ -76,10 +97,10 @@ const trapezoidPolygons = computed<Polygon[]>(() => {
   const nx = geo.dz / geo.l / props.scale;
   const nz = -geo.dx / geo.l / props.scale;
 
-  const n1x = n1.value.coords[0];
-  const n1z = n1.value.coords[2];
-  const n2x = n2.value.coords[0];
-  const n2z = n2.value.coords[2];
+  const n1x = spanEnds.value.start.x;
+  const n1z = spanEnds.value.start.z;
+  const n2x = spanEnds.value.end.x;
+  const n2z = spanEnds.value.end.z;
 
   const fzStart = props.eload.startValues[1];
   const fzEnd = props.eload.endValues[1];
@@ -167,8 +188,9 @@ const eloadForces = computed(() => {
   const geo = target.value.computeGeo();
   const nx = geo.dz / geo.l / props.scale;
   const nz = -geo.dx / geo.l / props.scale;
-  let nseg = Math.ceil((geo.l * props.scale) / 50);
-  let segsize = geo.l / nseg;
+  const loaded = spanEnds.value;
+  let nseg = Math.max(1, Math.ceil((loaded.length * props.scale) / 50));
+  let segsize = loaded.length / nseg;
   const cos = geo.dx / geo.l;
   const sin = geo.dz / geo.l;
 
@@ -194,8 +216,8 @@ const eloadForces = computed(() => {
       const normalOffset = normalMagnitude * dir;
 
       pts.push([
-        n1.value.coords[0] + s * cos * segsize + nx * normalOffset,
-        n1.value.coords[2] + s * sin * segsize + nz * normalOffset,
+        loaded.start.x + s * cos * segsize + nx * normalOffset,
+        loaded.start.z + s * sin * segsize + nz * normalOffset,
         rotation,
       ]);
     }
@@ -203,8 +225,8 @@ const eloadForces = computed(() => {
 
   // component fz
   if (hasFzComponent.value) {
-    nseg = Math.floor((geo.l * props.scale) / 25);
-    segsize = geo.l / nseg;
+    nseg = Math.max(1, Math.floor((loaded.length * props.scale) / 25));
+    segsize = loaded.length / nseg;
     const fzStart = props.eload.startValues[1];
     const fzEnd = props.eload.endValues[1];
     const fallbackDir = directionFromComponents(fzStart, fzEnd);
@@ -219,8 +241,8 @@ const eloadForces = computed(() => {
       const rotation = eleAngleDeg + (dir < 0 ? 180 : 0);
 
       pts.push([
-        n1.value.coords[0] + s * cos * segsize + nx * 20 * dir,
-        n1.value.coords[2] + s * sin * segsize + nz * 20 * dir,
+        loaded.start.x + s * cos * segsize + nx * 20 * dir,
+        loaded.start.z + s * sin * segsize + nz * 20 * dir,
         rotation,
       ]);
     }
@@ -262,9 +284,9 @@ const labelTransforms = computed(() => {
 
   const constantOffset = (base: number, dir: number) => (base + labelPadding) * dir;
 
-  const makeTransform = (node: Node, dist: number, isFx: boolean, anchorRight: boolean) => {
-    let x = node.coords[0];
-    let z = node.coords[2];
+  const makeTransform = (point: { x: number; z: number }, dist: number, isFx: boolean, anchorRight: boolean) => {
+    let x = point.x;
+    let z = point.z;
 
     if (props.eload.lcs) {
       x += (-nx * dist) / props.scale;
@@ -313,14 +335,14 @@ const labelTransforms = computed(() => {
 
   return {
     fx: {
-      constant: makeTransform(n1.value, fxConstantDist, true, false),
-      start: makeTransform(n1.value, fxStartDist, true, false),
-      end: makeTransform(n2.value, fxEndDist, true, true),
+      constant: makeTransform(spanEnds.value.start, fxConstantDist, true, false),
+      start: makeTransform(spanEnds.value.start, fxStartDist, true, false),
+      end: makeTransform(spanEnds.value.end, fxEndDist, true, true),
     },
     fz: {
-      constant: makeTransform(n1.value, fzConstantDist, false, false),
-      start: makeTransform(n1.value, fzStartDist, false, false),
-      end: makeTransform(n2.value, fzEndDist, false, true),
+      constant: makeTransform(spanEnds.value.start, fzConstantDist, false, false),
+      start: makeTransform(spanEnds.value.start, fzStartDist, false, false),
+      end: makeTransform(spanEnds.value.end, fzEndDist, false, true),
     },
   };
 });
