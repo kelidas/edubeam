@@ -2576,10 +2576,10 @@ defineExpose({ centerContent, fitContent });
                     d="M0.5 8H5.5M10.5 8H15.5M8 0.5V5.5M8 10.5V15.5"
                     fill="none"
                     stroke="currentColor"
-                    stroke-width="1.25"
-                    stroke-linecap="round"
+                    stroke-width="1"
+                    stroke-dasharray="2 1"
                   />
-                  <circle cx="8" cy="8" r="1.75" fill="currentColor" />
+                  <circle cx="8" cy="8" r="1.5" fill="currentColor" />
                 </svg>
               </v-chip>
             </template>
