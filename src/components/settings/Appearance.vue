@@ -87,6 +87,14 @@
         <v-btn value="horizontal">{{ $t('settings.result_label_orientation_horizontal') }}</v-btn>
       </v-btn-toggle>
 
+      <div class="vs-heading">{{ $t('settings.workspaces') }}</div>
+      <div class="vs-group">
+        <div class="vs-row">
+          <span>{{ $t('settings.show_influence_workspace') }}</span>
+          <v-switch v-model="appStore.showInfluenceWorkspace" color="primary" density="compact" hide-details inset />
+        </div>
+      </div>
+
       <div class="vs-heading">{{ $t('settings.model_checks') }}</div>
       <div class="vs-group">
         <div class="vs-row">

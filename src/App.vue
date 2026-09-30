@@ -67,13 +67,18 @@ const steps = computed(() => [
       description: t('tour.viewer.description'),
     },
   },
-  {
-    attachTo: { element: '#tab-influence' },
-    content: {
-      title: t('tour.influence.title'),
-      description: t('tour.influence.description'),
-    },
-  },
+  // the influence tab may be switched off in Settings, and then there is nothing to point at
+  ...(appStore.showInfluenceWorkspace
+    ? [
+        {
+          attachTo: { element: '#tab-influence' },
+          content: {
+            title: t('tour.influence.title'),
+            description: t('tour.influence.description'),
+          },
+        },
+      ]
+    : []),
   {
     attachTo: { element: '#undoRedo' },
     content: { title: t('tour.undoRedo.title'), description: t('tour.undoRedo.description') },

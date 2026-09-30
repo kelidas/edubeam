@@ -214,7 +214,9 @@
     "result_label_orientation": "Result label orientation",
     "result_label_orientation_axis": "Perpendicular to chart",
     "result_label_orientation_horizontal": "Always horizontal",
-    "result_labels": "Result labels"
+    "result_labels": "Result labels",
+    "workspaces": "Workspaces",
+    "show_influence_workspace": "Show the influence lines tab"
   },
   "sideSettings": {
     "showDeformedShape": "Deformed shape",

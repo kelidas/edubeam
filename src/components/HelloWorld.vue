@@ -3,27 +3,34 @@
     <div v-if="!appStore.inViewerMode">
       <div class="" style="border-bottom: 1px solid rgba(0, 0, 0, 0.12)">
         <v-tabs v-model="appStore.tab" height="36" bg-color="secondary">
-          <!-- named after the workspace it opens, so the tour can point at one of them -->
-          <v-tab
-            v-for="(item, index) in appStore.tabs"
-            :id="item.props.id ? `tab-${item.props.id}` : undefined"
-            :key="item.title"
-            :class="{ 'pr-0': item.closable }"
-          >
-            {{ $t(item.title) }}
-            <v-btn
-              v-if="item.closable"
-              icon="mdi-close"
-              size="x-small"
-              variant="text"
-              small
-              class="ml-1"
-              @click.prevent.stop="
-                appStore.tab = 0;
-                appStore.tabs.splice(index, 1);
-              "
-            />
-          </v-tab>
+          <!--
+            Named after the workspace it opens, so the tour can point at one of them. Each carries
+            its own fixed position in appStore.tabs as its value, rather than the position it
+            happens to render at, so hiding the influence tab does not shift what appStore.tab
+            means for the ones after it.
+          -->
+          <template v-for="(item, index) in appStore.tabs" :key="item.title">
+            <v-tab
+              v-if="item.props.id !== 'influence' || appStore.showInfluenceWorkspace"
+              :id="item.props.id ? `tab-${item.props.id}` : undefined"
+              :value="index"
+              :class="{ 'pr-0': item.closable }"
+            >
+              {{ $t(item.title) }}
+              <v-btn
+                v-if="item.closable"
+                icon="mdi-close"
+                size="x-small"
+                variant="text"
+                small
+                class="ml-1"
+                @click.prevent.stop="
+                  appStore.tab = 0;
+                  appStore.tabs.splice(index, 1);
+                "
+              />
+            </v-tab>
+          </template>
         </v-tabs>
       </div>
     </div>
@@ -42,18 +49,20 @@
         The drawing fills its tab and must not scroll - a canvas pans instead. A panel of settings
         is taller than the tab on a short window, and nothing above it scrolls, so it says so itself.
       -->
-      <v-window-item
-        v-for="item in appStore.tabs"
-        :key="item.title"
-        class="fill-height"
-        :class="item.scrolls ? 'overflow-y-auto' : 'overflow-hidden'"
-        :transition="false"
-        :reverse-transition="false"
-      >
-        <keep-alive>
-          <component :is="item.component" v-bind="item.props" />
-        </keep-alive>
-      </v-window-item>
+      <template v-for="(item, index) in appStore.tabs" :key="item.title">
+        <v-window-item
+          v-if="item.props.id !== 'influence' || appStore.showInfluenceWorkspace"
+          :value="index"
+          class="fill-height"
+          :class="item.scrolls ? 'overflow-y-auto' : 'overflow-hidden'"
+          :transition="false"
+          :reverse-transition="false"
+        >
+          <keep-alive>
+            <component :is="item.component" v-bind="item.props" />
+          </keep-alive>
+        </v-window-item>
+      </template>
     </v-window>
   </div>
 </template>

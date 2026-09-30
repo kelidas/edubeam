@@ -214,7 +214,9 @@
     "result_label_orientation": "结果标签方向",
     "result_label_orientation_axis": "垂直于图表",
     "result_label_orientation_horizontal": "始终水平",
-    "result_labels": "结果标签"
+    "result_labels": "结果标签",
+    "workspaces": "工作区",
+    "show_influence_workspace": "显示影响线标签页"
   },
   "sideSettings": {
     "showDeformedShape": "变形图",

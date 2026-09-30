@@ -214,7 +214,9 @@
     "result_label_orientation": "Ausrichtung der Ergebnisbeschriftungen",
     "result_label_orientation_axis": "Senkrecht zum Diagramm",
     "result_label_orientation_horizontal": "Immer horizontal",
-    "result_labels": "Ergebnisbeschriftungen"
+    "result_labels": "Ergebnisbeschriftungen",
+    "workspaces": "Arbeitsbereiche",
+    "show_influence_workspace": "Registerkarte Einflusslinien anzeigen"
   },
   "sideSettings": {
     "showDeformedShape": "Verformte Form",

@@ -214,7 +214,9 @@
     "result_label_orientation": "Ориентация подписей результатов",
     "result_label_orientation_axis": "Перпендикулярно эпюре",
     "result_label_orientation_horizontal": "Всегда горизонтально",
-    "result_labels": "Подписи результатов"
+    "result_labels": "Подписи результатов",
+    "workspaces": "Рабочие области",
+    "show_influence_workspace": "Показывать вкладку линий влияния"
   },
   "sideSettings": {
     "showDeformedShape": "Деформированная форма",

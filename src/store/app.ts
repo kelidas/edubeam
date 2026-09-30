@@ -218,6 +218,22 @@ export const useAppStore = defineStore(
     const openedTab = computed(() => tabs.value[tab.value] || null);
 
     /**
+     * Whether the influence-lines tab has a place in the tab strip at all.
+     *
+     * The tab itself stays in `tabs` - and the case it works on stays in the model - so turning
+     * this back on returns to whatever was already built there. Only what is rendered changes,
+     * through the item's own `v-if` rather than by filtering `tabs`, so every other tab keeps the
+     * fixed position `tab` already addresses it by.
+     */
+    const showInfluenceWorkspace = ref(true);
+
+    watch(showInfluenceWorkspace, (visible) => {
+      if (!visible && openedTab.value?.props?.id === 'influence') {
+        tab.value = tabs.value.findIndex((t) => t.props.id === 'viewer');
+      }
+    });
+
+    /**
      * What the app is editing: the real loads, or the unit dislocations whose deflected shape is
      * an influence line. Everything reading the "current" load case keys off this.
      */
@@ -292,6 +308,7 @@ export const useAppStore = defineStore(
       openedTab,
       workspace,
       tabs,
+      showInfluenceWorkspace,
       bottomBarTab,
       mouseMode,
       mouse,
@@ -347,6 +364,7 @@ export const useAppStore = defineStore(
         'units.Angle',
         'momentUnits',
         'axisConvention',
+        'showInfluenceWorkspace',
       ],
       debug: true,
     },

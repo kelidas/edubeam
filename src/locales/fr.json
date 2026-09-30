@@ -214,7 +214,9 @@
     "result_label_orientation": "Orientation des étiquettes de résultats",
     "result_label_orientation_axis": "Perpendiculaires au diagramme",
     "result_label_orientation_horizontal": "Toujours horizontales",
-    "result_labels": "Étiquettes des résultats"
+    "result_labels": "Étiquettes des résultats",
+    "workspaces": "Espaces de travail",
+    "show_influence_workspace": "Afficher l'onglet Lignes d'influence"
   },
   "sideSettings": {
     "showDeformedShape": "Déformée",
