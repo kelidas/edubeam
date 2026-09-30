@@ -7,6 +7,7 @@ import {
   BeamConcentratedLoad,
   BeamConcentratedDeformation,
   BeamElementLoad,
+  BeamElementTrapezoidalEdgeLoad,
   LinearStaticSolver,
   Node,
 } from 'ts-fem';
@@ -49,44 +50,66 @@ const nodes = computed<Node[]>(() => {
   return element.nodes.map((nodeId) => props.load!.domain.nodes.get(nodeId)!);
 });
 
+/**
+ * What the preview measures out: where along the element the load sits.
+ *
+ * A concentrated load has one such distance and a trapezoidal load given a position has two, and
+ * both are read from the element's first node - which is what the boxes beside the preview ask
+ * for, so the drawing and the numbers being typed say the same thing. A load that covers its whole
+ * element has nothing to measure: the element's own length is the answer.
+ */
 const dimensionLines = computed(() => {
-  if (!(props.load instanceof BeamConcentratedLoad) && !(props.load instanceof BeamConcentratedDeformation)) {
-    return [];
-  }
+  const load = props.load;
 
-  const element = props.load.domain.elements.get(props.load.target) as Beam2D | undefined;
+  if (!load) return [];
+
+  const element = load.domain.elements.get(load.target) as Beam2D | undefined;
   if (!element) return [];
 
-  const startNode = props.load.domain.nodes.get(element.nodes[0]);
+  const startNode = load.domain.nodes.get(element.nodes[0]);
   if (!startNode) return [];
 
   const geo = element.computeGeo();
   const elementLength = geo?.l ?? 0;
   if (!elementLength) return [];
 
-  const clampedDist = Math.min(Math.max(props.load.values[3] ?? 0, 0), elementLength);
   const cos = geo.dx / elementLength || 0;
   const sin = geo.dz / elementLength || 0;
+  const step = Math.min(Math.max(elementLength * 0.15, 0.25), 2);
 
-  const loadNode = new Node('__preview-load-distance', props.load.domain, [
-    startNode.coords[0] + cos * clampedDist,
-    startNode.coords[1],
-    startNode.coords[2] + sin * clampedDist,
-  ]);
+  /** One dimension, from the first node to a point that far along the element. */
+  const measured = (distance: number, label: string, line: number) => {
+    const along = Math.min(Math.max(distance, 0), elementLength);
+    const to = new Node(label, load.domain, [
+      startNode.coords[0] + cos * along,
+      startNode.coords[1],
+      startNode.coords[2] + sin * along,
+    ]);
 
-  const offset = Math.min(Math.max(elementLength * 0.15, 0.25), 2);
-
-  return [
-    {
+    return {
       points: [
         createDimensionRenderableNode({ x: startNode.coords[0], y: startNode.coords[2] }, startNode.label),
-        createDimensionRenderableNode({ x: loadNode.coords[0], y: loadNode.coords[2] }, loadNode.label),
+        createDimensionRenderableNode({ x: to.coords[0], y: to.coords[2] }, to.label),
       ],
-      distance: offset,
+      // stacked, so two of them are read one under the other rather than on top of each other
+      distance: step * line,
       numberFormat: appStore.numberFormatter,
       convertLength: appStore.convertLength,
-    },
-  ];
+    };
+  };
+
+  if (load instanceof BeamConcentratedLoad || load instanceof BeamConcentratedDeformation) {
+    return [measured(load.values[3] ?? 0, '__preview-load-distance', 1)];
+  }
+
+  if (load instanceof BeamElementTrapezoidalEdgeLoad && load.partial()) {
+    const from = load.from ?? 0;
+    const to = load.to ?? elementLength;
+
+    return [measured(from, '__preview-load-from', 1), measured(to, '__preview-load-to', 2)];
+  }
+
+  return [];
 });
 
 watch(
