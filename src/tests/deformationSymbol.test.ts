@@ -1,7 +1,8 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { LinearStaticSolver } from 'ts-fem';
 import Deformation from '../components/svg/ElementConcentratedDeformation.vue';
+import { axisConvention } from '../utils/axisConvention';
 
 /** The drawing is in model units, so the scale is how many pixels of symbol go to one of them. */
 const SCALE = 10;
@@ -240,5 +241,36 @@ describe('imposed deformation symbol', () => {
     const radius = (scale: number) => Number(drawn([0, 0, 1, 2], scale).find('circle.release.hinge').attributes('r'));
 
     expect(radius(SCALE)).toBeCloseTo(radius(SCALE * 4) * 4, 9);
+  });
+
+  /**
+   * The numbers beside the symbol are read in the system the reader chose, as every other value on
+   * the drawing is: the component across the beam turns over with the vertical axis, the one along
+   * it does not. The symbol itself is drawn from the model and does not move.
+   */
+  describe('in the y up convention', () => {
+    afterEach(() => (axisConvention.value = 'z-down'));
+
+    const pairLabel = (values: number[]) => {
+      const text = drawn(values)
+        .findAll('text')
+        .map((t) => t.text())
+        .join(' ');
+
+      return /\(([^)]*)\)/.exec(text)![1];
+    };
+
+    it('turns the component across the beam over, and leaves the one along it', () => {
+      const down = pairLabel([0.01, -0.02, 0, 2]);
+
+      axisConvention.value = 'y-up';
+      const up = pairLabel([0.01, -0.02, 0, 2]);
+
+      const [alongDown, acrossDown] = down.split(';').map((part) => Number(part.trim()));
+      const [alongUp, acrossUp] = up.split(';').map((part) => Number(part.trim()));
+
+      expect(alongUp).toBeCloseTo(alongDown, 12);
+      expect(acrossUp).toBeCloseTo(-acrossDown, 12);
+    });
   });
 });

@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { createVuetify } from 'vuetify';
@@ -8,6 +8,7 @@ import { DofID } from 'ts-fem';
 import { useProjectStore } from '@/store/project';
 import { useAppStore } from '@/store/app';
 import SectionResults from '@/components/SectionResults.vue';
+import { axisConvention } from '@/utils/axisConvention';
 
 /**
  * The widget over the same simply supported beam the computation is checked on, so what the table
@@ -334,10 +335,8 @@ describe('where the drawn quantity turns', () => {
   it('marks nothing where the quantity does not turn', async () => {
     build();
     const w = widget();
-    const toggle = w.findAll('.v-btn-toggle button');
-
     // the shear steps with the load; it has no stationary point in between
-    await toggle.find((b) => b.text() === 'V')!.trigger('click');
+    await w.find('.v-btn-toggle button[data-quantity="vz"]').trigger('click');
 
     expect(w.findAll('svg circle.turn')).toHaveLength(0);
   });
@@ -359,18 +358,15 @@ describe('the numbers at a jump', () => {
     return store;
   };
 
-  const draw = async (w: ReturnType<typeof widget>, name: string) => {
-    await w
-      .findAll('.v-btn-toggle button')
-      .find((b) => b.text() === name)!
-      .trigger('click');
+  const draw = async (w: ReturnType<typeof widget>, quantity: string) => {
+    await w.find(`.v-btn-toggle button[data-quantity="${quantity}"]`).trigger('click');
   };
 
   it('writes both sides of a step, not one of them', async () => {
     withForce(2.5, 9000);
     const w = widget();
 
-    await draw(w, 'V');
+    await draw(w, 'vz');
     const written = w.findAll('svg text.jump').map((t) => t.text());
 
     expect(written).toHaveLength(2);
@@ -381,7 +377,7 @@ describe('the numbers at a jump', () => {
     withForce(2.5, 9000);
     const w = widget();
 
-    await draw(w, 'V');
+    await draw(w, 'vz');
     const anchors = w.findAll('svg text.jump').map((t) => t.attributes('text-anchor'));
 
     expect(anchors).toEqual(['end', 'start']);
@@ -391,7 +387,7 @@ describe('the numbers at a jump', () => {
     withForce(2.5, 9000);
     const w = widget();
 
-    await draw(w, 'V');
+    await draw(w, 'vz');
     await w.findAllComponents({ name: 'VTextField' })[0].setValue(40);
 
     // the regular sections give their labels up, the jump does not
@@ -403,7 +399,7 @@ describe('the numbers at a jump', () => {
     withForce(2.5, 9000);
     const w = widget();
 
-    await draw(w, 'V');
+    await draw(w, 'vz');
     // four pieces of a six metre beam: the neighbours of the step are half a metre from it
     await w.findAllComponents({ name: 'VTextField' })[0].setValue(4);
 
@@ -433,11 +429,8 @@ describe('a jump that only one quantity has', () => {
     return store;
   };
 
-  const draw = async (w: ReturnType<typeof widget>, name: string) => {
-    await w
-      .findAll('.v-btn-toggle button')
-      .find((b) => b.text() === name)!
-      .trigger('click');
+  const draw = async (w: ReturnType<typeof widget>, quantity: string) => {
+    await w.find(`.v-btn-toggle button[data-quantity="${quantity}"]`).trigger('click');
   };
 
   // clear of midspan, where the peak of both the moment and the deflection wants the same room
@@ -454,7 +447,7 @@ describe('a jump that only one quantity has', () => {
     withDislocation(1);
     const w = widget();
 
-    await draw(w, 'M');
+    await draw(w, 'my');
 
     expect(w.findAll('svg text.jump')).toHaveLength(0);
   });
@@ -463,7 +456,7 @@ describe('a jump that only one quantity has', () => {
     withDislocation(1);
     const w = widget();
 
-    await draw(w, 'M');
+    await draw(w, 'my');
     const here = w
       .findAll('svg text.ordinate, svg text.jump')
       .filter((t) => Math.abs(Number(t.attributes('x')) - (10 + (320 - 20) / 6)) < 6);
@@ -479,5 +472,50 @@ describe('a jump that only one quantity has', () => {
     const pairs = bodyRows(w).filter((r) => /[−+]/.test(r.find('th').text()));
 
     expect(pairs).toHaveLength(2);
+  });
+});
+
+/**
+ * The table is read in the system the reader chose, not in the one the solver works in. Turning the
+ * vertical axis over turns the quantities that point along it - the deflection across the beam and
+ * the shear that goes with it - and leaves the moment and the rotation, which both systems count
+ * the same way. The headings carry the letters of whichever system is on.
+ */
+describe('the coordinate system the numbers are read in', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+  afterEach(() => (axisConvention.value = 'z-down'));
+
+  const headings = () =>
+    widget()
+      .findAll('thead th')
+      .map((th) => th.text().replace(/\s*\[.*/, ''));
+
+  /** A section with something of everything: away from the ends, where all six are non-zero. */
+  const section = () =>
+    bodyRows(widget())[1]
+      .findAll('td')
+      .map((td) => td.text());
+
+  it('names the columns after the axes in use', () => {
+    build();
+
+    expect(headings()).toEqual(['x', 'N', 'Vz', 'My', 'ux', 'uz', 'φ']);
+
+    axisConvention.value = 'y-up';
+
+    expect(headings()).toEqual(['x', 'N', 'Vy', 'Mz', 'ux', 'uy', 'φ']);
+  });
+
+  it('turns the deflection and the shear over with the axis, and nothing else', () => {
+    build();
+
+    const [n, vz, my, u, w, phi] = section();
+
+    axisConvention.value = 'y-up';
+    const [upN, upVz, upMy, upU, upW, upPhi] = section();
+
+    expect(upVz).not.toBe(vz);
+    expect(upW).not.toBe(w);
+    expect([upN, upMy, upU, upPhi]).toEqual([n, my, u, phi]);
   });
 });

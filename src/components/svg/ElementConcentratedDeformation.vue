@@ -1,6 +1,7 @@
 <script lang="ts" setup>
 import { BeamConcentratedDeformation } from 'ts-fem';
 import { computed } from 'vue';
+import { vertical } from '@/utils/axisConvention';
 
 const props = withDefaults(
   defineProps<{
@@ -373,7 +374,7 @@ const momentLabelPosition = computed(() => {
       }}
       <template v-if="eload.values[0] !== 0 && eload.values[1] !== 0">
         ({{ numberFormat.format(convertDisplacement(eload.values[0])) }};
-        {{ numberFormat.format(convertDisplacement(eload.values[1])) }})
+        {{ numberFormat.format(vertical(convertDisplacement(eload.values[1]))) }})
       </template>
     </text>
   </g>

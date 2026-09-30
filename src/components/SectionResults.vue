@@ -95,7 +95,10 @@ const extremes = computed(() => extremesOf(sections.value));
 
 interface Quantity {
   key: SectionQuantity;
+  /** Written out, for the table copied to the clipboard. */
   name: string;
+  /** The same name with its subscript, for the screen. */
+  label: string;
   unit: string;
   convert: (value: number) => number;
 }
@@ -104,15 +107,44 @@ interface Quantity {
  * Each of these carries one unit, unlike a stiffness matrix, so they are shown converted and
  * labelled - a shear in kN next to a deflection in mm is what anyone reading a section wants. A
  * rotation is in radians, which is not a unit the app converts.
+ *
+ * They are read in the coordinate system the reader chose, which is not the one the solver works
+ * in: turning the vertical axis over turns the quantities that point along it - the deflection
+ * across the beam and the shear that goes with it - and leaves the two that do not, since both
+ * conventions call a sagging moment and a counter-clockwise rotation positive. The letters follow
+ * the same axes, so the column says which system its numbers are in.
  */
-const quantities = computed<Quantity[]>(() => [
-  { key: 'n', name: 'N', unit: appStore.units.Force, convert: appStore.convertForce },
-  { key: 'vz', name: 'V', unit: appStore.units.Force, convert: appStore.convertForce },
-  { key: 'my', name: 'M', unit: appStore.units.Moment, convert: appStore.convertMoment },
-  { key: 'u', name: 'u', unit: appStore.units.Length, convert: appStore.convertLength },
-  { key: 'w', name: 'w', unit: appStore.units.Length, convert: appStore.convertLength },
-  { key: 'phi', name: 'φ', unit: 'rad', convert: (value: number) => value },
-]);
+const quantities = computed<Quantity[]>(() => {
+  const { v, r } = appStore.axes;
+  const across = (convert: (value: number) => number) => (value: number) => appStore.vertical(convert(value));
+
+  return [
+    { key: 'n', name: 'N', label: 'N', unit: appStore.units.Force, convert: appStore.convertForce },
+    {
+      key: 'vz',
+      name: `V${v}`,
+      label: `V<sub>${v}</sub>`,
+      unit: appStore.units.Force,
+      convert: across(appStore.convertForce),
+    },
+    {
+      key: 'my',
+      name: `M${r}`,
+      label: `M<sub>${r}</sub>`,
+      unit: appStore.units.Moment,
+      convert: appStore.convertMoment,
+    },
+    { key: 'u', name: 'ux', label: 'u<sub>x</sub>', unit: appStore.units.Length, convert: appStore.convertLength },
+    {
+      key: 'w',
+      name: `u${v}`,
+      label: `u<sub>${v}</sub>`,
+      unit: appStore.units.Length,
+      convert: across(appStore.convertLength),
+    },
+    { key: 'phi', name: 'φ', label: 'φ', unit: 'rad', convert: (value: number) => value },
+  ];
+});
 
 const quantityOf = (key: SectionQuantity) => quantities.value.find((q) => q.key === key)!;
 
@@ -583,8 +615,15 @@ const copy = () => {
         <template v-else>
           <div class="d-flex align-center ga-2 mb-1">
             <v-btn-toggle v-model="drawn" density="compact" variant="outlined" divided mandatory>
-              <v-btn v-for="q in quantities" :key="q.key" :value="q.key" size="x-small" class="text-none px-3">
-                {{ q.name }}
+              <v-btn
+                v-for="q in quantities"
+                :key="q.key"
+                :value="q.key"
+                :data-quantity="q.key"
+                size="x-small"
+                class="text-none px-3"
+              >
+                <span v-html="q.label"></span>
               </v-btn>
             </v-btn-toggle>
             <span class="text-caption text-medium-emphasis">[{{ quantityOf(drawn).unit }}]</span>
@@ -703,7 +742,7 @@ const copy = () => {
                 x<span class="text-medium-emphasis"> [{{ appStore.units.Length }}]</span>
               </th>
               <th v-for="q in quantities" :key="q.key" class="text-right px-2 font-weight-regular">
-                {{ q.name }}<span class="text-medium-emphasis"> [{{ q.unit }}]</span>
+                <span v-html="q.label"></span><span class="text-medium-emphasis"> [{{ q.unit }}]</span>
               </th>
             </tr>
           </thead>
