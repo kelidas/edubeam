@@ -18,26 +18,32 @@ import {
 } from '@/types/dimension';
 
 /**
- * What a load carries besides its numbers: whether it is switched on, and the name it goes by.
+ * What a load carries besides its numbers: whether it is switched on, the name it goes by, and -
+ * for a trapezoidal load - where on its element it sits.
  *
- * Written only when it is not the default, so a model of loads that are all on and unnamed
- * serialises to exactly what it did before - the shared link of such a model does not change.
+ * Written only where something is not the default, so a model of loads that are all on, unnamed
+ * and covering their elements serialises to exactly what it did before - the shared link of such a
+ * model does not change.
  */
-const loadMeta = (load: { active?: boolean; label?: string }) => {
-  const meta: { off?: 1; name?: string } = {};
+const loadMeta = (load: { active?: boolean; label?: string; from?: number; to?: number }) => {
+  const meta: { off?: 1; name?: string; from?: number; to?: number } = {};
 
   if (load.active === false) meta.off = 1;
   if (load.label) meta.name = load.label;
+  if (load.from !== undefined) meta.from = load.from;
+  if (load.to !== undefined) meta.to = load.to;
 
   return Object.keys(meta).length ? [meta] : [];
 };
 
 /** The other side of it: anything the model does not say stays at the default. */
-const applyLoadMeta = (load: { active: boolean; label: string }, meta: unknown) => {
-  const carried = (meta ?? {}) as { off?: number; name?: string };
+const applyLoadMeta = (load: { active: boolean; label: string; from?: number; to?: number }, meta: unknown) => {
+  const carried = (meta ?? {}) as { off?: number; name?: string; from?: number; to?: number };
 
   if (carried.off) load.active = false;
   if (typeof carried.name === 'string') load.label = carried.name;
+  if (typeof carried.from === 'number') load.from = carried.from;
+  if (typeof carried.to === 'number') load.to = carried.to;
 };
 
 /** `btoa` only accepts Latin-1; encode as UTF-8 bytes first so labels in any script survive. */

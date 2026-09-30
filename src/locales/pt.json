@@ -118,7 +118,8 @@
     "active": "Ativa",
     "switchOn": "Ativar esta carga",
     "switchOff": "Desativar esta carga",
-    "someSwitchedOff": "{n} desativadas"
+    "someSwitchedOff": "{n} desativadas",
+    "wholeElement": "elemento inteiro"
   },
   "tabs": {
     "nodes": "Nós",

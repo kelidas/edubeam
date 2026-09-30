@@ -118,7 +118,8 @@
     "active": "Вкл.",
     "switchOn": "Включить эту нагрузку",
     "switchOff": "Выключить эту нагрузку",
-    "someSwitchedOff": "{n} выключено"
+    "someSwitchedOff": "{n} выключено",
+    "wholeElement": "весь элемент"
   },
   "tabs": {
     "nodes": "Узлы",

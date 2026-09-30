@@ -118,6 +118,45 @@
               </v-col>
             </v-row>
           </v-col>
+          <!--
+            Where the load sits on the element, as distances from its first node. Left empty it
+            covers the whole element, which is what a trapezoidal load has always been; a uniform
+            load over part of an element is this with the same value typed twice.
+          -->
+          <v-col cols="12">
+            <v-row no-gutters>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="trapFrom"
+                  hide-details="auto"
+                  :rules="[minMax]"
+                  :placeholder="$t('loads.wholeElement')"
+                  persistent-placeholder
+                  :suffix="appStore.units.Length"
+                  @keydown="checkNumber($event)"
+                >
+                  <template #label
+                    ><span>x<sub>1</sub></span></template
+                  >
+                </v-text-field>
+              </v-col>
+              <v-col cols="12" md="6">
+                <v-text-field
+                  v-model="trapTo"
+                  hide-details="auto"
+                  :rules="[minMax]"
+                  :placeholder="$t('loads.wholeElement')"
+                  persistent-placeholder
+                  :suffix="appStore.units.Length"
+                  @keydown="checkNumber($event)"
+                >
+                  <template #label
+                    ><span>x<sub>2</sub></span></template
+                  >
+                </v-text-field>
+              </v-col>
+            </v-row>
+          </v-col>
         </template>
 
         <v-col
@@ -193,6 +232,8 @@ const {
   trapStartFz,
   trapEndFx,
   trapEndFz,
+  trapFrom,
+  trapTo,
   tc,
   tbt,
   position,

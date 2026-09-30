@@ -118,7 +118,8 @@
     "active": "Açık",
     "switchOn": "Bu yükü aç",
     "switchOff": "Bu yükü kapat",
-    "someSwitchedOff": "{n} kapalı"
+    "someSwitchedOff": "{n} kapalı",
+    "wholeElement": "tüm eleman"
   },
   "tabs": {
     "nodes": "Düğümler",

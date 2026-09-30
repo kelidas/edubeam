@@ -118,7 +118,8 @@
     "active": "On",
     "switchOn": "Switch this load on",
     "switchOff": "Switch this load off",
-    "someSwitchedOff": "{n} switched off"
+    "someSwitchedOff": "{n} switched off",
+    "wholeElement": "whole element"
   },
   "tabs": {
     "nodes": "Nodes",

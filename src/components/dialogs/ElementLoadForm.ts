@@ -122,6 +122,14 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
   const tc = ref('0.0');
   const tbt = ref('0.0');
   const position = ref('0.0');
+  /**
+   * Where a trapezoidal load sits on its element, as distances from the first node.
+   *
+   * Empty means the whole element, which is what these loads were before they could be given a
+   * position - so a load nobody touches here is saved, drawn and solved exactly as it was.
+   */
+  const trapFrom = ref('');
+  const trapTo = ref('');
   const lcs = ref(true);
 
   const fromMain = (value: string) => config.value.fromMain(appStore, parseFloat2(value));
@@ -141,6 +149,13 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
   const realTbt = computed(() => fromMoment(tbt.value));
   const realDist = computed(() => appStore.convertInverseLength(parseFloat2(position.value)));
 
+  /** What the model is given: a number where the box has one, and nothing where it is empty. */
+  const spanValue = (typed: string) =>
+    String(typed).trim() === '' ? undefined : appStore.convertInverseLength(parseFloat2(String(typed)));
+
+  const realTrapFrom = computed(() => spanValue(trapFrom.value));
+  const realTrapTo = computed(() => spanValue(trapTo.value));
+
   const target = computed(() => {
     if (!targetElementIdRef.value) return null;
     return projectStore.solver.domain.elements.get(targetElementIdRef.value) ?? null;
@@ -154,6 +169,8 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
 
   const minMax = (v: string | number) => {
     if (!target.value) return true;
+    // the span boxes are allowed to say nothing, which means the whole element
+    if (typeof v === 'string' && v.trim() === '') return true;
     const value = parseFloat2(v);
     if (value < 0 || value > elementLength.value) {
       return `Enter value between 0 and ${elementLength.value}`;
@@ -203,6 +220,10 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
       tc.value = String(toMain(load.values[0]));
       tbt.value = String(toMoment(load.values[1]));
     }
+    if (load instanceof BeamElementTrapezoidalEdgeLoad) {
+      trapFrom.value = load.from === undefined ? '' : String(appStore.convertLength(load.from));
+      trapTo.value = load.to === undefined ? '' : String(appStore.convertLength(load.to));
+    }
     if ('lcs' in load) {
       lcs.value = (load as { lcs: boolean }).lcs;
     }
@@ -219,7 +240,9 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
         load.target,
         [realTrapStartFx.value, realTrapStartFz.value],
         [realTrapEndFx.value, realTrapEndFz.value],
-        lcs.value
+        lcs.value,
+        realTrapFrom.value,
+        realTrapTo.value
       );
     }
     if (load instanceof BeamConcentratedLoad) {
@@ -251,7 +274,9 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
           elementId,
           [realTrapStartFx.value, realTrapStartFz.value],
           [realTrapEndFx.value, realTrapEndFz.value],
-          lcs.value
+          lcs.value,
+          realTrapFrom.value,
+          realTrapTo.value
         );
       case 'concentrated':
         return loadCase.createBeamConcentratedLoad(
@@ -286,7 +311,9 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
         domain,
         [realTrapStartFx.value, realTrapStartFz.value],
         [realTrapEndFx.value, realTrapEndFz.value],
-        lcs.value
+        lcs.value,
+        realTrapFrom.value,
+        realTrapTo.value
       );
     }
     if (loadTypeRef.value === 'concentrated') {
@@ -328,6 +355,8 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
     trapStartFz,
     trapEndFx,
     trapEndFz,
+    trapFrom,
+    trapTo,
     tc,
     tbt,
     position,
@@ -345,6 +374,8 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
       realTrapStartFz,
       realTrapEndFx,
       realTrapEndFz,
+      realTrapFrom,
+      realTrapTo,
       realDist,
       realTc,
       realTbt,

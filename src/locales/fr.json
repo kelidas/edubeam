@@ -118,7 +118,8 @@
     "active": "Act.",
     "switchOn": "Activer cette charge",
     "switchOff": "Désactiver cette charge",
-    "someSwitchedOff": "{n} désactivée(s)"
+    "someSwitchedOff": "{n} désactivée(s)",
+    "wholeElement": "élément entier"
   },
   "tabs": {
     "nodes": "Nœuds",

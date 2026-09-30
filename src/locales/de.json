@@ -118,7 +118,8 @@
     "active": "Ein",
     "switchOn": "Diese Last einschalten",
     "switchOff": "Diese Last ausschalten",
-    "someSwitchedOff": "{n} ausgeschaltet"
+    "someSwitchedOff": "{n} ausgeschaltet",
+    "wholeElement": "ganzes Element"
   },
   "tabs": {
     "nodes": "Knoten",

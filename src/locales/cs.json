@@ -184,7 +184,8 @@
     "active": "Zap.",
     "switchOn": "Zapnout toto zatížení",
     "switchOff": "Vypnout toto zatížení",
-    "someSwitchedOff": "{n} vypnuto"
+    "someSwitchedOff": "{n} vypnuto",
+    "wholeElement": "celý prvek"
   },
   "material": {
     "alphaT": "α_T",

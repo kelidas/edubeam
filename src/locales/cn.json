@@ -118,7 +118,8 @@
     "active": "启用",
     "switchOn": "启用此荷载",
     "switchOff": "停用此荷载",
-    "someSwitchedOff": "已停用 {n} 个"
+    "someSwitchedOff": "已停用 {n} 个",
+    "wholeElement": "整个单元"
   },
   "tabs": {
     "nodes": "节点",

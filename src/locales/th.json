@@ -118,7 +118,8 @@
     "active": "เปิด",
     "switchOn": "เปิดใช้น้ำหนักบรรทุกนี้",
     "switchOff": "ปิดใช้น้ำหนักบรรทุกนี้",
-    "someSwitchedOff": "ปิดใช้ {n} รายการ"
+    "someSwitchedOff": "ปิดใช้ {n} รายการ",
+    "wholeElement": "ทั้งชิ้นส่วน"
   },
   "tabs": {
     "nodes": "โหนด",

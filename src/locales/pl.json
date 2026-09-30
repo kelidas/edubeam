@@ -118,7 +118,8 @@
     "active": "Wł.",
     "switchOn": "Włącz to obciążenie",
     "switchOff": "Wyłącz to obciążenie",
-    "someSwitchedOff": "{n} wyłączonych"
+    "someSwitchedOff": "{n} wyłączonych",
+    "wholeElement": "cały element"
   },
   "tabs": {
     "nodes": "Węzły",

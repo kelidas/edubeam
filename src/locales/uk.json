@@ -118,7 +118,8 @@
     "active": "Увімк.",
     "switchOn": "Увімкнути це навантаження",
     "switchOff": "Вимкнути це навантаження",
-    "someSwitchedOff": "{n} вимкнено"
+    "someSwitchedOff": "{n} вимкнено",
+    "wholeElement": "весь елемент"
   },
   "tabs": {
     "nodes": "Вузли",
