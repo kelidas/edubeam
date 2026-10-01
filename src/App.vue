@@ -182,6 +182,12 @@ onMounted(() => {
       e.preventDefault();
       file.value.click();
     }
+
+    // Leave the tour. Harmless when none is running - finish() just sets the state it is
+    // already in.
+    if (e.key === 'Escape') {
+      endTour();
+    }
   });
 
   document.addEventListener(
