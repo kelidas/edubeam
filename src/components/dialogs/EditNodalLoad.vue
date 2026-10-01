@@ -69,7 +69,6 @@ const editNodalLoad = () => {
     formRef.value!.applyToLoad(load.value);
   });
 
-  projectStore.solve();
   projectStore.clearSelection();
   closeModal();
 };
