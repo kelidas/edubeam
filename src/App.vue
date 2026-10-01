@@ -122,9 +122,21 @@ const steps = computed(() => [
   },
 ]);
 
-/** Also offered in the menu, for anyone who skipped it. The display options are one of its stops. */
-const startTour = () => {
+/**
+ * Also offered in the menu, for anyone who skipped it. The display options are one of its stops.
+ *
+ * Most of the tour is about the drawing, and it can be started from any tab - the menu is always
+ * there. Started from Settings, say, a step about the drawing would have nothing to attach to: the
+ * pane it is about is hidden, so everything in it measures zero. Switching to it once, before the
+ * first step, is simpler than asking each step that needs it to switch for itself.
+ */
+const startTour = async () => {
+  const viewer = appStore.tabs.findIndex((tab) => tab.props.id === 'viewer');
+
+  if (viewer >= 0) appStore.tab = viewer;
+
   viewerStore.settingsOpen = true;
+  await nextTick();
   useVOnboarding(onboardingWrapper).start();
 };
 
