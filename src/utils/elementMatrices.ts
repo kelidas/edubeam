@@ -1,5 +1,5 @@
 import * as math from 'mathjs';
-import { Beam2D, DofID, type LabelType, type LoadCase, type Solver } from 'ts-fem';
+import { Beam2D, DofID, type LabelType, type LinearStaticSolver, type LoadCase, type Solver } from 'ts-fem';
 
 /**
  * The matrices and vectors behind a solved element, for reading rather than for solving.
@@ -285,35 +285,29 @@ export const nodalLoadVector = (solver: Solver, loadCase: LoadCase): Grid => {
 };
 
 /**
+ * `r`, the solved displacement at every equation: the free ones `Kr = f` was solved for, and the
+ * prescribed ones that were its input. The same length as the full structure matrix, unlike `b`,
+ * which stops at the free block.
+ */
+export const solutionVector = (loadCase: LoadCase): Grid => column(loadCase.r);
+
+/**
  * What the free block of the structure matrix is actually solved against.
  *
  * `Kr = f` holds for every equation, but only the unknowns are solved for - the prescribed ones
  * already have their answer. Moved to the other side, their contribution becomes a correction to
- * the load: `b = f[free] - K[free, prescribed] · r[prescribed]`, which is exactly the right-hand
- * side `solve()` hands to `lusolve` and never keeps afterwards. A zero prescribed displacement
- * (the ordinary case) leaves nothing to correct, and b is f[free] alone.
+ * the load: `b = f[free] - K[free, prescribed] · r[prescribed]`. ts-fem's own `solve()` computes
+ * exactly this and hands it to `lusolve`; `rightHandSide()` is the same arithmetic, kept in the
+ * library so this never drifts into a second copy of it.
  *
  * Defined only over the free block: a prescribed equation is not solved for, so there is no
  * right-hand side entry for one.
  */
-export const rightHandSide = (solver: Solver, loadCase: LoadCase): Grid => {
-  if (solver.neq === 0) return [];
-
+export const rightHandSide = (solver: LinearStaticSolver, loadCase: LoadCase): Grid => {
   const index = solver.loadCases.indexOf(loadCase);
   if (index < 0) return [];
 
-  const f = matrixColumn(toGrid(solver.f), index).slice(0, solver.neq);
-
-  if (solver.pneq === 0) return f;
-
-  const prescribed = column(loadCase.r)
-    .slice(solver.neq, solver.neq + solver.pneq)
-    .map(([value]) => value);
-  const coupling = toGrid(solver.k)
-    .slice(0, solver.neq)
-    .map((row) => row.slice(solver.neq, solver.neq + solver.pneq));
-
-  return f.map(([value], i) => [value - coupling[i].reduce((sum, k, j) => sum + k * prescribed[j], 0)]);
+  return column(solver.rightHandSide(index));
 };
 
 /** Whether the structure has been assembled and solved, so there is anything to read. */

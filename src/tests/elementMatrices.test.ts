@@ -11,6 +11,7 @@ import {
   occupied,
   only,
   rightHandSide,
+  solutionVector,
   structureDofNames,
   endForcesGlobal,
   endForcesLocal,
@@ -355,6 +356,26 @@ describe('the nodal load vector and the right-hand side', () => {
     const f = nodalLoadVector(store.solver, store.solver.loadCases[0]).flat().slice(0, store.solver.neq);
 
     expect(b).not.toEqual(f);
+  });
+
+  it('solutionVector spans the prescribed equations too, unlike b', () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz, DofID.Ry]);
+    domain.createNode('2', [L, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+    store.solver.loadCases[0].createPrescribedDisplacement('2', { [DofID.Dz]: 0.02 });
+
+    store.solve();
+
+    const r = solutionVector(store.solver.loadCases[0]).flat();
+
+    expect(r).toHaveLength(store.solver.neq + store.solver.pneq);
+    expect(r).toEqual(store.solver.loadCases[0].r.toArray());
+    near(r[r.length - 1], 0.02, 1e-9);
   });
 });
 

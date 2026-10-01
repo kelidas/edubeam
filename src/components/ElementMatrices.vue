@@ -12,6 +12,7 @@ import {
   occupied,
   only,
   rightHandSide,
+  solutionVector,
   structureDofNames,
   endForcesGlobal,
   endForcesLocal,
@@ -152,7 +153,7 @@ const view = computed(() => {
     const kOnly = only(grid, kept);
 
     /*
-     * F and b are properties of the whole solved system, not of whichever elements happen to be
+     * F, b and r are properties of the whole solved system, not of whichever elements happen to be
      * picked - assembling them from a selection the way K can be would silently be a different,
      * smaller structure's vectors. So they sit beside K only when K is the real thing.
      */
@@ -162,15 +163,16 @@ const view = computed(() => {
 
     const f = nodalLoadVector(projectStore.solver, loadCase.value);
     const b = rightHandSide(projectStore.solver, loadCase.value);
+    const r = solutionVector(loadCase.value);
 
     // b has no entry past the free block; NaN marks that and the cell shows a dash for it
     return {
-      grid: kOnly.map((row, r) => {
-        const i = kept[r];
-        return [...row, f[i]?.[0] ?? NaN, i < b.length ? b[i][0] : NaN];
+      grid: kOnly.map((row, idx) => {
+        const i = kept[idx];
+        return [...row, f[i]?.[0] ?? NaN, i < b.length ? b[i][0] : NaN, r[i]?.[0] ?? NaN];
       }),
       rows: kept.map((i) => names[i]),
-      cols: [...kept.map((i) => names[i]), 'F', 'b'],
+      cols: [...kept.map((i) => names[i]), 'F', 'b', 'r'],
     };
   }
 
