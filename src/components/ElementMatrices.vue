@@ -6,7 +6,9 @@ import { useAppStore } from '../store/app';
 import { formatResultAsText } from '../utils/numberDisplay';
 import {
   assembleFrom,
+  directNodalLoadVector,
   elementDofNames,
+  elementEquivalentLoadVector,
   ELEMENT_DOFS,
   nodalLoadVector,
   occupied,
@@ -161,6 +163,8 @@ const view = computed(() => {
       return { grid: kOnly, rows: kept.map((i) => names[i]), cols: kept.map((i) => names[i]) };
     }
 
+    const fNode = directNodalLoadVector(projectStore.solver, loadCase.value);
+    const fElem = elementEquivalentLoadVector(projectStore.solver, loadCase.value);
     const f = nodalLoadVector(projectStore.solver, loadCase.value);
     const b = rightHandSide(projectStore.solver, loadCase.value);
     const r = solutionVector(loadCase.value);
@@ -169,10 +173,17 @@ const view = computed(() => {
     return {
       grid: kOnly.map((row, idx) => {
         const i = kept[idx];
-        return [...row, f[i]?.[0] ?? NaN, i < b.length ? b[i][0] : NaN, r[i]?.[0] ?? NaN];
+        return [
+          ...row,
+          fNode[i]?.[0] ?? NaN,
+          fElem[i]?.[0] ?? NaN,
+          f[i]?.[0] ?? NaN,
+          i < b.length ? b[i][0] : NaN,
+          r[i]?.[0] ?? NaN,
+        ];
       }),
       rows: kept.map((i) => names[i]),
-      cols: [...kept.map((i) => names[i]), 'F', 'b', 'r'],
+      cols: [...kept.map((i) => names[i]), 'F node', 'F elem', 'F', 'b', 'r'],
     };
   }
 

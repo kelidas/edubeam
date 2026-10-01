@@ -285,6 +285,28 @@ export const nodalLoadVector = (solver: Solver, loadCase: LoadCase): Grid => {
 };
 
 /**
+ * F torn into the two things that are added together to make it: a concentrated load entered
+ * directly on a node, and an element load's own work-equivalent nodal forces - a distributed load
+ * on a beam, say, carries no meaning at a node until it is reduced to one. ts-fem keeps the two
+ * apart while assembling and sums them into `f`; these read the parts before that sum.
+ */
+export const directNodalLoadVector = (solver: Solver, loadCase: LoadCase): Grid => {
+  const index = solver.loadCases.indexOf(loadCase);
+
+  if (index < 0) return [];
+
+  return matrixColumn(toGrid(solver.fNodal), index);
+};
+
+export const elementEquivalentLoadVector = (solver: Solver, loadCase: LoadCase): Grid => {
+  const index = solver.loadCases.indexOf(loadCase);
+
+  if (index < 0) return [];
+
+  return matrixColumn(toGrid(solver.fElement), index);
+};
+
+/**
  * `r`, the solved displacement at every equation: the free ones `Kr = f` was solved for, and the
  * prescribed ones that were its input. The same length as the full structure matrix, unlike `b`,
  * which stops at the free block.

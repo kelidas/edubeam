@@ -5,7 +5,9 @@ import { useProjectStore } from '@/store/project';
 import { changeLabel } from '@/utils';
 import {
   assembleFrom,
+  directNodalLoadVector,
   elementDofNames,
+  elementEquivalentLoadVector,
   ELEMENT_DOFS,
   nodalLoadVector,
   occupied,
@@ -321,6 +323,24 @@ describe('the nodal load vector and the right-hand side', () => {
     store.solve();
 
     expect(rightHandSide(store.solver, store.solver.loadCases[0])).toHaveLength(store.solver.neq);
+  });
+
+  it('splits into a direct nodal part and an element-equivalent part that sum back to it', () => {
+    const store = buildLoaded();
+    store.solver.loadCases[0].createNodalLoad('2', { [DofID.Dz]: -500 });
+    store.solve();
+
+    const loadCase = store.solver.loadCases[0];
+    const fNode = directNodalLoadVector(store.solver, loadCase).flat();
+    const fElem = elementEquivalentLoadVector(store.solver, loadCase).flat();
+    const f = nodalLoadVector(store.solver, loadCase).flat();
+
+    f.forEach((value, i) => near(value, fNode[i] + fElem[i], 1e-9));
+
+    // the nodal load alone, untouched by the element load's own equivalent force
+    const atNode2Dz = store.solver.nodeCodeNumbers.get('2')![DofID.Dz];
+    expect(fNode[atNode2Dz]).toBe(-500);
+    expect(fElem[atNode2Dz]).not.toBe(0);
   });
 
   /**
