@@ -73,9 +73,9 @@
     "fNodeHint": "A load entered directly on this degree of freedom.",
     "fElemHint": "An element load's own work-equivalent nodal forces.",
     "fTotalHint": "F node + F elem, before any support is accounted for.",
-    "krHint": "K times the solved r. Equals F where the equation is free; F plus the reaction where it is prescribed.",
     "bHint": "What the free block is solved against: f minus the prescribed block's contribution.",
-    "rHint": "The solved displacement: free equations and prescribed ones alike."
+    "rHint": "The solved displacement: free equations and prescribed ones alike.",
+    "couplingHint": "K[free,prescribed] times r[prescribed]: what a settlement couples back into the free block. b = F minus this."
   },
   "nodes": {
     "addNode": "Adicionar nó",

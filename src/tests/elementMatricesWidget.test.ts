@@ -139,16 +139,35 @@ describe('the Structure F tab', () => {
 
   const colHeaders = (wrapper: ReturnType<typeof open>) => wrapper.findAll('thead th').map((th) => th.text());
 
-  it('offers F node, F elem, F, K·r, b and r as a short header plus a tooltip, not a paragraph', async () => {
+  it('offers F node, F elem, F, K·rₚ, b and r as a short header plus a tooltip, not a paragraph', async () => {
     buildLoaded();
     const wrapper = open({});
 
     await openTab(wrapper, 'Structure F');
     const headers = wrapper.findAll('thead th').filter((th, i) => i > 0);
 
-    expect(colHeaders(wrapper)).toEqual(['', 'F node', 'F elem', 'F', 'K·r', 'b', 'r']);
+    expect(colHeaders(wrapper)).toEqual(['', 'F node', 'F elem', 'F', 'K·rₚ', 'b', 'r']);
     // the explanation lives in each header's own tooltip, not in a sentence above the table
     headers.forEach((th) => expect(th.attributes('title')).toBeTruthy());
     expect(wrapper.text()).not.toContain('direct nodal load');
+  });
+
+  it("filters to a selection's own rows rather than re-assembling a smaller F", async () => {
+    const store = buildLoaded();
+    const wrapper = open({});
+
+    // element 'a' runs between nodes 1 and 2; node 3 is not its concern
+    store.selection2.elements = ['a'];
+    await nextTick();
+    await openTab(wrapper, 'Structure F');
+
+    const checkbox = wrapper.findAll('.v-checkbox-btn').find((c) => c.text().startsWith('Selected elem'))!;
+    await checkbox.find('input').setValue(true);
+    await nextTick();
+
+    const labels = wrapper.findAll('tbody th').map((th) => th.text());
+
+    expect(labels.length).toBeGreaterThan(0);
+    expect(labels.some((l) => l.includes('(3)'))).toBe(false);
   });
 });

@@ -13,9 +13,9 @@ import {
   nodalLoadVector,
   occupied,
   only,
+  prescribedCoupling,
   rightHandSide,
   solutionVector,
-  stiffnessTimesSolution,
   structureDofNames,
   endForcesGlobal,
   endForcesLocal,
@@ -128,10 +128,27 @@ const VECTOR_COLUMNS = [
   ['F node', 'common.fNodeHint'],
   ['F elem', 'common.fElemHint'],
   ['F', 'common.fTotalHint'],
-  ['K·r', 'common.krHint'],
+  ['K·rₚ', 'common.couplingHint'],
   ['b', 'common.bHint'],
   ['r', 'common.rHint'],
 ] as const;
+
+/**
+ * The equations "Structure F" shows: the free block, or everything - filtered down to a selection's
+ * own rows, same as K can be, but by filtering the real, whole-system vectors rather than
+ * re-assembling a smaller structure's worth of them, which would be a different reading entirely.
+ */
+const structureFRows = computed(() => {
+  if (!hasSystemMatrix(projectStore.solver)) return [];
+
+  const size = reduced.value ? projectStore.solver.neq : projectStore.solver.neq + projectStore.solver.pneq;
+  const all = Array.from({ length: size }, (_, i) => i);
+
+  if (!selectionOnly.value || selected.value.length === 0) return all;
+
+  const equations = new Set(selected.value.flatMap((el) => el.getLocationArray()));
+  return all.filter((i) => equations.has(i));
+});
 
 /** What the open tab puts in the one table below: its numbers, and the names around them. */
 const view = computed(() => {
@@ -173,30 +190,27 @@ const view = computed(() => {
   }
 
   if (tab.value === 'structureF') {
-    // F, b and r are properties of the whole solved system, so this tab has no "selected elements
-    // only" of its own - there is no smaller structure's worth of them to show instead.
     if (!hasSystemMatrix(projectStore.solver) || !loadCase.value) return nothing;
 
     const names = structureDofNames(projectStore.solver);
     const fNode = directNodalLoadVector(projectStore.solver, loadCase.value);
     const fElem = elementEquivalentLoadVector(projectStore.solver, loadCase.value);
     const f = nodalLoadVector(projectStore.solver, loadCase.value);
-    const kr = stiffnessTimesSolution(projectStore.solver, loadCase.value);
+    const coupling = prescribedCoupling(projectStore.solver, loadCase.value);
     const b = rightHandSide(projectStore.solver, loadCase.value);
     const r = solutionVector(loadCase.value);
 
-    // b has no entry past the free block; NaN marks that and the cell shows a dash for it
+    // the coupling and b have no entry past the free block; NaN marks that and the cell shows a dash
     const row = (i: number) => [
       fNode[i]?.[0] ?? NaN,
       fElem[i]?.[0] ?? NaN,
       f[i]?.[0] ?? NaN,
-      kr[i]?.[0] ?? NaN,
+      i < coupling.length ? coupling[i][0] : NaN,
       i < b.length ? b[i][0] : NaN,
       r[i]?.[0] ?? NaN,
     ];
 
-    const size = reduced.value ? projectStore.solver.neq : names.length;
-    const all = Array.from({ length: size }, (_, i) => i);
+    const all = structureFRows.value;
     const kept = hideEmpty.value ? all.filter((i) => row(i).some((v) => !Number.isNaN(v) && v !== 0)) : all;
 
     return {
@@ -225,9 +239,7 @@ const dropped = computed(() => {
   if (tab.value === 'structureF') {
     if (!loadCase.value) return 0;
 
-    const size = reduced.value ? projectStore.solver.neq : projectStore.solver.neq + projectStore.solver.pneq;
-
-    return size - view.value.grid.length;
+    return structureFRows.value.length - view.value.grid.length;
   }
 
   return 0;
@@ -291,12 +303,13 @@ const copy = () => {
             :label="$t('common.freeBlockOnly')"
           />
           <!--
-            One element's contribution sitting in the structure's own numbering is where the two
-            pictures meet, so it is worth being able to see it on its own. F, b and r have no such
-            reading - they belong to the whole system - so the switch is K's alone.
+            On K this re-assembles from only the selected elements' own stiffness - a different,
+            smaller structure. F, b and r cannot be re-assembled that way without becoming a
+            different system's vectors, so on Structure F the same switch instead filters which of
+            the real, whole-system rows are shown.
           -->
           <v-checkbox-btn
-            v-if="tab === 'structureK'"
+            v-if="tab === 'structureK' || tab === 'structureF'"
             v-model="selectionOnly"
             :disabled="selected.length === 0"
             density="compact"

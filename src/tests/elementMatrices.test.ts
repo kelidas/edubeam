@@ -12,9 +12,9 @@ import {
   nodalLoadVector,
   occupied,
   only,
+  prescribedCoupling,
   rightHandSide,
   solutionVector,
-  stiffnessTimesSolution,
   structureDofNames,
   endForcesGlobal,
   endForcesLocal,
@@ -399,7 +399,7 @@ describe('the nodal load vector and the right-hand side', () => {
     near(r[r.length - 1], 0.02, 1e-9);
   });
 
-  it('K·r reproduces F on a free equation, and by the reaction on a prescribed one', () => {
+  it('is the coupling b is built from: zero with a plain support, nonzero with a settlement', () => {
     const store = useProjectStore();
     const domain = store.solver.domain;
     const loadCase = store.solver.loadCases[0];
@@ -409,20 +409,45 @@ describe('the nodal load vector and the right-hand side', () => {
     domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz, DofID.Ry]);
     domain.createNode('2', [L, 0, 0], [DofID.Dx, DofID.Dz]);
     domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+    // a plain support first: prescribed, but at its default zero
+    loadCase.createPrescribedDisplacement('2', {});
+
+    store.solve();
+
+    expect(
+      prescribedCoupling(store.solver, loadCase)
+        .flat()
+        .every((v) => v === 0)
+    ).toBe(true);
+    expect(rightHandSide(store.solver, loadCase)).toEqual(
+      nodalLoadVector(store.solver, loadCase).slice(0, store.solver.neq)
+    );
+  });
+
+  it('with no load at all, is what makes b nonzero when a support has settled', () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+    const loadCase = store.solver.loadCases[0];
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz, DofID.Ry]);
+    domain.createNode('2', [L, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+    // no nodal load, no element load - F is zero everywhere
     loadCase.createPrescribedDisplacement('2', { [DofID.Dz]: 0.02 });
 
     store.solve();
 
-    const kr = stiffnessTimesSolution(store.solver, loadCase).flat();
     const f = nodalLoadVector(store.solver, loadCase).flat();
-    const atNode2Dz = store.solver.nodeCodeNumbers.get('2')![DofID.Dz];
+    expect(f.every((v) => v === 0)).toBe(true);
 
-    // every free equation: K·r is exactly what solve() built b from
-    for (let i = 0; i < store.solver.neq; i++) near(kr[i], f[i], 1e-6);
+    const coupling = prescribedCoupling(store.solver, loadCase).flat();
+    const b = rightHandSide(store.solver, loadCase).flat();
 
-    // the prescribed one: K·r departs from F by precisely the reaction there
-    const reaction = loadCase.R.toArray()[atNode2Dz - store.solver.neq] as number;
-    near(kr[atNode2Dz], f[atNode2Dz] + reaction, 1e-6);
+    expect(coupling.some((v) => v !== 0)).toBe(true);
+    // b = F - coupling, so with F at zero, b is just the coupling negated
+    b.forEach((value, i) => near(value, -coupling[i], 1e-9));
   });
 });
 
