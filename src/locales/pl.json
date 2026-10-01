@@ -183,7 +183,14 @@
       "moment": "Moment zginający",
       "pressure": "Naprężenie",
       "area": "Pole",
-      "areaM2": "Geometryczny moment bezwładności"
+      "areaM2": "Geometryczny moment bezwładności",
+      "system": "Układ jednostek",
+      "systemSI": "SI (metryczny)",
+      "systemUS": "Amerykański (imperialny)",
+      "systemCustom": "Własny",
+      "temperature": "Temperatura",
+      "sectionLength": "Wymiary przekroju",
+      "displacement": "Przemieszczenie"
     },
     "grid": "Siatka",
     "show_grid": "Pokaż siatkę",
@@ -371,7 +378,10 @@
       "shape": "Kształt",
       "noShape": "Brak kształtu wielokątnego",
       "centroidal": "centralny",
-      "centroidalNote": "Wszystkie momenty bezwładności liczone są względem osi przechodzących przez środek ciężkości; I₁, I₂ to wartości główne, a α to kąt od osi y do osi 1."
+      "centroidalNote": "Wszystkie momenty bezwładności liczone są względem osi przechodzących przez środek ciężkości; I₁, I₂ to wartości główne, a α to kąt od osi y do osi 1.",
+      "outOfPlaneNote": "Przekrój nie jest symetryczny względem płaszczyzny ramy. Analiza 2D jest dokładna tylko wtedy, gdy pręt jest na całej długości zabezpieczony przed przemieszczeniem bocznym (poza ekran) i skręceniem, np. przez płytę lub gęsto rozmieszczone stężenia; same podpory w węzłach nie wystarczą. Swobodny pręt dodatkowo się skręca, ponieważ obciążenia nie działają w środku ścinania, a to skręcenie nie jest uwzględnione w przemieszczeniach.",
+      "outOfPlaneRestrained": "Stężony bocznie i przeciw skręceniu na całej długości: {inertia}",
+      "outOfPlaneFree": "Swobodny w kierunku bocznym (skręcenie nadal nieuwzględnione): {inertia}"
     }
   },
   "tooltip": {
@@ -476,12 +486,10 @@
       }
     }
   },
-  "emptyModel": {
-    "message": "Model jest pusty. Narysuj belkę, aby zacząć."
-  },
   "welcome": {
     "title": "Witamy w <span class=\"edubeam\">edubeam</span>! 🚀",
-    "description": "Modeluj belki, ramy i kratownice i obserwuj siły wewnętrzne już podczas rysowania. Jak chcesz zacząć?",
+    "description": "Modeluj belki, ramy i kratownice i obserwuj siły wewnętrzne już podczas rysowania.",
+    "start": "Jak chcesz zacząć?",
     "showAround": "Oprowadź mnie",
     "showAroundHint": "Krótki przegląd widoku, opcji wyświetlania i dolnego panelu.",
     "drawFirstBeam": "Narysuj pierwszą belkę",
@@ -520,6 +528,7 @@
     "enterValue": "Wprowadź wartość",
     "invalidNumber": "Nieprawidłowa liczba",
     "positiveNumber": "Wprowadź liczbę większą od zera",
+    "between": "Wprowadź wartość od {min} do {max}",
     "sameNodes": "Element musi łączyć dwa różne węzły",
     "materialInUse": "Materiał jest używany przez elementy: {elements}. Przed usunięciem przypisz im inny materiał.",
     "crossSectionInUse": "Przekrój jest używany przez elementy: {elements}. Przed usunięciem przypisz im inny przekrój."
@@ -607,7 +616,8 @@
     "addCrossSectionFirst": "Najpierw dodaj przekrój.",
     "selectMaterialAndCrossSection": "Wybierz materiał i przekrój.",
     "labelInUse": "Etykieta {label} jest już używana.",
-    "noMaterialOrCrossSection": "Element nie ma określonego materiału lub przekroju."
+    "noMaterialOrCrossSection": "Element nie ma określonego materiału lub przekroju.",
+    "elementMissing": "Element {label} już nie istnieje."
   },
   "help": {
     "aria": "Pokaż pomoc",

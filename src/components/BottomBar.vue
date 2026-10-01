@@ -736,7 +736,7 @@
               >
                 <label class="input-before">D<sub>x</sub></label>
                 <input
-                  :value="appStore.convertLength(item.ref.prescribedValues[0])"
+                  :value="appStore.convertDisplacement(item.ref.prescribedValues[0])"
                   class="inline-edit"
                   :disabled="!isDofSupported(item.ref.target, DofID.Dx)"
                   @keydown="checkNumber($event)"
@@ -746,11 +746,11 @@
                       'prescribedValues',
                       0,
                       $event.target as HTMLInputElement,
-                      appStore.convertInverseLength
+                      appStore.convertInverseDisplacement
                     )
                   "
                 />
-                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Displacement)"></div>
               </div>
               <div
                 class="inline-edit-group load mr-2"
@@ -761,17 +761,17 @@
                   >D<sub>{{ appStore.axes.v }}</sub></span
                 >
                 <input
-                  :value="appStore.vertical(appStore.convertLength(item.ref.prescribedValues[2]))"
+                  :value="appStore.vertical(appStore.convertDisplacement(item.ref.prescribedValues[2]))"
                   class="inline-edit"
                   :disabled="!isDofSupported(item.ref.target, DofID.Dz)"
                   @keydown="checkNumber($event)"
                   @change="
                     changeSetArrayItem(item.ref, 'prescribedValues', 2, $event.target as HTMLInputElement, (v) =>
-                      appStore.vertical(appStore.convertInverseLength(v))
+                      appStore.vertical(appStore.convertInverseDisplacement(v))
                     )
                   "
                 />
-                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+                <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Displacement)"></div>
               </div>
               <div
                 class="inline-edit-group load"
@@ -1279,18 +1279,20 @@
           </template>
           <template #item.alpha="{ item }">
             <input
-              :value="item.alpha"
+              :value="formatScientificNumber(appStore.convertThermalExpansion(item.alpha))"
               class="inline-edit"
               @keydown="checkNumber($event)"
-              @change="changeItem(item, 'alpha', $event.target as HTMLInputElement)"
+              @change="
+                changeItem(item, 'alpha', $event.target as HTMLInputElement, appStore.convertInverseThermalExpansion)
+              "
             />
           </template>
           <template #item.d="{ item }">
             <input
-              :value="item.d"
+              :value="formatScientificNumber(appStore.convertDensity(item.d))"
               class="inline-edit"
               @keydown="checkNumber($event)"
-              @change="changeItem(item, 'd', $event.target as HTMLInputElement)"
+              @change="changeItem(item, 'd', $event.target as HTMLInputElement, appStore.convertInverseDensity)"
             />
           </template>
           <template #item.actions="{ item }">
@@ -1424,14 +1426,14 @@
           </template>
           <template #item.h="{ item }">
             <span v-if="item.shape" class="derived-value" :title="$t('crossSection.derivedFromShape')">
-              {{ formatScientificNumber(appStore.convertLength(item.h)) }}
+              {{ formatScientificNumber(appStore.convertSectionLength(item.h)) }}
             </span>
             <input
               v-else
-              :value="formatScientificNumber(appStore.convertLength(item.h))"
+              :value="formatScientificNumber(appStore.convertSectionLength(item.h))"
               class="inline-edit"
               @keydown="checkNumber($event)"
-              @change="changeItem(item, 'h', $event.target as HTMLInputElement, appStore.convertInverseLength)"
+              @change="changeItem(item, 'h', $event.target as HTMLInputElement, appStore.convertInverseSectionLength)"
             />
           </template>
           <template #item.k="{ item }">
@@ -1557,12 +1559,12 @@
                       class="inline-edit fw pl-1"
                       v-html="
                         appStore.formatResultHTML(
-                          appStore.convertLength(item.getUnknowns(useProjectStore().loadCase, [DofID.Dx]))
+                          appStore.convertDisplacement(item.getUnknowns(useProjectStore().loadCase, [DofID.Dx]))
                         )
                       "
                     />
                     <div v-else class="inline-edit fw pl-1" v-html="appStore.formatResultHTML(0)"></div>
-                    <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+                    <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Displacement)"></div>
                   </div>
                   <div class="inline-edit-group mr-2">
                     <label class="input-before"
@@ -1577,13 +1579,13 @@
                       v-html="
                         appStore.formatResultHTML(
                           appStore.vertical(
-                            appStore.convertLength(item.getUnknowns(useProjectStore().loadCase, [DofID.Dz]))
+                            appStore.convertDisplacement(item.getUnknowns(useProjectStore().loadCase, [DofID.Dz]))
                           )
                         )
                       "
                     />
                     <div v-else class="inline-edit fw pl-1" v-html="appStore.formatResultHTML(0)"></div>
-                    <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Length)"></div>
+                    <div class="input-after" v-html="formatMeasureAsHTML(appStore.units.Displacement)"></div>
                   </div>
                   <div class="inline-edit-group mr-2">
                     <label class="input-before"
@@ -1846,10 +1848,11 @@ const elementLoadMomentUnits = (load: Load) => loadConfig(load).getMomentUnits(a
 // A displacement can only be prescribed on a DOF the node actually constrains, so the
 // other components stay read-only here just as they are in the add/edit dialogs.
 onMounted(() => {
+  // Enter or Escape in a field leaves it, which commits an inline edit. Only a field: blurring
+  // whatever has focus threw keyboard users off every button and card they pressed Enter on.
   window.addEventListener('keydown', (e) => {
-    if (e.key == 'Escape' || e.keyCode === 13) {
-      (document.activeElement as HTMLElement).blur();
-    }
+    const field = document.activeElement;
+    if ((e.key === 'Escape' || e.key === 'Enter') && field instanceof HTMLInputElement) field.blur();
   });
 });
 
@@ -2209,9 +2212,9 @@ const nodeLoadChips = (item: Node): NodeLoadChip[] => {
     const tmp = [];
     // Displacements are lengths; a prescribed rotation is stored and shown in radians.
     if (DofID.Dx in values && Math.abs(values[DofID.Dx]) > 1e-12)
-      tmp.push('D<sub>x</sub> = ' + appStore.convertLength(values[DofID.Dx]));
+      tmp.push('D<sub>x</sub> = ' + appStore.convertDisplacement(values[DofID.Dx]));
     if (DofID.Dz in values && Math.abs(values[DofID.Dz]) > 1e-12)
-      tmp.push(`D<sub>${appStore.axes.v}</sub> = ` + appStore.vertical(appStore.convertLength(values[DofID.Dz])));
+      tmp.push(`D<sub>${appStore.axes.v}</sub> = ` + appStore.vertical(appStore.convertDisplacement(values[DofID.Dz])));
     if (DofID.Ry in values && Math.abs(values[DofID.Ry]) > 1e-12)
       tmp.push(`R<sub>${appStore.axes.r}</sub> = ` + values[DofID.Ry]);
 
@@ -2571,7 +2574,7 @@ const headers = reactive({
     },
     {
       title: 'crossSection.h',
-      units: 'Length',
+      units: 'SectionLength',
       key: 'h',
       width: 160,
     },

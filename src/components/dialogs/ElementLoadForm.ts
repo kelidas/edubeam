@@ -1,7 +1,9 @@
 import { ref, computed, type Ref } from 'vue';
 import { useAppStore } from '@/store/app';
 import { useProjectStore } from '@/store/project';
-import { parseFloat2 } from '@/utils';
+import { parseFloat2, rangeRule } from '@/utils';
+import { newPointLoadPosition } from '@/utils/newEntityDefaults';
+import { presetFamily } from '@/utils/presetFamily';
 import {
   BeamElementLoad,
   BeamElementUniformEdgeLoad,
@@ -171,18 +173,14 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
     if (!target.value) return true;
     // the span boxes are allowed to say nothing, which means the whole element
     if (typeof v === 'string' && v.trim() === '') return true;
-    const value = parseFloat2(v);
-    if (value < 0 || value > elementLength.value) {
-      return `Enter value between 0 and ${elementLength.value}`;
-    }
-    return true;
+    return rangeRule(0, elementLength.value, appStore.units.Length)(v);
   };
 
   /** Places a concentrated load/deformation at a sensible default offset from the first node. */
   const resetPositionToDefault = () => {
     if (!target.value) return;
     const l = target.value.computeGeo().l;
-    position.value = String(appStore.convertLength(Math.max(Math.min(Math.floor(l / 2), 5.0), l / 10)));
+    position.value = String(appStore.convertLength(newPointLoadPosition(l, presetFamily(appStore.units.Length))));
   };
 
   /**

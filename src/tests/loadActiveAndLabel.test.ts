@@ -121,10 +121,12 @@ describe('a load that is switched off or named', () => {
 
     const units = {
       lengthLabel: 'm',
+      displacementLabel: 'm',
       angleLabel: 'rad',
       forceLabel: 'kN',
       momentLabel: 'kNm',
       length: (v: number) => v,
+      displacement: (v: number) => v,
       force: (v: number) => v,
       moment: (v: number) => v,
     };

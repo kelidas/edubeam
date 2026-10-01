@@ -21,15 +21,17 @@ export function useNodalLoadForm(loadTypeRef: Ref<NodalLoadKind>, nodeIdRef: Ref
 
   const mainLabel = computed(() => (loadTypeRef.value === 'force' ? 'F' : 'D'));
   const momentLabel = computed(() => (loadTypeRef.value === 'force' ? 'M' : 'R'));
-  const mainUnits = computed(() => (loadTypeRef.value === 'force' ? appStore.units.Force : appStore.units.Length));
+  const mainUnits = computed(() =>
+    loadTypeRef.value === 'force' ? appStore.units.Force : appStore.units.Displacement
+  );
   const momentUnits = computed(() => (loadTypeRef.value === 'force' ? appStore.units.Moment : 'rad'));
 
   const toMain = (value: number) =>
-    loadTypeRef.value === 'force' ? appStore.convertForce(value) : appStore.convertLength(value);
+    loadTypeRef.value === 'force' ? appStore.convertForce(value) : appStore.convertDisplacement(value);
   const fromMain = (value: string) =>
     loadTypeRef.value === 'force'
       ? appStore.convertInverseForce(parseFloat2(value))
-      : appStore.convertInverseLength(parseFloat2(value));
+      : appStore.convertInverseDisplacement(parseFloat2(value));
   // A prescribed rotation is stored and displayed in radians - no conversion.
   const toMoment = (value: number) => (loadTypeRef.value === 'force' ? appStore.convertMoment(value) : value);
   const fromMoment = (value: string) =>

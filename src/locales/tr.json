@@ -183,7 +183,14 @@
       "moment": "Eğilme momenti",
       "pressure": "Basınç",
       "area": "Alan",
-      "areaM2": "Atalet momenti"
+      "areaM2": "Atalet momenti",
+      "system": "Birim sistemi",
+      "systemSI": "SI (metrik)",
+      "systemUS": "ABD (emperyal)",
+      "systemCustom": "Özel",
+      "temperature": "Sıcaklık",
+      "sectionLength": "Kesit boyutları",
+      "displacement": "Yer değiştirme"
     },
     "grid": "Izgara",
     "show_grid": "Izgarayı göster",
@@ -371,7 +378,10 @@
       "shape": "Şekil",
       "noShape": "Çokgen kesit yok",
       "centroidal": "ağırlık merkezine göre",
-      "centroidalNote": "Tüm atalet momentleri ağırlık merkezinden geçen eksenlere göre hesaplanır; I₁ ve I₂ asal atalet momentleri, α ise y ekseninden 1 eksenine olan açıdır."
+      "centroidalNote": "Tüm atalet momentleri ağırlık merkezinden geçen eksenlere göre hesaplanır; I₁ ve I₂ asal atalet momentleri, α ise y ekseninden 1 eksenine olan açıdır.",
+      "outOfPlaneNote": "Kesit çerçeve düzlemine göre simetrik değildir. 2B analiz yalnızca eleman tüm boyu boyunca yanal yer değiştirmeye (ekranın dışına) ve burulmaya karşı tutulduğunda, örneğin bir döşeme veya sık aralıklı çaprazlarla, kesindir; yalnızca düğümlerdeki mesnetler yeterli değildir. Serbest bir eleman, yükler kayma merkezinden geçmediği için ayrıca burulur ve bu burulma yer değiştirmelere dahil edilmez.",
+      "outOfPlaneRestrained": "Tüm boyu boyunca yanal olarak ve burulmaya karşı tutulu: {inertia}",
+      "outOfPlaneFree": "Yanal yönde serbest (burulma yine dahil değil): {inertia}"
     }
   },
   "tooltip": {
@@ -476,12 +486,10 @@
       }
     }
   },
-  "emptyModel": {
-    "message": "Model boş. Başlamak için bir kiriş çizin."
-  },
   "welcome": {
     "title": "<span class=\"edubeam\">edubeam</span>'e hoş geldiniz! 🚀",
-    "description": "Kiriş, çerçeve ve kafes sistemleri modelleyin, iç kuvvetleri çizerken görün. Nasıl başlamak istersiniz?",
+    "description": "Kiriş, çerçeve ve kafes sistemleri modelleyin, iç kuvvetleri çizerken görün.",
+    "start": "Nasıl başlamak istersiniz?",
     "showAround": "Beni gezdir",
     "showAroundHint": "Görüntüleyiciye, görünüm seçeneklerine ve alt çubuğa kısa bir bakış.",
     "drawFirstBeam": "İlk kirişinizi çizin",
@@ -520,6 +528,7 @@
     "enterValue": "Bir değer girin",
     "invalidNumber": "Geçersiz sayı",
     "positiveNumber": "Sıfırdan büyük bir sayı girin",
+    "between": "{min} ile {max} arasında bir değer girin",
     "sameNodes": "Bir eleman iki farklı düğümü birbirine bağlamalıdır",
     "materialInUse": "Bu malzeme şu elemanlarda kullanılıyor: {elements}. Silmeden önce bu elemanlara başka bir malzeme atayın.",
     "crossSectionInUse": "Bu kesit şu elemanlarda kullanılıyor: {elements}. Silmeden önce bu elemanlara başka bir kesit atayın."
@@ -607,7 +616,8 @@
     "addCrossSectionFirst": "Lütfen önce bir kesit ekleyin.",
     "selectMaterialAndCrossSection": "Lütfen bir malzeme ve bir kesit seçin.",
     "labelInUse": "{label} etiketi zaten kullanılıyor.",
-    "noMaterialOrCrossSection": "Elemana malzeme veya kesit atanmamış."
+    "noMaterialOrCrossSection": "Elemana malzeme veya kesit atanmamış.",
+    "elementMissing": "{label} elemanı artık mevcut değil."
   },
   "help": {
     "aria": "Yardımı göster",

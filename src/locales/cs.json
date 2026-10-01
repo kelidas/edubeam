@@ -121,7 +121,14 @@
       "moment": "Ohybový moment",
       "mass": "Hmotnost",
       "pressure": "Napětí",
-      "units": "Jednotky"
+      "units": "Jednotky",
+      "system": "Soustava jednotek",
+      "systemSI": "SI (metrická)",
+      "systemUS": "Americká (imperiální)",
+      "systemCustom": "Vlastní",
+      "temperature": "Teplota",
+      "sectionLength": "Rozměry průřezu",
+      "displacement": "Posun"
     },
     "show_grid": "Zobrazit mřížku",
     "mouse": {
@@ -371,7 +378,10 @@
       "shape": "Tvar",
       "noShape": "Bez polygonálního tvaru",
       "centroidal": "těžišťové",
-      "centroidalNote": "Všechny momenty setrvačnosti jsou vztaženy k osám procházejícím těžištěm; I₁, I₂ jsou hlavní momenty a α je úhel od osy y k ose 1."
+      "centroidalNote": "Všechny momenty setrvačnosti jsou vztaženy k osám procházejícím těžištěm; I₁, I₂ jsou hlavní momenty a α je úhel od osy y k ose 1.",
+      "outOfPlaneNote": "Průřez není symetrický k rovině rámu. 2D výpočet je přesný jen tehdy, je-li prut po celé délce zajištěn proti vybočení do strany (z obrazovky) a proti zkroucení, například deskou nebo hustě rozmístěným ztužením; samotné podpory v uzlech nestačí. Volný prut se navíc kroutí, protože zatížení nepůsobí ve středu smyku, a toto zkroucení není v deformacích zahrnuto.",
+      "outOfPlaneRestrained": "Zajištěn do strany a proti zkroucení po celé délce: {inertia}",
+      "outOfPlaneFree": "Volně vychýlitelný do strany (zkroucení stále není zahrnuto): {inertia}"
     }
   },
   "tooltip": {
@@ -476,12 +486,10 @@
       }
     }
   },
-  "emptyModel": {
-    "message": "Model je prázdný. Začněte nakreslením nosníku."
-  },
   "welcome": {
     "title": "Vítejte v <span class=\"edubeam\">edubeamu</span>! 🚀",
-    "description": "Modelujte nosníky, rámy a příhradové konstrukce a sledujte vnitřní síly už při kreslení. Jak chcete začít?",
+    "description": "Modelujte nosníky, rámy a příhradové konstrukce a sledujte vnitřní síly už při kreslení.",
+    "start": "Jak chcete začít?",
     "showAround": "Provést aplikací",
     "showAroundHint": "Krátká prohlídka prohlížeče, možností zobrazení a spodního panelu.",
     "drawFirstBeam": "Nakreslit první nosník",
@@ -520,6 +528,7 @@
     "enterValue": "Zadejte hodnotu",
     "invalidNumber": "Neplatné číslo",
     "positiveNumber": "Zadejte číslo větší než nula",
+    "between": "Zadejte hodnotu mezi {min} a {max}",
     "sameNodes": "Prvek musí spojovat dva různé uzly",
     "materialInUse": "Materiál používají prvky {elements}. Před smazáním jim přiřaďte jiný.",
     "crossSectionInUse": "Průřez používají prvky {elements}. Před smazáním jim přiřaďte jiný."
@@ -607,7 +616,8 @@
     "addCrossSectionFirst": "Nejprve prosím přidejte průřez.",
     "selectMaterialAndCrossSection": "Vyberte prosím materiál a průřez.",
     "labelInUse": "Označení {label} je již použito.",
-    "noMaterialOrCrossSection": "Prvek nemá zadaný materiál nebo průřez."
+    "noMaterialOrCrossSection": "Prvek nemá zadaný materiál nebo průřez.",
+    "elementMissing": "Prvek {label} už neexistuje."
   },
   "help": {
     "aria": "Zobrazit nápovědu",

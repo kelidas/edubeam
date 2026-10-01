@@ -183,7 +183,14 @@
       "moment": "弯矩",
       "pressure": "应力",
       "area": "面积",
-      "areaM2": "截面二次矩"
+      "areaM2": "截面二次矩",
+      "system": "单位制",
+      "systemSI": "国际单位制（公制）",
+      "systemUS": "美制（英制）",
+      "systemCustom": "自定义",
+      "temperature": "温度",
+      "sectionLength": "截面尺寸",
+      "displacement": "位移"
     },
     "grid": "网格",
     "show_grid": "显示网格",
@@ -371,7 +378,10 @@
       "shape": "形状",
       "noShape": "无多边形形状",
       "centroidal": "形心轴",
-      "centroidalNote": "所有截面二次矩均对通过形心的轴计算；I₁、I₂ 为主惯性矩，α 为 y 轴到轴 1 的夹角。"
+      "centroidalNote": "所有截面二次矩均对通过形心的轴计算；I₁、I₂ 为主惯性矩，α 为 y 轴到轴 1 的夹角。",
+      "outOfPlaneNote": "该截面关于框架平面不对称。只有当构件沿全长受到侧向（垂直于屏幕）变形和扭转约束时，例如由楼板或间距较小的支撑约束，二维分析才是精确的；仅靠节点处的支座是不够的。自由构件还会发生扭转，因为荷载未作用于剪切中心，而这部分扭转未计入变形结果。",
+      "outOfPlaneRestrained": "沿全长侧向及扭转约束：{inertia}",
+      "outOfPlaneFree": "侧向自由变形（仍未计入扭转）：{inertia}"
     }
   },
   "tooltip": {
@@ -476,12 +486,10 @@
       }
     }
   },
-  "emptyModel": {
-    "message": "模型为空。绘制一根梁开始吧。"
-  },
   "welcome": {
     "title": "欢迎使用 <span class=\"edubeam\">edubeam</span>！ 🚀",
-    "description": "建模梁、框架和桁架，绘制的同时即可看到内力。您想如何开始？",
+    "description": "建模梁、框架和桁架，绘制的同时即可看到内力。",
+    "start": "您想如何开始？",
     "showAround": "带我看看",
     "showAroundHint": "快速了解视图、显示选项和底部面板。",
     "drawFirstBeam": "绘制第一根梁",
@@ -520,6 +528,7 @@
     "enterValue": "请输入数值",
     "invalidNumber": "无效数字",
     "positiveNumber": "请输入大于零的数",
+    "between": "请输入 {min} 到 {max} 之间的数值",
     "sameNodes": "单元必须连接两个不同的节点",
     "materialInUse": "该材料正被单元 {elements} 使用。删除前请先为这些单元重新指定材料。",
     "crossSectionInUse": "该截面正被单元 {elements} 使用。删除前请先为这些单元重新指定截面。"
@@ -607,7 +616,8 @@
     "addCrossSectionFirst": "请先添加截面。",
     "selectMaterialAndCrossSection": "请选择材料和截面。",
     "labelInUse": "标签 {label} 已被使用。",
-    "noMaterialOrCrossSection": "单元未指定材料或截面。"
+    "noMaterialOrCrossSection": "单元未指定材料或截面。",
+    "elementMissing": "单元 {label} 已不存在。"
   },
   "help": {
     "aria": "显示帮助",

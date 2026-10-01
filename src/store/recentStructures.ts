@@ -70,16 +70,24 @@ export const modelFingerprint = (model: string): string | null => {
   return JSON.stringify(parsed);
 };
 
-let starterFingerprint: string | null | undefined;
+let starterFingerprints: string[] | undefined;
 
+/** Either starter frame, the SI or the US one, untouched. */
 const isStarterModel = (fingerprint: string) => {
-  if (starterFingerprint === undefined) {
+  starterFingerprints ??= (['si', 'us'] as const).map((system) => {
     const solver = new LinearStaticSolver();
     const dimensions: DimensionLine[] = [];
-    buildStarterModel(solver, dimensions);
-    starterFingerprint = modelFingerprint(serializeModel(solver, dimensions) ?? '');
-  }
-  return fingerprint === starterFingerprint;
+    buildStarterModel(solver, dimensions, system);
+    return modelFingerprint(serializeModel(solver, dimensions) ?? '');
+  });
+
+  return starterFingerprints.includes(fingerprint);
+};
+
+/** Whether a serialized model is one of the starter frames, as a first visit opens it. */
+export const isUntouchedStarterModel = (model: string | null) => {
+  const fingerprint = model === null ? null : modelFingerprint(model);
+  return fingerprint !== null && isStarterModel(fingerprint);
 };
 
 const createId = () => `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;

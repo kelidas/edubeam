@@ -524,6 +524,30 @@ export const importJSON = (json: any) => {
   }
 };
 
+/**
+ * The app settings as local storage holds them, before the store reads them back: `undefined` on a
+ * first visit (or storage that cannot be read, which only means the defaults are suggested again),
+ * `null` for something stored that is not an object.
+ */
+export const readStoredAppSettings = (): Record<string, unknown> | null | undefined => {
+  let raw: string | null;
+
+  try {
+    raw = localStorage.getItem('app');
+  } catch {
+    return undefined;
+  }
+
+  if (raw === null) return undefined;
+
+  try {
+    const parsed: unknown = JSON.parse(raw);
+    return typeof parsed === 'object' && parsed !== null ? (parsed as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+};
+
 export const suggestLanguage = () => {
   const langs = navigator.languages || [navigator.language];
 
@@ -653,6 +677,23 @@ export const positiveNumberRules = [
   },
 ];
 
+/**
+ * A rule for a value typed in display units that has to lie within [min, max], e.g. a load position
+ * along an element. The bounds have passed through a unit conversion, so a value typed as exactly
+ * the displayed maximum may sit a rounding error above it; the tolerance keeps that one valid.
+ */
+export const rangeRule =
+  (min: number, max: number, unit: string) =>
+  (v: unknown): string | true => {
+    const val = ruleValueAsNumber(v);
+    const tolerance = 1e-9 * Math.max(Math.abs(min), Math.abs(max), 1);
+    if (Number.isFinite(val) && val >= min - tolerance && val <= max + tolerance) return true;
+
+    // A converted length such as 9.842519685039372 ft reads better trimmed
+    const show = (x: number) => `${Number(x.toPrecision(6))}`;
+    return i18n.global.t('validators.between', { min: show(min), max: `${show(max)} ${unit}` });
+  };
+
 export const changeItem = (item: object, value: string, el?: HTMLInputElement, formatter?: (v: number) => number) => {
   if (el.value === '') el.value = '0';
 
@@ -689,74 +730,103 @@ export const changeNodeLcsAngle = (node: Node | undefined, el: HTMLInputElement)
 };
 
 export const changeLabel = (map: string, item: EntityWithLabel, el?: HTMLInputElement) => {
-  setUnsolved();
+  const label = el.value.trim();
+  const prevId = item.label;
+
+  if (label === '' || label === String(prevId)) {
+    el.value = String(prevId);
+    return;
+  }
+
+  if (useProjectStore().solver.domain[map].has(label)) {
+    alert(i18n.global.t('warnings.labelInUse', { label }));
+    el.value = String(prevId);
+    return;
+  }
 
   const _showLoads = useViewerStore().showLoads;
   useViewerStore().showLoads = false;
 
-  //if (isNaN(parseInt(el.value))) return;
-  if (useProjectStore().solver.domain[map].has(el.value)) {
-    alert(i18n.global.t('warnings.labelInUse', { label: el.value }));
-    el.value = item.label;
-    return;
-  }
+  executeModelMutationWithUndo(() => {
+    setUnsolved();
+    relabel(map, item, label);
+  });
 
+  useViewerStore().showLoads = _showLoads;
+};
+
+/** Everything that names an entity by its label, re-pointed at the new one. */
+const relabel = (map: string, item: EntityWithLabel, label: string) => {
+  const projectStore = useProjectStore();
   const prevId = item.label;
 
-  item.label = el.value;
-  useProjectStore().solver.domain[map].set(item.label, item);
+  item.label = label;
+  projectStore.solver.domain[map].set(label, item);
 
   if (map === 'nodes') {
-    for (const element of useProjectStore().solver.domain.elements.values()) {
+    for (const element of projectStore.solver.domain.elements.values()) {
       const idtomodify = element.nodes.findIndex((nid) => nid == prevId);
       if (idtomodify > -1) {
-        element.nodes[idtomodify] = item.label;
+        element.nodes[idtomodify] = label;
       }
     }
 
     // Every list that names a node, and every case - a prescribed displacement left behind by a
     // rename is a load pointing at a node that no longer exists, which the drawing cannot place.
-    for (const loadCase of useProjectStore().solver.loadCases) {
+    for (const loadCase of projectStore.solver.loadCases) {
       for (const load of loadCase.nodalLoadList) {
-        if (load.target == prevId) load.target = item.label;
+        if (load.target == prevId) load.target = label;
       }
 
       for (const bc of loadCase.prescribedBC) {
-        if (bc.target == prevId) bc.target = item.label;
+        if (bc.target == prevId) bc.target = label;
+      }
+    }
+
+    for (const dim of projectStore.dimensions) {
+      for (const point of dim.points) {
+        if (point.sourceNodeLabel == prevId) point.sourceNodeLabel = label;
       }
     }
   }
 
   if (map === 'elements') {
-    for (const loadCase of useProjectStore().solver.loadCases) {
+    for (const loadCase of projectStore.solver.loadCases) {
       for (const load of loadCase.elementLoadList) {
-        if (load.target == prevId) load.target = item.label;
+        if (load.target == prevId) load.target = label;
       }
     }
   }
 
   if (map === 'materials') {
-    for (const element of useProjectStore().solver.domain.elements.values()) {
+    for (const element of projectStore.solver.domain.elements.values()) {
       if (element.mat == prevId) {
-        element.mat = item.label;
+        element.mat = label;
       }
     }
   }
 
   if (map === 'crossSections') {
-    for (const element of useProjectStore().solver.domain.elements.values()) {
+    for (const element of projectStore.solver.domain.elements.values()) {
       if (element.cs == prevId) {
-        element.cs = item.label;
+        element.cs = label;
       }
     }
   }
 
-  // delete current
-  useProjectStore().solver.domain[map].delete(prevId);
+  // Panels and context menus look the selection up by label; left on the old one they find nothing.
+  const selectionType = { nodes: 'node', elements: 'element' }[map];
+  if (selectionType && projectStore.selection.type === selectionType && projectStore.selection.label == prevId) {
+    projectStore.selection.label = label;
+  }
 
-  useViewerStore().showLoads = _showLoads;
+  if (map === 'nodes' || map === 'elements') {
+    const selected = projectStore.selection2[map];
+    const index = selected.findIndex((selectedLabel) => selectedLabel == prevId);
+    if (index > -1) selected[index] = label;
+  }
 
-  solve();
+  projectStore.solver.domain[map].delete(prevId);
 };
 
 export const toggleSet = (item: unknown, set: string, value: number) => {

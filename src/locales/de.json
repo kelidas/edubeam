@@ -183,7 +183,14 @@
       "moment": "Biegemoment",
       "pressure": "Druck",
       "area": "Fläche",
-      "areaM2": "Flächenträgheitsmoment"
+      "areaM2": "Flächenträgheitsmoment",
+      "system": "Einheitensystem",
+      "systemSI": "SI (metrisch)",
+      "systemUS": "US-amerikanisch (imperial)",
+      "systemCustom": "Benutzerdefiniert",
+      "temperature": "Temperatur",
+      "sectionLength": "Querschnittsabmessungen",
+      "displacement": "Verschiebung"
     },
     "grid": "Raster",
     "show_grid": "Raster anzeigen",
@@ -371,7 +378,10 @@
       "shape": "Form",
       "noShape": "Keine polygonale Form",
       "centroidal": "Schwerachse",
-      "centroidalNote": "Alle Flächenträgheitsmomente beziehen sich auf Achsen durch den Schwerpunkt; I₁, I₂ sind die Hauptträgheitsmomente, α ist der Winkel von der y-Achse zur Achse 1."
+      "centroidalNote": "Alle Flächenträgheitsmomente beziehen sich auf Achsen durch den Schwerpunkt; I₁, I₂ sind die Hauptträgheitsmomente, α ist der Winkel von der y-Achse zur Achse 1.",
+      "outOfPlaneNote": "Der Querschnitt ist nicht symmetrisch zur Rahmenebene. Eine 2D-Berechnung ist nur dann exakt, wenn der Stab über seine ganze Länge gegen seitliches Ausweichen (aus dem Bildschirm) und Verdrehen gehalten ist, z. B. durch eine Platte oder eng liegende Aussteifungen; Lager in den Knoten allein genügen nicht. Ein freier Stab verdreht sich zusätzlich, weil die Lasten nicht im Schubmittelpunkt angreifen, und diese Verdrehung ist in den Verformungen nicht enthalten.",
+      "outOfPlaneRestrained": "Über die Länge seitlich und gegen Verdrehen gehalten: {inertia}",
+      "outOfPlaneFree": "Seitlich frei verformbar (Verdrehung weiterhin nicht berücksichtigt): {inertia}"
     }
   },
   "tooltip": {
@@ -476,12 +486,10 @@
       }
     }
   },
-  "emptyModel": {
-    "message": "Das Modell ist leer. Zeichnen Sie einen Balken, um zu beginnen."
-  },
   "welcome": {
     "title": "Willkommen bei <span class=\"edubeam\">edubeam</span>! 🚀",
-    "description": "Modellieren Sie Balken, Rahmen und Fachwerke und sehen Sie die Schnittgrößen schon beim Zeichnen. Wie möchten Sie beginnen?",
+    "description": "Modellieren Sie Balken, Rahmen und Fachwerke und sehen Sie die Schnittgrößen schon beim Zeichnen.",
+    "start": "Wie möchten Sie beginnen?",
     "showAround": "Rundgang starten",
     "showAroundHint": "Ein kurzer Blick auf die Ansicht, die Anzeigeoptionen und die untere Leiste.",
     "drawFirstBeam": "Ersten Balken zeichnen",
@@ -520,6 +528,7 @@
     "enterValue": "Wert eingeben",
     "invalidNumber": "Ungültige Zahl",
     "positiveNumber": "Geben Sie eine Zahl größer als null ein",
+    "between": "Geben Sie einen Wert zwischen {min} und {max} ein",
     "sameNodes": "Ein Element muss zwei verschiedene Knoten verbinden",
     "materialInUse": "Das Material wird von Element(en) {elements} verwendet. Weisen Sie diesen vor dem Löschen ein anderes zu.",
     "crossSectionInUse": "Der Querschnitt wird von Element(en) {elements} verwendet. Weisen Sie diesen vor dem Löschen einen anderen zu."
@@ -607,7 +616,8 @@
     "addCrossSectionFirst": "Bitte fügen Sie zuerst einen Querschnitt hinzu.",
     "selectMaterialAndCrossSection": "Bitte wählen Sie ein Material und einen Querschnitt aus.",
     "labelInUse": "Die Bezeichnung {label} ist bereits vergeben.",
-    "noMaterialOrCrossSection": "Für das Element ist kein Material oder Querschnitt angegeben."
+    "noMaterialOrCrossSection": "Für das Element ist kein Material oder Querschnitt angegeben.",
+    "elementMissing": "Element {label} existiert nicht mehr."
   },
   "help": {
     "aria": "Hilfe anzeigen",

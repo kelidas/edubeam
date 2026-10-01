@@ -17,33 +17,48 @@ import { axisLetters, vertical } from './axisConvention';
  */
 export interface ResultUnits {
   lengthLabel: string;
+  displacementLabel: string;
   angleLabel: string;
   forceLabel: string;
   momentLabel: string;
   length: (value: number) => number;
+  displacement: (value: number) => number;
   force: (value: number) => number;
   moment: (value: number) => number;
 }
 
 interface AppStoreUnitsSource {
-  units: { Length: string; Angle: string; Force: string; Moment: string };
+  units: { Length: string; Displacement: string; Angle: string; Force: string; Moment: string };
   convertLength: (value: number) => number;
+  convertDisplacement: (value: number) => number;
   convertForce: (value: number) => number;
   convertMoment: (value: number) => number;
 }
 
 export const resultUnitsFromStore = (app: AppStoreUnitsSource): ResultUnits => ({
   lengthLabel: app.units.Length,
+  displacementLabel: app.units.Displacement,
   angleLabel: app.units.Angle,
   forceLabel: app.units.Force,
   momentLabel: app.units.Moment,
   length: (value) => app.convertLength(value),
+  displacement: (value) => app.convertDisplacement(value),
   force: (value) => app.convertForce(value),
   moment: (value) => app.convertMoment(value),
 });
 
 /** Reaction components a 2D model can produce, in table order. */
 const REACTION_DOFS: DofID[] = [DofID.Dx, DofID.Dz, DofID.Ry];
+
+/**
+ * A node no element touches gets no equation numbers, so the solver has nothing to read back for it
+ * - asking anyway throws instead of returning a value.
+ */
+const readUnknown = (solver: LinearStaticSolver, node: Node, dof: DofID) => {
+  if (solver.nodeCodeNumbers.get(node.label)?.[dof] === undefined) return null;
+
+  return node.getUnknowns(solver.loadCases[0], [dof]) as unknown as number;
+};
 
 const readReaction = (node: Node, loadCase: LinearStaticSolver['loadCases'][number], dof: DofID) => {
   if (node.bcs.size === 0) return null;
@@ -79,8 +94,8 @@ export const buildNodeResultRows = (solver: LinearStaticSolver, units: ResultUni
       'Node',
       `x [${units.lengthLabel}]`,
       `${v} [${units.lengthLabel}]`,
-      `Dx [${units.lengthLabel}]`,
-      `D${v} [${units.lengthLabel}]`,
+      `Dx [${units.displacementLabel}]`,
+      `D${v} [${units.displacementLabel}]`,
       `R${r} [${units.angleLabel}]`,
       `Rx [${units.forceLabel}]`,
       `R${v} [${units.forceLabel}]`,
@@ -89,7 +104,11 @@ export const buildNodeResultRows = (solver: LinearStaticSolver, units: ResultUni
   ];
 
   for (const node of sortByLabel([...solver.domain.nodes.values()])) {
-    const displacement = (dof: DofID) => units.length(node.getUnknowns(loadCase, [dof]) as unknown as number);
+    const displacement = (dof: DofID) => {
+      const value = readUnknown(solver, node, dof);
+
+      return value === null ? null : units.displacement(value);
+    };
     const reaction = (dof: DofID) => {
       const value = readReaction(node, loadCase, dof);
 
@@ -99,14 +118,16 @@ export const buildNodeResultRows = (solver: LinearStaticSolver, units: ResultUni
       return dof === DofID.Ry ? units.moment(value) : units.force(value);
     };
 
+    const dz = displacement(DofID.Dz);
+
     rows.push([
       node.label,
       units.length(node.coords[0]),
       vertical(units.length(node.coords[2])),
       displacement(DofID.Dx),
-      vertical(displacement(DofID.Dz)),
+      dz === null ? null : vertical(dz),
       // Rotations are an angle, not a length, so they bypass the length conversion.
-      node.getUnknowns(loadCase, [DofID.Ry]) as unknown as number,
+      readUnknown(solver, node, DofID.Ry),
       ...REACTION_DOFS.map(reaction),
     ]);
   }

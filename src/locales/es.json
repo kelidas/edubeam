@@ -183,7 +183,14 @@
       "moment": "Momento flector",
       "pressure": "Presión",
       "area": "Área",
-      "areaM2": "Segundo momento de área"
+      "areaM2": "Segundo momento de área",
+      "system": "Sistema de unidades",
+      "systemSI": "SI (métrico)",
+      "systemUS": "Estadounidense (imperial)",
+      "systemCustom": "Personalizado",
+      "temperature": "Temperatura",
+      "sectionLength": "Dimensiones de sección",
+      "displacement": "Desplazamiento"
     },
     "grid": "Cuadrícula",
     "show_grid": "Mostrar cuadrícula",
@@ -371,7 +378,10 @@
       "shape": "Forma",
       "noShape": "Sin forma poligonal",
       "centroidal": "baricéntrico",
-      "centroidalNote": "Todos los momentos de segundo orden se calculan respecto a ejes que pasan por el centro de gravedad; I₁, I₂ son los valores principales y α es el ángulo del eje y al eje 1."
+      "centroidalNote": "Todos los momentos de segundo orden se calculan respecto a ejes que pasan por el centro de gravedad; I₁, I₂ son los valores principales y α es el ángulo del eje y al eje 1.",
+      "outOfPlaneNote": "La sección no es simétrica respecto al plano del pórtico. Un análisis 2D solo es exacto si la barra está restringida frente al desplazamiento lateral (fuera de la pantalla) y al giro por torsión en toda su longitud, por ejemplo por una losa o por arriostramientos poco espaciados; los apoyos en los nudos no bastan. Una barra libre además se tuerce porque las cargas no actúan en su centro de cortante, y esa torsión no se incluye en las deformaciones.",
+      "outOfPlaneRestrained": "Restringida lateralmente y a torsión en toda su longitud: {inertia}",
+      "outOfPlaneFree": "Libre de desplazarse lateralmente (la torsión sigue sin incluirse): {inertia}"
     }
   },
   "tooltip": {
@@ -476,12 +486,10 @@
       }
     }
   },
-  "emptyModel": {
-    "message": "El modelo está vacío. Dibuja una viga para empezar."
-  },
   "welcome": {
     "title": "¡Bienvenido a <span class=\"edubeam\">edubeam</span>! 🚀",
-    "description": "Modela vigas, pórticos y celosías y ve sus esfuerzos internos mientras dibujas. ¿Cómo quieres empezar?",
+    "description": "Modela vigas, pórticos y celosías y ve sus esfuerzos internos mientras dibujas.",
+    "start": "¿Cómo quieres empezar?",
     "showAround": "Hacer un recorrido",
     "showAroundHint": "Un vistazo rápido al visor, las opciones de visualización y la barra inferior.",
     "drawFirstBeam": "Dibuja tu primera viga",
@@ -520,6 +528,7 @@
     "enterValue": "Introduzca un valor",
     "invalidNumber": "Número no válido",
     "positiveNumber": "Introduzca un número mayor que cero",
+    "between": "Introduzca un valor entre {min} y {max}",
     "sameNodes": "Un elemento debe unir dos nodos distintos",
     "materialInUse": "El material lo usan los elementos {elements}. Reasígnelos antes de eliminarlo.",
     "crossSectionInUse": "La sección transversal la usan los elementos {elements}. Reasígnelos antes de eliminarla."
@@ -607,7 +616,8 @@
     "addCrossSectionFirst": "Añada primero una sección transversal.",
     "selectMaterialAndCrossSection": "Seleccione un material y una sección transversal.",
     "labelInUse": "La etiqueta {label} ya está en uso.",
-    "noMaterialOrCrossSection": "El elemento no tiene material o sección transversal."
+    "noMaterialOrCrossSection": "El elemento no tiene material o sección transversal.",
+    "elementMissing": "El elemento {label} ya no existe."
   },
   "help": {
     "aria": "Mostrar ayuda",

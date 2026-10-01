@@ -183,7 +183,14 @@
       "moment": "Bending moment",
       "pressure": "Pressure",
       "area": "Area",
-      "areaM2": "Second moment of area"
+      "areaM2": "Second moment of area",
+      "system": "Unit system",
+      "systemSI": "SI (metric)",
+      "systemUS": "US customary (imperial)",
+      "systemCustom": "Custom",
+      "temperature": "Temperature",
+      "sectionLength": "Section dimensions",
+      "displacement": "Displacement"
     },
     "grid": "Grid",
     "show_grid": "Show grid",
@@ -371,7 +378,10 @@
       "shape": "Shape",
       "noShape": "No polygonal shape",
       "centroidal": "centroidal",
-      "centroidalNote": "All second moments of area are taken about axes through the centroid; I₁, I₂ are the principal values and α is the angle from the y axis to axis 1."
+      "centroidalNote": "All second moments of area are taken about axes through the centroid; I₁, I₂ are the principal values and α is the angle from the y axis to axis 1.",
+      "outOfPlaneNote": "This section is not symmetric about the frame plane. A 2D analysis is exact only if the member is held against sideways deflection (out of the screen) and twisting along its whole length, for example by a slab or closely spaced bracing; supports at the nodes alone are not enough. A free member also twists because the loads act off its shear centre, and that twist is not included in the deflections.",
+      "outOfPlaneRestrained": "Held sideways and against twisting along its length: {inertia}",
+      "outOfPlaneFree": "Free to deflect sideways (twisting still not included): {inertia}"
     }
   },
   "tooltip": {
@@ -476,12 +486,10 @@
       }
     }
   },
-  "emptyModel": {
-    "message": "The model is empty. Draw a beam to get started."
-  },
   "welcome": {
     "title": "Welcome to <span class=\"edubeam\">edubeam</span>! 🚀",
-    "description": "Model beams, frames and trusses and see their internal forces as you draw. How would you like to start?",
+    "description": "Model beams, frames and trusses and see their internal forces as you draw.",
+    "start": "How would you like to start?",
     "showAround": "Show me around",
     "showAroundHint": "A quick look at the viewer, the display options and the bottom bar.",
     "drawFirstBeam": "Draw your first beam",
@@ -520,6 +528,7 @@
     "enterValue": "Enter a value",
     "invalidNumber": "Invalid number",
     "positiveNumber": "Enter a number greater than zero",
+    "between": "Enter a value between {min} and {max}",
     "sameNodes": "An element must connect two different nodes",
     "materialInUse": "Material is used by element(s) {elements}. Reassign them before deleting it.",
     "crossSectionInUse": "Cross-section is used by element(s) {elements}. Reassign them before deleting it."
@@ -607,7 +616,8 @@
     "addCrossSectionFirst": "Please add a cross section first.",
     "selectMaterialAndCrossSection": "Please select a material and a cross section.",
     "labelInUse": "Label {label} is already in use.",
-    "noMaterialOrCrossSection": "Element does not specify material or cross section."
+    "noMaterialOrCrossSection": "Element does not specify material or cross section.",
+    "elementMissing": "Element {label} no longer exists."
   },
   "help": {
     "aria": "Show help",

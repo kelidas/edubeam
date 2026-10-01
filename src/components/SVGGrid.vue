@@ -17,12 +17,12 @@
       <rect fill="white" x="0" y="100%" width="100%" height="16" transform="translate(0 -16)" />
       <g v-for="(item, i) in xGridTexts" :key="`x${i}`" :transform="`translate(${item.x + gridTX} ${item.y})`">
         <text text-anchor="middle" dy="0.35em">
-          {{ (Number(item.value) + trueOffsetX).toFixed(2) }}
+          {{ rulerLabel(appStore.convertLength(Number(item.value) + trueOffsetX)) }}
         </text>
       </g>
       <g v-for="(item, i) in yGridTexts" :key="`y${i}`" :transform="`translate(${item.x} ${item.y + gridTY})`">
         <text text-anchor="middle" dy="0.35em" :transform="`rotate(${item.angle})`">
-          {{ vertical(Number(item.value) + trueOffsetY).toFixed(2) }}
+          {{ rulerLabel(vertical(appStore.convertLength(Number(item.value) + trueOffsetY))) }}
         </text>
       </g>
     </g>
@@ -43,8 +43,12 @@
 
 <script setup lang="ts">
 import { gridStep } from '@/utils/gridStep';
-import { ref } from 'vue';
+import { ref, watch } from 'vue';
 import { axisConvention, vertical } from '@/utils/axisConvention';
+import { useAppStore } from '@/store/app';
+import { formatFeetInches, rulerStep, rulerStepFeet, stepDecimals } from '@/utils/grid';
+
+const appStore = useAppStore();
 
 const props = withDefaults(
   defineProps<{
@@ -67,6 +71,11 @@ const trueOffsetX = ref(0);
 const trueOffsetY = ref(0);
 const csLeft = ref(0);
 const csTop = ref(0);
+const decimals = ref(2);
+
+/** Feet read in feet and inches, as on a US drawing; every other unit as a decimal. */
+const inFeet = () => appStore.units.Length === 'ft';
+const rulerLabel = (value: number) => (inFeet() ? formatFeetInches(value) : value.toFixed(decimals.value));
 
 const refreshGrid = (isZooming = false) => {
   if (props.viewport === undefined) return;
@@ -93,10 +102,17 @@ const refreshGrid = (isZooming = false) => {
   const realH = rightBottom.y - leftTop.y;
   const w = svgP2.x - svgP1.x;
   const h = svgP2.y - svgP1.y;
-  const stepW = gridStep(w, realW);
 
   // Nothing to draw on a view that cannot be measured, and nothing that could reach the DOM as NaN
-  if (stepW === null) return;
+  if (gridStep(w, realW) === null) return;
+
+  const tickCount = Math.floor(realW / 40);
+  const nWpx = w / (tickCount - 1); //(rightBottom.x - leftTop.x) / 20;
+  // The step is round in the unit the rulers are read in, then drawn in model metres
+  const minStep = appStore.convertLength(nWpx);
+  const stepDisplay = inFeet() ? rulerStepFeet(minStep) : rulerStep(minStep);
+  const stepW = appStore.convertInverseLength(stepDisplay);
+  decimals.value = stepDecimals(stepDisplay);
 
   trueOffsetX.value = Math.floor(svgP1.x / stepW) * stepW;
   trueOffsetY.value = Math.floor(svgP1.y / stepW) * stepW;
@@ -112,7 +128,6 @@ const refreshGrid = (isZooming = false) => {
 
   // const stepPx = stepW * gridZoomW;
 
-  const tickCount = Math.floor(realW / 40);
   const tickCountY = Math.ceil(h / stepW) + 1;
 
   if (!isZooming) return;
@@ -173,6 +188,12 @@ const refreshGrid = (isZooming = false) => {
 
   gridPath.value = path;
 };
+
+// The rulers are laid out in the length unit, so another unit is another layout
+watch(
+  () => appStore.units.Length,
+  () => refreshGrid(true)
+);
 
 defineExpose({ refreshGrid });
 </script>
