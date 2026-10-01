@@ -23,74 +23,7 @@
           ></v-radio>
         </v-radio-group>
         <v-form v-model="valid">
-          <v-container>
-            <v-row no-gutters>
-              <v-col cols="6" align-self="center">
-                <div class="d-flex justify-center">
-                  <Vector2DHelper
-                    :fx="loadType === 'force' ? realFx : realDx"
-                    :fz="loadType === 'force' ? realFz : realDz"
-                    :my="loadType === 'force' ? realMy : realRy"
-                    :type="loadType === 'force' ? 'force' : 'displacement'"
-                    :label="loadNodeId"
-                  />
-                </div>
-              </v-col>
-
-              <v-col cols="6">
-                <v-row no-gutters>
-                  <v-col cols="12">
-                    <v-select
-                      v-model="loadNodeId"
-                      :items="projectStore.nodes"
-                      item-title="label"
-                      item-value="label"
-                      :label="$t('common.node')"
-                      hide-details="auto"
-                      required
-                      autofocus
-                    />
-                  </v-col>
-                  <v-col cols="12">
-                    <v-text-field
-                      v-model="loadNodeValueFx"
-                      :label="`${mainLabel}x`"
-                      hide-details="auto"
-                      :rules="numberRules"
-                      :suffix="mainUnits"
-                      :disabled="loadType === 'displacement' && !nodeBcs.has(DofID.Dx)"
-                      @keydown="checkNumber($event)"
-                    ></v-text-field>
-                  </v-col>
-
-                  <v-col cols="12">
-                    <v-text-field
-                      v-model="loadNodeValueFz"
-                      :label="`${mainLabel}${appStore.axes.v}`"
-                      hide-details="auto"
-                      :rules="numberRules"
-                      :suffix="mainUnits"
-                      :disabled="loadType === 'displacement' && !nodeBcs.has(DofID.Dz)"
-                      @keydown="checkNumber($event)"
-                    ></v-text-field>
-                  </v-col>
-
-                  <v-col cols="12">
-                    <v-text-field
-                      v-model="loadNodeValueMy"
-                      :label="`${momentLabel}${appStore.axes.r}`"
-                      hide-details="auto"
-                      :rules="numberRules"
-                      :suffix="`${momentUnits}`"
-                      :disabled="loadType === 'displacement' && !nodeBcs.has(DofID.Ry)"
-                      @keydown="checkNumber($event)"
-                    >
-                    </v-text-field>
-                  </v-col>
-                </v-row>
-              </v-col>
-            </v-row>
-          </v-container>
+          <NodalLoadFields ref="formRef" v-model:node-id="loadNodeId" v-model:load-type="loadType" />
         </v-form>
       </div>
 
@@ -111,12 +44,12 @@
 import HelpTip from '../HelpTip.vue';
 import { ref, computed, onMounted, watch } from 'vue';
 import { useProjectStore } from '../../store/project';
-import { DofID } from 'ts-fem';
 import { closeModal } from 'jenesius-vue-modal';
 import { useAppStore } from '@/store/app';
-import { checkNumber, executeModelMutationWithUndo, parseFloat2, numberRules } from '@/utils';
+import { executeModelMutationWithUndo } from '@/utils';
 import { i18n } from '@/plugins/i18n';
-import Vector2DHelper from '../Vector2DHelper.vue';
+import NodalLoadFields from './NodalLoadFields.vue';
+import type { NodalLoadKind } from './NodalLoadForm';
 
 const projectStore = useProjectStore();
 const appStore = useAppStore();
@@ -124,7 +57,7 @@ const appStore = useAppStore();
 const props = withDefaults(
   defineProps<{
     label?: string | number;
-    type?: 'force' | 'displacement';
+    type?: NodalLoadKind;
   }>(),
   {
     label: undefined,
@@ -135,16 +68,16 @@ const props = withDefaults(
 const open = ref(true);
 const valid = ref(false);
 
-const loadType = ref('force');
+const loadType = ref<NodalLoadKind>('force');
 const nodes = projectStore.solver.domain.nodes;
 const firstNodeLabel = nodes.size > 0 ? [...nodes.values()][0].label : undefined;
 const loadNodeId = ref(props.label != null && nodes.has(props.label) ? props.label : firstNodeLabel);
 
+const formRef = ref<InstanceType<typeof NodalLoadFields> | null>(null);
+
 const selectedNode = computed(() => nodes.get(loadNodeId.value));
+/** DOFs supported (constrained) at the target node - only those can carry a prescribed displacement. */
 const nodeBcs = computed<Set<number>>(() => selectedNode.value?.bcs ?? new Set());
-const loadNodeValueFx = ref(`${appStore.convertForce(0)}`);
-const loadNodeValueFz = ref(`${appStore.convertForce(0)}`);
-const loadNodeValueMy = ref('0');
 
 watch(loadNodeId, () => {
   // ...except in the influence workspace, where a force is not on offer at all
@@ -153,20 +86,6 @@ watch(loadNodeId, () => {
   }
 });
 
-const mainLabel = computed(() => (loadType.value === 'force' ? 'F' : 'D'));
-const momentLabel = computed(() => (loadType.value === 'force' ? 'M' : 'R'));
-
-const mainUnits = computed(() => (loadType.value === 'force' ? appStore.units.Force : appStore.units.Length));
-const momentUnits = computed(() => (loadType.value === 'force' ? appStore.units.Moment : 'rad'));
-
-const realFx = computed(() => appStore.convertInverseForce(parseFloat2(loadNodeValueFx.value)));
-const realFz = computed(() => appStore.vertical(appStore.convertInverseForce(parseFloat2(loadNodeValueFz.value))));
-const realMy = computed(() => appStore.convertInverseMoment(parseFloat2(loadNodeValueMy.value)));
-
-const realDx = computed(() => appStore.convertInverseLength(parseFloat2(loadNodeValueFx.value)));
-const realDz = computed(() => appStore.vertical(appStore.convertInverseLength(parseFloat2(loadNodeValueFz.value))));
-const realRy = computed(() => parseFloat2(loadNodeValueMy.value));
-
 onMounted(() => {
   if (props.type === 'displacement' || appStore.workspace === 'influence') {
     loadType.value = 'displacement';
@@ -174,7 +93,7 @@ onMounted(() => {
 });
 
 const addNodalLoad = () => {
-  if (valid.value === false || !selectedNode.value) return;
+  if (valid.value === false || !selectedNode.value || !formRef.value) return;
 
   if (loadType.value !== 'force') {
     // check if the node already has a prescribed displacement
@@ -188,21 +107,8 @@ const addNodalLoad = () => {
   }
 
   executeModelMutationWithUndo(() => {
-    useProjectStore().loadCase.solved = false;
-
-    if (loadType.value === 'force') {
-      useProjectStore().loadCase.createNodalLoad(loadNodeId.value, {
-        [DofID.Dx]: realFx.value,
-        [DofID.Dz]: realFz.value,
-        [DofID.Ry]: realMy.value,
-      });
-    } else {
-      useProjectStore().loadCase.createPrescribedDisplacement(loadNodeId.value, {
-        [DofID.Dx]: realDx.value,
-        [DofID.Dz]: realDz.value,
-        [DofID.Ry]: realRy.value,
-      });
-    }
+    projectStore.loadCase.solved = false;
+    formRef.value!.createLoad(projectStore.loadCase, loadNodeId.value);
   });
 
   projectStore.clearSelection();
