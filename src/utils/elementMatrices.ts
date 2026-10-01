@@ -314,6 +314,25 @@ export const elementEquivalentLoadVector = (solver: Solver, loadCase: LoadCase):
 export const solutionVector = (loadCase: LoadCase): Grid => column(loadCase.r);
 
 /**
+ * `K·r`, the full stiffness matrix against the full solved displacement, at every equation.
+ *
+ * On a free equation this reproduces `F` exactly - `K[free,free]·r[free] + K[free,prescribed]·
+ * r[prescribed] = f[free]` is the identity `b` is built from, shown here rather than asserted. On a
+ * prescribed one it does not: the gap between `K·r` and `F` there is the reaction.
+ *
+ * Always the full, unreduced matrix - the free-block-only view some callers show is a display
+ * choice, not a different structure, and this vector is not that view.
+ */
+export const stiffnessTimesSolution = (solver: Solver, loadCase: LoadCase): Grid => {
+  if (!hasSystemMatrix(solver)) return [];
+
+  const k = systemStiffness(solver, false);
+  const r = solutionVector(loadCase).flat();
+
+  return k.map((row) => [row.reduce((sum, value, j) => sum + value * r[j], 0)]);
+};
+
+/**
  * What the free block of the structure matrix is actually solved against.
  *
  * `Kr = f` holds for every equation, but only the unknowns are solved for - the prescribed ones

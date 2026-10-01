@@ -39,6 +39,14 @@ const open = (props: { label?: string }) =>
 
 const tabs = (wrapper: ReturnType<typeof open>) => wrapper.findAll('.v-tab').map((t) => t.text());
 
+const openTab = async (wrapper: ReturnType<typeof open>, title: string) => {
+  await wrapper
+    .findAll('.v-tab')
+    .find((t) => t.text() === title)!
+    .trigger('click');
+  await nextTick();
+};
+
 describe('the matrices widget', () => {
   beforeEach(() => setActivePinia(createPinia()));
 
@@ -52,8 +60,7 @@ describe('the matrices widget', () => {
     build();
     const names = tabs(open({}));
 
-    expect(names).toHaveLength(1);
-    expect(names[0]).toBe('Structure');
+    expect(names).toEqual(['Structure K', 'Structure F']);
   });
 
   it('counts the elements picked in the drawing', async () => {
@@ -87,14 +94,6 @@ describe('what the matrices are indexed by', () => {
 
   const rowLabels = (wrapper: ReturnType<typeof open>) => wrapper.findAll('tbody th').map((th) => th.text());
 
-  const openTab = async (wrapper: ReturnType<typeof open>, title: string) => {
-    await wrapper
-      .findAll('.v-tab')
-      .find((t) => t.text() === title)!
-      .trigger('click');
-    await nextTick();
-  };
-
   it('names the rows by the nodes rather than by the element ends', () => {
     build();
 
@@ -106,7 +105,7 @@ describe('what the matrices are indexed by', () => {
     build();
     const wrapper = open({ label: 'b' });
 
-    await openTab(wrapper, 'Structure');
+    await openTab(wrapper, 'Structure K');
     const labels = rowLabels(wrapper);
 
     expect(labels.length).toBeGreaterThan(0);
@@ -117,9 +116,39 @@ describe('what the matrices are indexed by', () => {
     const store = build();
     const wrapper = open({ label: 'b' });
 
-    await openTab(wrapper, 'Structure');
+    await openTab(wrapper, 'Structure K');
 
     // nothing in an assembled structure is empty, so hiding empties changes nothing
     expect(rowLabels(wrapper)).toHaveLength(store.solver.neq);
+  });
+});
+
+describe('the Structure F tab', () => {
+  beforeEach(() => setActivePinia(createPinia()));
+
+  /** Loaded, unlike `build()` - an unloaded structure's F, b and r are all zero and hidden away. */
+  const buildLoaded = () => {
+    const store = build();
+
+    // node 2 is unsupported, so this load lands on a free equation and survives "free block only"
+    store.solver.loadCases[0].createNodalLoad('2', { [DofID.Dz]: -1000 });
+    store.solveNow();
+
+    return store;
+  };
+
+  const colHeaders = (wrapper: ReturnType<typeof open>) => wrapper.findAll('thead th').map((th) => th.text());
+
+  it('offers F node, F elem, F, K·r, b and r as a short header plus a tooltip, not a paragraph', async () => {
+    buildLoaded();
+    const wrapper = open({});
+
+    await openTab(wrapper, 'Structure F');
+    const headers = wrapper.findAll('thead th').filter((th, i) => i > 0);
+
+    expect(colHeaders(wrapper)).toEqual(['', 'F node', 'F elem', 'F', 'K·r', 'b', 'r']);
+    // the explanation lives in each header's own tooltip, not in a sentence above the table
+    headers.forEach((th) => expect(th.attributes('title')).toBeTruthy());
+    expect(wrapper.text()).not.toContain('direct nodal load');
   });
 });

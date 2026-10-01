@@ -15,6 +15,7 @@ import {
   only,
   rightHandSide,
   solutionVector,
+  stiffnessTimesSolution,
   structureDofNames,
   endForcesGlobal,
   endForcesLocal,
@@ -34,7 +35,7 @@ const props = defineProps<{
   label?: string;
 }>();
 
-const tab = ref(props.label ? 'kloc' : 'system');
+const tab = ref(props.label ? 'kloc' : 'structureK');
 
 /**
  * Condensation is the interesting part of a released element, so it is a switch rather than a
@@ -122,28 +123,43 @@ const endForces = computed<Grid>(() => {
   ]);
 });
 
+/** The F/b/r vector table's columns: a literal header next to the translation key for its tooltip. */
+const VECTOR_COLUMNS = [
+  ['F node', 'common.fNodeHint'],
+  ['F elem', 'common.fElemHint'],
+  ['F', 'common.fTotalHint'],
+  ['K·r', 'common.krHint'],
+  ['b', 'common.bHint'],
+  ['r', 'common.rHint'],
+] as const;
+
 /** What the open tab puts in the one table below: its numbers, and the names around them. */
 const view = computed(() => {
   const el = element.value;
 
-  const nothing = { grid: [] as Grid, rows: [] as readonly string[], cols: [] as readonly string[] };
+  const nothing = {
+    grid: [] as Grid,
+    rows: [] as readonly string[],
+    cols: [] as readonly string[],
+    colHints: [] as readonly (string | null)[],
+  };
 
-  if (tab.value !== 'system' && (!el || !usable.value)) return nothing;
+  if (tab.value !== 'structureK' && tab.value !== 'structureF' && (!el || !usable.value)) return nothing;
 
   if (tab.value === 'kglob') {
-    return { grid: globalStiffness(el!), rows: dofNames.value, cols: dofNames.value };
+    return { ...nothing, grid: globalStiffness(el!), rows: dofNames.value, cols: dofNames.value };
   }
 
   if (tab.value === 't') {
     // T maps global to local, so its rows and its columns are not the same frame
-    return { grid: transformation(el!), rows: dofNames.value, cols: dofNames.value };
+    return { ...nothing, grid: transformation(el!), rows: dofNames.value, cols: dofNames.value };
   }
 
   if (tab.value === 'forces') {
-    return { grid: endForces.value, rows: dofNames.value, cols: END_FORCE_COLUMNS };
+    return { ...nothing, grid: endForces.value, rows: dofNames.value, cols: END_FORCE_COLUMNS };
   }
 
-  if (tab.value === 'system') {
+  if (tab.value === 'structureK') {
     const grid = !hasSystemMatrix(projectStore.solver)
       ? []
       : selectionOnly.value
@@ -152,57 +168,73 @@ const view = computed(() => {
     // the same names as an element's own, so one element's 6x6 can be found inside the assembled one
     const names = grid.length ? structureDofNames(projectStore.solver) : [];
     const kept = hideEmpty.value ? occupied(grid) : grid.map((_, i) => i);
-    const kOnly = only(grid, kept);
 
-    /*
-     * F, b and r are properties of the whole solved system, not of whichever elements happen to be
-     * picked - assembling them from a selection the way K can be would silently be a different,
-     * smaller structure's vectors. So they sit beside K only when K is the real thing.
-     */
-    if (grid.length === 0 || selectionOnly.value || !loadCase.value) {
-      return { grid: kOnly, rows: kept.map((i) => names[i]), cols: kept.map((i) => names[i]) };
-    }
+    return { ...nothing, grid: only(grid, kept), rows: kept.map((i) => names[i]), cols: kept.map((i) => names[i]) };
+  }
 
+  if (tab.value === 'structureF') {
+    // F, b and r are properties of the whole solved system, so this tab has no "selected elements
+    // only" of its own - there is no smaller structure's worth of them to show instead.
+    if (!hasSystemMatrix(projectStore.solver) || !loadCase.value) return nothing;
+
+    const names = structureDofNames(projectStore.solver);
     const fNode = directNodalLoadVector(projectStore.solver, loadCase.value);
     const fElem = elementEquivalentLoadVector(projectStore.solver, loadCase.value);
     const f = nodalLoadVector(projectStore.solver, loadCase.value);
+    const kr = stiffnessTimesSolution(projectStore.solver, loadCase.value);
     const b = rightHandSide(projectStore.solver, loadCase.value);
     const r = solutionVector(loadCase.value);
 
     // b has no entry past the free block; NaN marks that and the cell shows a dash for it
+    const row = (i: number) => [
+      fNode[i]?.[0] ?? NaN,
+      fElem[i]?.[0] ?? NaN,
+      f[i]?.[0] ?? NaN,
+      kr[i]?.[0] ?? NaN,
+      i < b.length ? b[i][0] : NaN,
+      r[i]?.[0] ?? NaN,
+    ];
+
+    const size = reduced.value ? projectStore.solver.neq : names.length;
+    const all = Array.from({ length: size }, (_, i) => i);
+    const kept = hideEmpty.value ? all.filter((i) => row(i).some((v) => !Number.isNaN(v) && v !== 0)) : all;
+
     return {
-      grid: kOnly.map((row, idx) => {
-        const i = kept[idx];
-        return [
-          ...row,
-          fNode[i]?.[0] ?? NaN,
-          fElem[i]?.[0] ?? NaN,
-          f[i]?.[0] ?? NaN,
-          i < b.length ? b[i][0] : NaN,
-          r[i]?.[0] ?? NaN,
-        ];
-      }),
+      grid: kept.map(row),
       rows: kept.map((i) => names[i]),
-      cols: [...kept.map((i) => names[i]), 'F node', 'F elem', 'F', 'b', 'r'],
+      cols: VECTOR_COLUMNS.map(([name]) => name),
+      colHints: VECTOR_COLUMNS.map(([, hint]) => hint),
     };
   }
 
-  return { grid: localStiffness(el!, condensed.value), rows: dofNames.value, cols: dofNames.value };
+  return { ...nothing, grid: localStiffness(el!, condensed.value), rows: dofNames.value, cols: dofNames.value };
 });
 
-/** How many rows the structure matrix is not showing, which is worth saying rather than hiding. */
+/** How many rows the open tab is not showing, which is worth saying rather than hiding. */
 const dropped = computed(() => {
-  if (tab.value !== 'system' || !hideEmpty.value || !hasSystemMatrix(projectStore.solver)) return 0;
+  if (!hideEmpty.value || !hasSystemMatrix(projectStore.solver)) return 0;
 
-  const size = selectionOnly.value
-    ? assembleFrom(projectStore.solver, selected.value, reduced.value).length
-    : systemStiffness(projectStore.solver, reduced.value).length;
+  if (tab.value === 'structureK') {
+    const size = selectionOnly.value
+      ? assembleFrom(projectStore.solver, selected.value, reduced.value).length
+      : systemStiffness(projectStore.solver, reduced.value).length;
 
-  return size - view.value.grid.length;
+    return size - view.value.grid.length;
+  }
+
+  if (tab.value === 'structureF') {
+    if (!loadCase.value) return 0;
+
+    const size = reduced.value ? projectStore.solver.neq : projectStore.solver.neq + projectStore.solver.pneq;
+
+    return size - view.value.grid.length;
+  }
+
+  return 0;
 });
 
 /** A square matrix gets its leading diagonal marked; a set of vectors has no diagonal to mark. */
-const square = computed(() => tab.value !== 'forces');
+const square = computed(() => tab.value !== 'forces' && tab.value !== 'structureF');
 
 const empty = computed(() => view.value.grid.length === 0);
 
@@ -237,7 +269,8 @@ const copy = () => {
           <v-tab value="t" class="text-none px-3">T</v-tab>
           <v-tab value="forces" class="text-none px-3">{{ $t('common.endForces') }}</v-tab>
         </template>
-        <v-tab value="system" class="text-none px-3">{{ $t('common.structure') }}</v-tab>
+        <v-tab value="structureK" class="text-none px-3">{{ $t('common.structureK') }}</v-tab>
+        <v-tab value="structureF" class="text-none px-3">{{ $t('common.structureF') }}</v-tab>
       </v-tabs>
 
       <div class="flex-grow-1 pa-2" style="overflow: auto">
@@ -251,7 +284,7 @@ const copy = () => {
             :label="hinged ? $t('common.condensed') : $t('common.condensedNoHinge')"
           />
           <v-checkbox-btn
-            v-if="tab === 'system'"
+            v-if="tab === 'structureK' || tab === 'structureF'"
             v-model="reduced"
             density="compact"
             hide-details
@@ -259,10 +292,11 @@ const copy = () => {
           />
           <!--
             One element's contribution sitting in the structure's own numbering is where the two
-            pictures meet, so it is worth being able to see it on its own.
+            pictures meet, so it is worth being able to see it on its own. F, b and r have no such
+            reading - they belong to the whole system - so the switch is K's alone.
           -->
           <v-checkbox-btn
-            v-if="tab === 'system'"
+            v-if="tab === 'structureK'"
             v-model="selectionOnly"
             :disabled="selected.length === 0"
             density="compact"
@@ -270,16 +304,13 @@ const copy = () => {
             :label="`${$t('common.selectedElementsOnly')} (${selected.length})`"
           />
           <v-checkbox-btn
-            v-if="tab === 'system'"
+            v-if="tab === 'structureK' || tab === 'structureF'"
             v-model="hideEmpty"
             density="compact"
             hide-details
             :label="$t('common.hideEmptyRows')"
           />
           <span v-if="tab === 't'" class="text-medium-emphasis">{{ $t('common.transformationHint') }}</span>
-          <span v-if="tab === 'system' && !selectionOnly" class="text-medium-emphasis">{{
-            $t('common.loadVectorHint')
-          }}</span>
           <span v-if="dropped > 0" class="text-medium-emphasis">{{
             $t('common.emptyRowsHidden', { n: dropped })
           }}</span>
@@ -311,7 +342,14 @@ const copy = () => {
           <thead>
             <tr>
               <th></th>
-              <th v-for="(name, j) in view.cols" :key="j" class="text-right px-2 font-weight-regular">{{ name }}</th>
+              <th
+                v-for="(name, j) in view.cols"
+                :key="j"
+                class="text-right px-2 font-weight-regular"
+                :title="view.colHints[j] ? $t(view.colHints[j]!) : undefined"
+              >
+                {{ name }}
+              </th>
             </tr>
           </thead>
           <tbody>

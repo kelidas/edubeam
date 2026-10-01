@@ -14,6 +14,7 @@ import {
   only,
   rightHandSide,
   solutionVector,
+  stiffnessTimesSolution,
   structureDofNames,
   endForcesGlobal,
   endForcesLocal,
@@ -396,6 +397,32 @@ describe('the nodal load vector and the right-hand side', () => {
     expect(r).toHaveLength(store.solver.neq + store.solver.pneq);
     expect(r).toEqual(store.solver.loadCases[0].r.toArray());
     near(r[r.length - 1], 0.02, 1e-9);
+  });
+
+  it('K·r reproduces F on a free equation, and by the reaction on a prescribed one', () => {
+    const store = useProjectStore();
+    const domain = store.solver.domain;
+    const loadCase = store.solver.loadCases[0];
+
+    domain.createMaterial('m', { e: E, g: 81e9, alpha: 1.2e-5, d: 7850 });
+    domain.createCrossSection('cs', { a: A, iy: I, h: 0.2, k: 1e6 });
+    domain.createNode('1', [0, 0, 0], [DofID.Dx, DofID.Dz, DofID.Ry]);
+    domain.createNode('2', [L, 0, 0], [DofID.Dx, DofID.Dz]);
+    domain.createBeam2D('b', ['1', '2'], 'm', 'cs');
+    loadCase.createPrescribedDisplacement('2', { [DofID.Dz]: 0.02 });
+
+    store.solve();
+
+    const kr = stiffnessTimesSolution(store.solver, loadCase).flat();
+    const f = nodalLoadVector(store.solver, loadCase).flat();
+    const atNode2Dz = store.solver.nodeCodeNumbers.get('2')![DofID.Dz];
+
+    // every free equation: K·r is exactly what solve() built b from
+    for (let i = 0; i < store.solver.neq; i++) near(kr[i], f[i], 1e-6);
+
+    // the prescribed one: K·r departs from F by precisely the reaction there
+    const reaction = loadCase.R.toArray()[atNode2Dz - store.solver.neq] as number;
+    near(kr[atNode2Dz], f[atNode2Dz] + reaction, 1e-6);
   });
 });
 
