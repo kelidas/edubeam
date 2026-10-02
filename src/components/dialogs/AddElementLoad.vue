@@ -62,15 +62,16 @@ const formRef = ref<InstanceType<typeof ElementLoadFields> | null>(null);
  * structure, so it is offered only in the workspace that is about influence lines - which is also
  * the workspace this dialog opens on it in.
  */
-const loadTypes = computed(() => [
-  { label: t('loadType.udl'), value: 'udl' },
-  { label: t('loadType.trapezoidal'), value: 'trapezoidal' },
-  { label: t('loadType.concentrated'), value: 'concentrated' },
-  ...(appStore.workspace === 'influence'
+const loadTypes = computed(() =>
+  appStore.workspace === 'influence'
     ? [{ label: t('loadType.concentrated_deformation'), value: 'concentrated_deformation' }]
-    : []),
-  { label: t('loadType.temperature'), value: 'temperature' },
-]);
+    : [
+        { label: t('loadType.udl'), value: 'udl' },
+        { label: t('loadType.trapezoidal'), value: 'trapezoidal' },
+        { label: t('loadType.concentrated'), value: 'concentrated' },
+        { label: t('loadType.temperature'), value: 'temperature' },
+      ]
+);
 
 watch(loadType, (newVal) => {
   if (!formRef.value) return;
