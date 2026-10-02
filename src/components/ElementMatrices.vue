@@ -155,7 +155,7 @@ const show = (value: number) =>
   <div class="fill-height d-flex flex-column">
     <!-- Opened on the structure rather than on an element, only the structure has anything to say. -->
     <template v-if="usable || !props.label">
-      <v-tabs v-model="tab" density="compact" class="flex-grow-0 border-b">
+      <v-tabs v-model="tab" density="compact" class="flex-grow-0 flex-shrink-0 border-b">
         <template v-if="usable">
           <v-tab value="kloc" class="text-none px-3">K loc</v-tab>
           <v-tab value="kglob" class="text-none px-3">K glob</v-tab>
@@ -165,7 +165,7 @@ const show = (value: number) =>
         <v-tab value="system" class="text-none px-3">{{ $t('common.structure') }}</v-tab>
       </v-tabs>
 
-      <div class="flex-grow-1 pa-2" style="overflow: auto">
+      <div class="flex-grow-1 pa-2" style="min-height: 0; overflow: auto">
         <div class="d-flex align-center ga-3 mb-2 text-caption">
           <v-checkbox-btn
             v-if="tab === 'kloc'"
