@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { createPinia, setActivePinia } from 'pinia';
-import { DofID } from 'ts-fem';
+import { BeamConcentratedDeformation, DofID } from 'ts-fem';
 import { useProjectStore } from '@/store/project';
 import { useClipboardStore } from '@/store/clipboard';
+import { useAppStore } from '@/store/app';
 import { deleteNode } from '@/utils';
 
 /**
@@ -90,5 +91,40 @@ describe('clipboard', () => {
     deleteNode('3', false);
 
     expect(clipboard.isAnythingInClipboard()).toBe(false);
+  });
+
+  it('copies a concentrated deformation along with its element', () => {
+    const store = build();
+    store.solver.loadCases[0].createBeamConcentratedDeformation('a', [0, 0, 1, 2], true);
+
+    const clipboard = useClipboardStore();
+    clipboard.select(select({ elements: ['a'], elementLoads: [0] }));
+    clipboard.paste({ x: 0, z: 1 });
+
+    const pasted = store.solver.loadCases[0].elementLoadList.at(-1);
+    expect(pasted).toBeInstanceOf(BeamConcentratedDeformation);
+    expect((pasted as unknown as { values: number[] }).values).toEqual([0, 0, 1, 2]);
+  });
+
+  /**
+   * Influence lines are unit dislocations on the second load case, not ordinary nodal forces -
+   * copy and paste need to read and write whichever case the open tab is about, not always the
+   * structure one.
+   */
+  it('copies and pastes on the workspace open at the time, not always the structure case', () => {
+    build();
+    const appStore = useAppStore();
+    const influence = appStore.tabs.findIndex((t) => t.props.id === 'influence');
+    const influenceLoadCase = useProjectStore().influenceLoadCase();
+
+    appStore.tab = influence;
+    influenceLoadCase.createPrescribedDisplacement('2', { [DofID.Dz]: 1 });
+
+    const clipboard = useClipboardStore();
+    clipboard.select(select({ nodes: ['2', '3'], prescribedBC: [0] }));
+    clipboard.paste({ x: 0, z: 1 });
+
+    expect(influenceLoadCase.prescribedBC).toHaveLength(2);
+    expect(useProjectStore().solver.loadCases[0].prescribedBC).toHaveLength(0);
   });
 });
