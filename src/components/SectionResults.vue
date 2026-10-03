@@ -289,23 +289,31 @@ watch(
 onBeforeUnmount(() => observer?.disconnect());
 
 /**
- * Tall enough for the curve and, beyond it either side, the longest number written along an
- * ordinate: written upright, a number takes height rather than width.
+ * Room above the axis and below it: the curve and, beyond it, the longest number written along an
+ * ordinate on that side - written upright, a number takes height rather than width. A side nothing
+ * is drawn on keeps only what the node names and the reading at the top need.
  */
-const plotHeight = computed(() => {
-  const longest = Math.max(
-    0,
-    ...sections.value.map((s) =>
-      widthOf(showBriefly(quantityOf(drawn.value).convert(s[drawn.value]), drawn.value), LABEL_SIZE)
-    )
-  );
+const rooms = computed(() => {
+  const longest = (sign: 1 | -1) =>
+    Math.max(
+      -1,
+      ...sections.value
+        .filter((s) => Math.sign(s[drawn.value]) === sign)
+        .map((s) => widthOf(showBriefly(quantityOf(drawn.value).convert(s[drawn.value]), drawn.value), LABEL_SIZE))
+    );
+  const side = (sign: 1 | -1) => {
+    const text = longest(sign);
+    return text < 0 ? 34 * em : Math.max(34 * em, REACH + GAP + 3 * em + text + 4 * em);
+  };
 
-  return Math.round(2 * (REACH + GAP + 3 * em + longest + 4 * em));
+  return { above: Math.round(side(-1)), below: Math.round(side(1)) };
 });
+
+const plotHeight = computed(() => rooms.value.above + rooms.value.below);
 
 /** Where the axis sits and how far the diagram may reach either side of it. */
 const axis = computed(() => ({
-  y: plotHeight.value / 2,
+  y: rooms.value.above,
   reach: REACH,
   left: PAD_X,
   right: Math.max(PAD_X + 20, plotWidth.value - PAD_X),
