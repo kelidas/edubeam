@@ -3301,7 +3301,7 @@ defineExpose({ centerContent, fitContent });
               <SVGElementConcentratedDeformation
                 v-if="eload instanceof BeamConcentratedDeformation"
                 :key="`element-cd-${index}`"
-                :class="{ selected: projectStore.selection2.elementLoads.includes(index) }"
+                :class="{ selected: projectStore.selection2.elementLoads.includes(index), 'load-off': !eload.active }"
                 :data-element-load-id="index"
                 :eload="eload"
                 :scale="scale"
