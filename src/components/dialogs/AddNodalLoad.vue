@@ -95,7 +95,9 @@ onMounted(() => {
 const addNodalLoad = () => {
   if (valid.value === false || !selectedNode.value || !formRef.value) return;
 
-  if (loadType.value !== 'force') {
+  // The influence lines tab keeps several unit dislocations at one support - one for each reaction
+  // whose line is wanted - and switches between them; a structure has one settlement per node.
+  if (loadType.value !== 'force' && appStore.workspace !== 'influence') {
     // check if the node already has a prescribed displacement
     for (const load of projectStore.loadCase.prescribedBC) {
       if (load.target === loadNodeId.value) {
