@@ -42,6 +42,9 @@ const nodes = computed<Node[]>(() => {
   return element.nodes.map((nodeId) => props.load!.domain.nodes.get(nodeId)!);
 });
 
+/** How far below the element a dimension is drawn, clear of the element, its supports and its labels. */
+const DIMENSION_OFFSET_PX = 30;
+
 const dimensionLines = computed(() => {
   if (!(props.load instanceof BeamConcentratedLoad)) return [];
 
@@ -65,15 +68,15 @@ const dimensionLines = computed(() => {
     startNode.coords[2] + sin * clampedDist,
   ]);
 
-  const offset = Math.min(Math.max(elementLength * 0.15, 0.25), 2);
-
   return [
     {
       points: [
         createDimensionRenderableNode({ x: startNode.coords[0], y: startNode.coords[2] }, startNode.label),
         createDimensionRenderableNode({ x: loadNode.coords[0], y: loadNode.coords[2] }, loadNode.label),
       ],
-      distance: offset,
+      // in pixels: a share of the element's length came out a few pixels in a small preview, on the beam
+      distance: DIMENSION_OFFSET_PX,
+      distanceUnit: 'pixel' as const,
       numberFormat: appStore.numberFormatter,
       convertLength: appStore.convertLength,
     },

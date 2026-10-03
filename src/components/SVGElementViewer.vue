@@ -55,6 +55,8 @@ const props = withDefaults(
     dimlines?: {
       points: DimensionRenderableNode[];
       distance: number;
+      /** A distance in pixels stays the same on screen however far the preview is zoomed out. */
+      distanceUnit?: 'world' | 'pixel';
       numberFormat?: Intl.NumberFormat;
       convertLength?: (value: number) => number;
     }[];
@@ -514,7 +516,7 @@ defineExpose({ centerContent, fitContent, setView, update });
               v-for="(dim, index) in props.dimlines"
               :key="index"
               :points="dim.points"
-              :distance="dim.distance"
+              :distance="dim.distanceUnit === 'pixel' ? dim.distance / scale : dim.distance"
               :scale="scale"
               :font-size="props.fontSize"
               :number-format="dim.numberFormat ?? props.numberFormat"
