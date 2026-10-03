@@ -104,6 +104,48 @@ describe('a load that is switched off or named', () => {
     expect(read.elementLoadList[0].label).toBe('');
   });
 
+  /**
+   * The influence lines tab keeps several unit dislocations at one support and switches between
+   * them, so which are on - and what they are called - has to survive a save, a shared link and an
+   * undo, all of which go through the saved model.
+   */
+  it('keeps the influence case switched off and named too', () => {
+    const store = build();
+    const influence = store.influenceLoadCase();
+
+    influence.createPrescribedDisplacement('1', { [DofID.Dz]: 1 });
+    const moment = influence.createPrescribedDisplacement('1', { [DofID.Ry]: 1 });
+    const deformation = influence.createBeamConcentratedDeformation('b', [0, 0, 1, 2], true);
+
+    moment.active = false;
+    moment.label = 'moment at the clamp';
+    deformation.label = 'midspan';
+
+    const saved = serializeModel(store.solver, store.dimensions);
+    setActivePinia(createPinia());
+    const fresh = useProjectStore();
+    deserializeModel(saved, fresh.solver, fresh.dimensions);
+
+    const read = fresh.solver.loadCases[1];
+    expect(read.prescribedBC.map((l) => l.active)).toEqual([true, false]);
+    expect(read.prescribedBC[1].label).toBe('moment at the clamp');
+    expect(read.elementLoadList[0].label).toBe('midspan');
+  });
+
+  /** A link to an influence case nobody switched off or named reads as it always did. */
+  it('adds nothing to the influence case while every dislocation is on and unnamed', () => {
+    const store = build();
+    store.influenceLoadCase().createPrescribedDisplacement('1', { [DofID.Dz]: 1 });
+
+    const json = JSON.parse(
+      new TextDecoder().decode(
+        Uint8Array.from(atob(serializeModel(store.solver, store.dimensions)), (c) => c.charCodeAt(0))
+      )
+    );
+
+    expect(json.ipd).toEqual([['1', { [DofID.Dz]: 1 }]]);
+  });
+
   /** A table read a week later should say what it was worked out without. */
   it('says in the exported results which loads were switched off', () => {
     const store = build();

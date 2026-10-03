@@ -241,11 +241,11 @@ export const serializeModel = (ls: LinearStaticSolver, dims: DimensionLine[]) =>
     influence.elementLoadList
       .filter((el) => el instanceof BeamConcentratedDeformation)
       .forEach((load: BeamConcentratedDeformation) => {
-        icd.push([load.target, load.values, load.lcs]);
+        icd.push([load.target, load.values, load.lcs, ...loadMeta(load)]);
       });
 
     influence.prescribedBC.forEach((load) => {
-      ipd.push([load.target, load.prescribedValues]);
+      ipd.push([load.target, load.prescribedValues, ...loadMeta(load)]);
     });
   }
 
@@ -393,11 +393,11 @@ export const deserializeModel = (base64String: string, ls: LinearStaticSolver, d
     const influence = ls.loadCases[1];
 
     for (const e of tmp.icd ?? []) {
-      influence.createBeamConcentratedDeformation(e[0], e[1], e[2] !== undefined ? e[2] : true);
+      applyLoadMeta(influence.createBeamConcentratedDeformation(e[0], e[1], e[2] !== undefined ? e[2] : true), e[3]);
     }
 
     for (const e of tmp.ipd ?? []) {
-      influence.createPrescribedDisplacement(e[0], e[1]);
+      applyLoadMeta(influence.createPrescribedDisplacement(e[0], e[1]), e[2]);
     }
   }
 
