@@ -42,7 +42,7 @@ export interface SectionResult {
  * is what the drawing does - this is its own offset - so the table and the diagram agree with it
  * rather than each picking their own idea of "just before".
  */
-const EITHER_SIDE = 1e-7;
+export const EITHER_SIDE = 1e-7;
 
 export const elementLength = (element: Beam2D) => element.computeGeo().l;
 

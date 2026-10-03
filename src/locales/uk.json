@@ -61,7 +61,8 @@
     "pointAlongHint": "Наведіть на стрижень, щоб прочитати переріз",
     "hideEmptyRows": "Сховати порожні рядки",
     "emptyRowsHidden": "сховано порожніх: {n}",
-    "step": "Крок"
+    "step": "Крок",
+    "wholeBeam": "Уся балка"
   },
   "nodes": {
     "addNode": "Додати вузол",

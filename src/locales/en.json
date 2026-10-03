@@ -61,7 +61,8 @@
     "pointAlongHint": "Point along the beam to read a section",
     "hideEmptyRows": "Hide empty rows",
     "emptyRowsHidden": "{n} empty hidden",
-    "step": "Step"
+    "step": "Step",
+    "wholeBeam": "Whole beam"
   },
   "nodes": {
     "addNode": "Add node",

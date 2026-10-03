@@ -5,16 +5,15 @@ import { useProjectStore } from '../store/project';
 import { useAppStore } from '../store/app';
 import { MEASURED_AT, widthOf } from '../utils/labelWidth';
 import { formatResultAsText } from '../utils/numberDisplay';
+import { extremesOf, type SectionQuantity, type SectionResult } from '../utils/sectionResults';
 import {
-  elementLength,
-  extremesOf,
-  jumpsOf,
-  resultsAlong,
-  resultsAt,
-  stationaryPoints,
-  type SectionQuantity,
-  type SectionResult,
-} from '../utils/sectionResults';
+  chainJumpsOf,
+  chainOf,
+  chainResultsAlong,
+  chainResultsAt,
+  chainStationaryPoints,
+  collinearRun,
+} from '../utils/sectionChain';
 
 const projectStore = useProjectStore();
 const appStore = useAppStore();
@@ -59,12 +58,33 @@ const element = computed(() => {
   return found instanceof Beam2D ? found : null;
 });
 
+/**
+ * The straight run of elements this one belongs to - a continuous beam modelled span by span - and
+ * whether to read all of it rather than this element alone. Off to begin with, so the widget opens
+ * on the element it was asked about.
+ */
+const run = computed(() => (element.value ? collinearRun(projectStore.solver, element.value) : []));
+const whole = ref(false);
+
+/**
+ * What is read: the element alone, or the whole run, laid end to end and pointing the way this
+ * element does so switching between the two does not turn its numbers over.
+ */
+const chain = computed(() => {
+  if (!element.value) return null;
+
+  return chainOf(whole.value && run.value.length > 1 ? run.value : [element.value], element.value);
+});
+
 const usable = computed(() => {
-  const el = element.value;
+  const parts = chain.value?.parts ?? [];
 
-  if (!el) return false;
+  if (parts.length === 0) return false;
 
-  return !!projectStore.solver.domain.materials.get(el.mat) && !!projectStore.solver.domain.crossSections.get(el.cs);
+  return parts.every(
+    ({ element: el }) =>
+      !!projectStore.solver.domain.materials.get(el.mat) && !!projectStore.solver.domain.crossSections.get(el.cs)
+  );
 });
 
 /**
@@ -78,17 +98,17 @@ const loadCase = computed(() => projectStore.loadCase ?? projectStore.solver.loa
 
 const solved = computed(() => usable.value && loadCase.value?.solved === true);
 
-const length = computed(() => (element.value ? elementLength(element.value) : 0));
+const length = computed(() => chain.value?.length ?? 0);
 
 const sections = computed<SectionResult[]>(() =>
-  solved.value ? resultsAlong(element.value!, loadCase.value, divisions.value) : []
+  solved.value ? chainResultsAlong(chain.value!, loadCase.value, divisions.value) : []
 );
 
 /** The one section asked for, if any. It is clamped onto the element, so it is always a real one. */
 const asked = computed<SectionResult | null>(() => {
   if (!solved.value || position.value === null || !Number.isFinite(position.value)) return null;
 
-  return resultsAt(element.value!, loadCase.value, appStore.convertInverseLength(position.value));
+  return chainResultsAt(chain.value!, loadCase.value, appStore.convertInverseLength(position.value));
 });
 
 const extremes = computed(() => extremesOf(sections.value));
@@ -117,13 +137,13 @@ const quantities = computed<Quantity[]>(() => [
 const quantityOf = (key: SectionQuantity) => quantities.value.find((q) => q.key === key)!;
 
 /**
- * The nodes at the two ends, named.
+ * The nodes along what is read, named - the two ends of an element, and every joint of a run.
  *
  * The element is drawn straight here whatever its angle, so which end is which is not something the
  * picture can say on its own - and x is measured from the first of them, which is the one fact the
  * whole table rests on.
  */
-const ends = computed(() => (element.value ? element.value.nodes : ['', '']));
+const ends = computed(() => chain.value?.nodes ?? []);
 
 /**
  * Numerical noise written as zero.
@@ -282,7 +302,9 @@ const atX = (x: number) =>
  * is the shape between them, and tying the two together would make a parabola look like a chain of
  * chords whenever few sections were asked for.
  */
-const curve = computed(() => (solved.value ? resultsAlong(element.value!, loadCase.value, 100) : []));
+const curve = computed(() =>
+  solved.value ? chainResultsAlong(chain.value!, loadCase.value, 100 * (chain.value?.parts.length ?? 1)) : []
+);
 
 const scale = computed(() => {
   const peak = curve.value.reduce((max, section) => Math.max(max, Math.abs(section[drawn.value])), 0);
@@ -319,11 +341,11 @@ const marks = computed(() =>
  * the beam anyone wants a number from. Marking it is only half of it - the pointer stops there too,
  * so the exact value can be read in the row above.
  */
-const turns = computed(() => (solved.value ? stationaryPoints(element.value!, loadCase.value, drawn.value) : []));
+const turns = computed(() => (solved.value ? chainStationaryPoints(chain.value!, loadCase.value, drawn.value) : []));
 
 const turningMarks = computed(() =>
   turns.value.map((x) => {
-    const section = resultsAt(element.value!, loadCase.value, x);
+    const section = chainResultsAt(chain.value!, loadCase.value, x);
 
     return {
       x: atX(x),
@@ -345,7 +367,7 @@ const labelled = computed(() => marks.value.length <= 13);
  * ahead of everything else and at the cost of a neighbour, says a jump is there when none is.
  */
 const stepsHere = (at: number) =>
-  solved.value && jumpsOf(element.value!, loadCase.value, drawn.value).some((jump) => Math.abs(jump - at) < 1e-6);
+  solved.value && chainJumpsOf(chain.value!, loadCase.value, drawn.value).some((jump) => Math.abs(jump - at) < 1e-6);
 
 /**
  * Everything written on the diagram, in the order it earns its place.
@@ -563,6 +585,15 @@ const copy = () => {
         <span class="text-caption text-medium-emphasis"
           >L = {{ showLength(appStore.convertLength(length)) }} {{ appStore.units.Length }}</span
         >
+        <!-- offered only where there is a run to read: the element carries on in line at a joint -->
+        <v-checkbox-btn
+          v-if="run.length > 1"
+          v-model="whole"
+          density="compact"
+          hide-details
+          class="flex-grow-0"
+          :label="`${$t('common.wholeBeam')} (${run.length})`"
+        />
         <v-chip v-if="appStore.workspace === 'influence'" size="x-small" color="primary" label>
           {{ $t('tabView.influence') }}
         </v-chip>
@@ -646,11 +677,12 @@ const copy = () => {
               />
             </g>
 
-            <!-- the element itself, drawn straight whatever its angle, with a named node at each end -->
+            <!-- the element itself, drawn straight whatever its angle, with a named node at each end
+                 and at every joint of a run -->
             <line :x1="atX(0)" :y1="axis.y" :x2="atX(length)" :y2="axis.y" stroke="#000000" stroke-width="1.5" />
-            <g v-for="(node, i) in ends" :key="i">
+            <g v-for="node in ends" :key="node.label">
               <rect
-                :x="atX(i * length) - 3 * em"
+                :x="atX(node.x) - 3 * em"
                 :y="axis.y - 3 * em"
                 :width="6 * em"
                 :height="6 * em"
@@ -659,22 +691,22 @@ const copy = () => {
               />
               <circle
                 class="node"
-                :cx="atX(i * length)"
+                :cx="atX(node.x)"
                 :cy="axis.y - 14 * em"
-                :r="ringAround(node)"
+                :r="ringAround(node.label)"
                 fill="#ffffff"
                 stroke="#000000"
               />
               <text
                 class="node"
-                :x="atX(i * length)"
+                :x="atX(node.x)"
                 :y="axis.y - 14 * em"
                 text-anchor="middle"
                 dominant-baseline="central"
                 :font-size="LABEL_SIZE"
                 fill="#000000"
               >
-                {{ node }}
+                {{ node.label }}
               </text>
             </g>
 

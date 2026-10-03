@@ -61,7 +61,8 @@
     "pointAlongHint": "Наведите на стержень, чтобы прочитать сечение",
     "hideEmptyRows": "Скрыть пустые строки",
     "emptyRowsHidden": "скрыто пустых: {n}",
-    "step": "Шаг"
+    "step": "Шаг",
+    "wholeBeam": "Вся балка"
   },
   "nodes": {
     "addNode": "Добавить узел",

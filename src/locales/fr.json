@@ -61,7 +61,8 @@
     "pointAlongHint": "Pointez la barre pour lire une section",
     "hideEmptyRows": "Masquer les lignes vides",
     "emptyRowsHidden": "{n} vides masquées",
-    "step": "Pas"
+    "step": "Pas",
+    "wholeBeam": "Poutre entière"
   },
   "nodes": {
     "addNode": "Ajouter un nœud",
