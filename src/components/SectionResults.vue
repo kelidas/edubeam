@@ -356,9 +356,6 @@ const turningMarks = computed(() =>
   })
 );
 
-/** Beyond a dozen the numbers would sit on top of one another, so only the ordinates are drawn. */
-const labelled = computed(() => marks.value.length <= 13);
-
 /**
  * Where the quantity on show steps, which is not everywhere a section is read either side.
  *
@@ -447,21 +444,20 @@ const labels = computed<DiagramLabel[]>(() => {
     });
   }
 
-  if (labelled.value) {
-    for (const mark of marks.value) {
-      // a pair that does step here is already written, as two numbers rather than one
-      if (mark.side === -1 && stepsHere(mark.at)) continue;
-      // and where it does not step, the two carry the same number: one of them says it
-      if (mark.side === 1) continue;
+  // every section asks for its number; where they are too close, every other one or so is kept
+  for (const mark of marks.value) {
+    // a pair that does step here is already written, as two numbers rather than one
+    if (mark.side === -1 && stepsHere(mark.at)) continue;
+    // and where it does not step, the two carry the same number: one of them says it
+    if (mark.side === 1) continue;
 
-      wanted.push({
-        x: mark.x,
-        y: mark.y + (mark.value >= 0 ? 10 * em : -5 * em),
-        anchor: 'middle',
-        text: mark.text,
-        kind: 'ordinate',
-      });
-    }
+    wanted.push({
+      x: mark.x,
+      y: mark.y + (mark.value >= 0 ? 10 * em : -5 * em),
+      anchor: 'middle',
+      text: mark.text,
+      kind: 'ordinate',
+    });
   }
 
   const kept: DiagramLabel[] = [];

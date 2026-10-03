@@ -148,14 +148,23 @@ describe('what the widget draws', () => {
     expect(w.findAll('svg text.turn')).toHaveLength(1);
   });
 
-  it('drops the labels once they would sit on top of one another', async () => {
+  it('thins the labels out once they would sit on top of one another, rather than dropping them all', async () => {
     build();
     const w = widget();
 
     await w.findComponent({ name: 'VTextField' }).setValue(40);
 
     expect(w.findAll('svg circle.ordinate')).toHaveLength(41);
-    expect(w.findAll('svg text.ordinate')).toHaveLength(0);
+
+    const xs = w
+      .findAll('svg text.ordinate')
+      .map((t) => Number(t.attributes('x')))
+      .sort((a, b) => a - b);
+
+    expect(xs.length).toBeGreaterThan(1);
+    expect(xs.length).toBeLessThan(41);
+    // what is kept stands apart: no two numbers written over each other
+    xs.slice(1).forEach((x, i) => expect(x - xs[i]).toBeGreaterThan(20));
   });
 
   it('writes a value that is only numerical noise as zero', () => {
@@ -394,8 +403,8 @@ describe('the numbers at a jump', () => {
     await draw(w, 'V');
     await w.findAllComponents({ name: 'VTextField' })[0].setValue(40);
 
-    // the regular sections give their labels up, the jump does not
-    expect(w.findAll('svg text.ordinate')).toHaveLength(0);
+    // the regular sections give some of their labels up, the jump does not
+    expect(w.findAll('svg text.ordinate').length).toBeLessThan(41);
     expect(w.findAll('svg text.jump')).toHaveLength(2);
   });
 
