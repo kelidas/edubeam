@@ -156,15 +156,16 @@ describe('what the widget draws', () => {
 
     expect(w.findAll('svg circle.ordinate')).toHaveLength(41);
 
-    const xs = w
+    const kept = w
       .findAll('svg text.ordinate')
-      .map((t) => Number(t.attributes('x')))
-      .sort((a, b) => a - b);
+      .map((t) => ({ x: Number(t.attributes('x')), y: Number(t.attributes('y')) }));
 
-    expect(xs.length).toBeGreaterThan(1);
-    expect(xs.length).toBeLessThan(41);
-    // what is kept stands apart: no two numbers written over each other
-    xs.slice(1).forEach((x, i) => expect(x - xs[i]).toBeGreaterThan(20));
+    expect(kept.length).toBeGreaterThan(1);
+    expect(kept.length).toBeLessThan(41);
+    // what is kept stands apart: no two numbers written over each other, near across and on one line
+    kept.forEach((a, i) =>
+      kept.slice(i + 1).forEach((b) => expect(Math.abs(a.x - b.x) > 20 || Math.abs(a.y - b.y) >= 11).toBe(true))
+    );
   });
 
   it('writes a value that is only numerical noise as zero', () => {
