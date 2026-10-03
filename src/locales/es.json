@@ -763,18 +763,5 @@
       "firstBeam": "Reemplazada por la tarea «primera viga»",
       "restore": "Reemplazada por una estructura restaurada"
     }
-  },
-  "freeBody": {
-    "elementForces": "Fuerzas en los extremos",
-    "nodeEquilibrium": "Equilibrio del nudo",
-    "local": "Local",
-    "global": "Global",
-    "load": "Carga",
-    "reaction": "Reacción",
-    "balanced": "En equilibrio",
-    "notSolved": "Aún no hay resultados: la estructura no se ha resuelto.",
-    "nodeMissing": "El nudo {label} ya no existe.",
-    "elementHint": "Lo que los nudos ejercen sobre el elemento",
-    "nodeHint": "Fuerzas que actúan sobre el nudo"
   }
 }

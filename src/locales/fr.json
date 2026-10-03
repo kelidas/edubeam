@@ -763,18 +763,5 @@
       "firstBeam": "Remplacée par la tâche « première poutre »",
       "restore": "Remplacée par une structure restaurée"
     }
-  },
-  "freeBody": {
-    "elementForces": "Efforts aux extrémités",
-    "nodeEquilibrium": "Équilibre du nœud",
-    "local": "Local",
-    "global": "Global",
-    "load": "Charge",
-    "reaction": "Réaction",
-    "balanced": "En équilibre",
-    "notSolved": "Pas encore de résultats : la structure n'a pas été calculée.",
-    "nodeMissing": "Le nœud {label} n'existe plus.",
-    "elementHint": "Ce que les nœuds exercent sur l'élément",
-    "nodeHint": "Forces agissant sur le nœud"
   }
 }

@@ -763,18 +763,5 @@
       "firstBeam": "Zastąpiony zadaniem „pierwsza belka”",
       "restore": "Zastąpiony przywróconym modelem"
     }
-  },
-  "freeBody": {
-    "elementForces": "Siły na końcach pręta",
-    "nodeEquilibrium": "Równowaga węzła",
-    "local": "Lokalny",
-    "global": "Globalny",
-    "load": "Obciążenie",
-    "reaction": "Reakcja",
-    "balanced": "W równowadze",
-    "notSolved": "Brak wyników: konstrukcja nie została obliczona.",
-    "nodeMissing": "Węzeł {label} już nie istnieje.",
-    "elementHint": "Siły, którymi węzły działają na pręt",
-    "nodeHint": "Siły działające na węzeł"
   }
 }
