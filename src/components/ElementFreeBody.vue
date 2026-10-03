@@ -42,7 +42,7 @@ const ARC = 24;
 /** The tallest a distributed load is drawn, and the shortest of its arrows that still shows. */
 const BAND = 46;
 const BAND_MIN = 10;
-const FONT = 15;
+const FONT = 18;
 
 const axes = computed(() => elementAxes(props.element));
 const along = computed<Vec>(() => ({ x: axes.value.along.x, y: axes.value.along.z }));
@@ -175,7 +175,11 @@ const bands = computed(() =>
       const uniform = Math.abs(qa - qb) <= Math.max(Math.abs(qa), Math.abs(qb)) * 1e-9;
 
       if (parallel) {
-        const side = { x: -normal.value.x * 18, y: -normal.value.y * 18 };
+        // beside the element on the side the other component's arrows point to, away from their tails
+        const other = shape.start[key === 'fx' ? 'fz' : 'fx'] + shape.end[key === 'fx' ? 'fz' : 'fx'];
+        const otherAxis = directions.value[1 - i];
+        const toward = Math.sign(other * (otherAxis.x * normal.value.x + otherAxis.y * normal.value.y)) || -1;
+        const side = { x: normal.value.x * 18 * toward, y: normal.value.y * 18 * toward };
         const from = { x: a.x + side.x, y: a.y + side.y };
         const to = { x: b.x + side.x, y: b.y + side.y };
         const sign = Math.sign(qa || qb);
@@ -185,7 +189,8 @@ const bands = computed(() =>
           const at = { x: from.x + t * (to.x - from.x), y: from.y + t * (to.y - from.y) };
           return forceArrow(at, direction, 10, true).head;
         });
-        const middle = { x: (from.x + to.x) / 2, y: (from.y + to.y) / 2 };
+        // off the middle, where a point load usually sits and the band across has its number
+        const middle = { x: from.x + 0.7 * (to.x - from.x), y: from.y + 0.7 * (to.y - from.y) };
         const away = unit(side);
         const texts: Text[] = uniform
           ? [{ key: 'q', label: labelBeyond(middle, away, 8), text: props.show(Math.abs(qa)) }]
@@ -221,8 +226,10 @@ const bands = computed(() =>
       const outline = tails.map((p) => `${p.x},${p.y}`).join(' ');
       const fill = `${a.x},${a.y} ${outline} ${b.x},${b.y}`;
       const away = (tail: Vec, at: Vec) => unit({ x: tail.x - at.x, y: tail.y - at.y });
-      const middleTail = tails[Math.floor(tails.length / 2)];
-      const middleAt = pointAt((shape.from + shape.to) / 2);
+      // a third of the way along rather than in the middle, where a point load usually sits
+      const third = Math.round((tails.length - 1) * 0.3);
+      const middleTail = tails[third];
+      const middleAt = pointAt(shape.from + ((shape.to - shape.from) * third) / (tails.length - 1));
       const texts: Text[] = uniform
         ? [{ key: 'q', label: labelBeyond(middleTail, away(middleTail, middleAt), 6), text: props.show(Math.abs(qa)) }]
         : [

@@ -125,8 +125,16 @@ const arrows = computed(() =>
 
       const arrow = forceArrow(at, direction, length, !stub);
 
-      // an element's arrow pointing at the node would write its number on the node: it goes at the tail
-      if (stub && Math.hypot(arrow.tip.x, arrow.tip.y) < Math.hypot(arrow.from.x, arrow.from.y)) {
+      if (stub && Math.abs(direction.x * stub.x + direction.y * stub.y) > 0.9) {
+        // Along its element an arrow's number would sit on the element itself: it goes beside the
+        // middle of the arrow instead, on the side the element's other component does not point to.
+        const across = { x: -stub.y, y: stub.x };
+        const other = components.value[i][1 - k].value;
+        const side = other > 0 ? -1 : 1;
+        const middle = { x: (arrow.from.x + arrow.tip.x) / 2, y: (arrow.from.y + arrow.tip.y) / 2 };
+        arrow.label = labelBeyond(middle, { x: across.x * side, y: across.y * side }, 10);
+      } else if (stub && Math.hypot(arrow.tip.x, arrow.tip.y) < Math.hypot(arrow.from.x, arrow.from.y)) {
+        // pointing at the node, its number would be written on the node: it goes at the tail
         arrow.label = labelBeyond(arrow.from, { x: -direction.x, y: -direction.y });
       }
 
