@@ -283,10 +283,11 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
           lcs.value
         );
       case 'concentrated_deformation':
+        // a section opens along and across its own element, so there is no system to choose
         return loadCase.createBeamConcentratedDeformation(
           elementId,
           [realFx.value, realFz.value, realMy.value, realDist.value],
-          lcs.value
+          true
         );
       case 'temperature':
         return loadCase.createBeamTemperatureLoad(elementId, [realTc.value, realTbt.value, 0]);
