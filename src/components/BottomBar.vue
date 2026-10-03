@@ -608,18 +608,25 @@
                 height="16"
                 aria-hidden="true"
               >
-                <!-- a support moved: where it was, dashed, where it went, and the move between them -->
+                <!-- a pin moved: where it was, dashed, where it went, and the move between them; a pin as
+                     the support picker draws one, a bare triangle, since a line under it is a roller -->
                 <polygon
-                  points="4.5,2 1.5,7 7.5,7"
+                  points="5,1.5 1.2,8 8.8,8"
                   fill="none"
                   stroke="currentColor"
                   stroke-width="1"
+                  stroke-linejoin="round"
                   stroke-dasharray="1.6 1.2"
                 />
-                <polygon points="14.5,8 11.5,13 17.5,13" fill="none" stroke="currentColor" stroke-width="1.3" />
-                <line x1="11" y1="15" x2="18" y2="15" stroke="currentColor" stroke-width="1.3" />
-                <line x1="6.5" y1="5" x2="10.8" y2="7.6" stroke="currentColor" stroke-width="1.2" />
-                <polygon points="12.6,8.7 9.4,8.4 10.9,6" fill="currentColor" />
+                <polygon
+                  points="14.5,7.5 10.2,14.5 18.8,14.5"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.3"
+                  stroke-linejoin="round"
+                />
+                <line x1="7.4" y1="5.2" x2="10.6" y2="7.7" stroke="currentColor" stroke-width="1.2" />
+                <polygon points="12.5,9.2 9.3,8.9 10.9,6.5" fill="currentColor" />
               </svg>
               <svg
                 v-else-if="loadTypeKey(item) === 'udl'"
