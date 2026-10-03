@@ -163,9 +163,9 @@ describe('what the widget draws', () => {
 
     expect(kept.length).toBeGreaterThan(1);
     expect(kept.length).toBeLessThan(41);
-    // what is kept stands apart: no two numbers written over each other, near across and on one line
+    // what is kept stands apart: upright, two numbers side by side need only a line of text between them
     kept.forEach((a, i) =>
-      kept.slice(i + 1).forEach((b) => expect(Math.abs(a.x - b.x) > 20 || Math.abs(a.y - b.y) >= 11).toBe(true))
+      kept.slice(i + 1).forEach((b) => expect(Math.abs(a.x - b.x) >= 12 || Math.abs(a.y - b.y) >= 11).toBe(true))
     );
   });
 
@@ -388,9 +388,13 @@ describe('the numbers at a jump', () => {
     const w = widget();
 
     await draw(w, 'vz');
-    const anchors = w.findAll('svg text.jump').map((t) => t.attributes('text-anchor'));
+    // written upright, the pair stand side by side: before the step left of its ordinate, after it right
+    const xs = w.findAll('svg text.jump').map((t) => Number(t.attributes('x')));
+    const ordinate = 10 + (300 * 2.5) / 6;
 
-    expect(anchors).toEqual(['end', 'start']);
+    expect(xs[0]).toBeLessThan(ordinate);
+    expect(xs[1]).toBeGreaterThan(ordinate);
+    w.findAll('svg text.jump').forEach((t) => expect(t.attributes('transform')).toContain('rotate(-90'));
   });
 
   it('keeps them when the sections are too many to label', async () => {

@@ -289,9 +289,11 @@ const em = LABEL_SIZE / MEASURED_AT;
  */
 const ringAround = (node: string) => 1 + (LABEL_SIZE / 2) * (1 + Math.pow(String(node).length - 1, 1.7) * 0.3);
 
-const PLOT_HEIGHT = Math.round(132 * em);
 const PAD_X = 10;
-const PAD_Y = Math.round(30 * em);
+/** How far the curve reaches either side of the axis at its peak. */
+const REACH = Math.round(46 * em);
+/** The space between the end of an ordinate and the number written beyond it. */
+const GAP = 4 * em;
 
 let observer: ResizeObserver | null = null;
 
@@ -318,10 +320,25 @@ watch(
 
 onBeforeUnmount(() => observer?.disconnect());
 
+/**
+ * Tall enough for the curve and, beyond it either side, the longest number written along an
+ * ordinate: written upright, a number takes height rather than width.
+ */
+const plotHeight = computed(() => {
+  const longest = Math.max(
+    0,
+    ...sections.value.map((s) =>
+      widthOf(showBriefly(quantityOf(drawn.value).convert(s[drawn.value]), drawn.value), LABEL_SIZE)
+    )
+  );
+
+  return Math.round(2 * (REACH + GAP + 3 * em + longest + 4 * em));
+});
+
 /** Where the axis sits and how far the diagram may reach either side of it. */
 const axis = computed(() => ({
-  y: PLOT_HEIGHT / 2,
-  reach: PLOT_HEIGHT / 2 - PAD_Y,
+  y: plotHeight.value / 2,
+  reach: REACH,
   left: PAD_X,
   right: Math.max(PAD_X + 20, plotWidth.value - PAD_X),
 }));
@@ -410,56 +427,67 @@ const stepsHere = (at: number) =>
  * across a diagram sit about sixty pixels apart and are forty wide, so they only collide near a
  * jump or a peak - which is exactly where the numbers that matter are.
  */
+/**
+ * A number written upright beside an ordinate, reading upwards: anchored at `y`, it runs down from
+ * there (`end`) for a value drawn below the axis and up (`start`) for one drawn above it, so it
+ * always reads away from the curve. Upright, the numbers of neighbouring sections stand side by
+ * side a line apart rather than needing their whole length between them.
+ */
 interface DiagramLabel {
   x: number;
   y: number;
-  anchor: 'start' | 'middle' | 'end';
+  anchor: 'start' | 'end';
   text: string;
   kind: 'turn' | 'jump' | 'ordinate';
 }
 
-const spans = (label: DiagramLabel): [number, number] => {
-  const width = widthOf(label.text, LABEL_SIZE);
+/** The box a label takes: a line of text across, its length along the ordinate. */
+const box = (label: DiagramLabel) => {
+  const length = widthOf(label.text, LABEL_SIZE);
+  const half = LABEL_SIZE / 2;
 
-  if (label.anchor === 'end') return [label.x - width, label.x];
-  if (label.anchor === 'start') return [label.x, label.x + width];
-
-  return [label.x - width / 2, label.x + width / 2];
+  return {
+    across: [label.x - half, label.x + half] as const,
+    along: (label.anchor === 'end' ? [label.y, label.y + length] : [label.y - length, label.y]) as readonly [
+      number,
+      number,
+    ],
+  };
 };
 
 /**
- * The same label, nudged back inside the drawing.
- *
- * The section at either end sits against the edge, and half of a number centred on it hangs off the
- * side and is cut. Moving it in by the overflow keeps it whole and still nearest its own ordinate,
- * which is the most that can be done for it.
+ * The same label, nudged back inside the drawing: the section at either end sits against the edge,
+ * and half a line of text there hangs off the side.
  */
 const fitted = (label: DiagramLabel): DiagramLabel => {
-  const [from, to] = spans(label);
+  const [from, to] = box(label).across;
   const over = Math.max(0, to - (plotWidth.value - 1)) - Math.max(0, 1 - from);
 
   return over === 0 ? label : { ...label, x: label.x - over };
 };
 
 const clashes = (a: DiagramLabel, b: DiagramLabel) => {
-  // labels on different lines do not fight, whatever their distance across
-  if (Math.abs(a.y - b.y) >= 11 * em) return false;
+  const one = box(a);
+  const other = box(b);
+  const overlap = (p: readonly [number, number], q: readonly [number, number], gap: number) =>
+    p[0] < q[1] + gap && q[0] < p[1] + gap;
 
-  const [aFrom, aTo] = spans(a);
-  const [bFrom, bTo] = spans(b);
-
-  return aFrom < bTo + 2 * em && bFrom < aTo + 2 * em;
+  return overlap(one.across, other.across, em) && overlap(one.along, other.along, 2 * em);
 };
+
+/** Away from the axis, the way a value is drawn: down for a positive one, up for a negative one. */
+const outward = (value: number) => (value >= 0 ? 1 : -1);
 
 const labels = computed<DiagramLabel[]>(() => {
   const wanted: DiagramLabel[] = [];
 
   for (const mark of marks.value) {
     if (mark.side && stepsHere(mark.at)) {
+      // the two of a pair stand either side of the ordinate, a line of text apart
       wanted.push({
-        x: mark.x + mark.side * 3 * em,
-        y: mark.y + (mark.side === -1 ? -5 * em : 12 * em),
-        anchor: mark.side === -1 ? 'end' : 'start',
+        x: mark.x + mark.side * (LABEL_SIZE / 2 + em),
+        y: mark.y + outward(mark.value) * GAP,
+        anchor: mark.value >= 0 ? 'end' : 'start',
         text: mark.text,
         kind: 'jump',
       });
@@ -467,10 +495,11 @@ const labels = computed<DiagramLabel[]>(() => {
   }
 
   for (const mark of turningMarks.value) {
+    // past the ring that marks it
     wanted.push({
       x: mark.x,
-      y: mark.y + (mark.value >= 0 ? 19 * em : -13 * em),
-      anchor: 'middle',
+      y: mark.y + outward(mark.value) * (GAP + 3 * em),
+      anchor: mark.value >= 0 ? 'end' : 'start',
       text: mark.text,
       kind: 'turn',
     });
@@ -485,8 +514,8 @@ const labels = computed<DiagramLabel[]>(() => {
 
     wanted.push({
       x: mark.x,
-      y: mark.y + (mark.value >= 0 ? 10 * em : -5 * em),
-      anchor: 'middle',
+      y: mark.y + outward(mark.value) * GAP,
+      anchor: mark.value >= 0 ? 'end' : 'start',
       text: mark.text,
       kind: 'ordinate',
     });
@@ -660,8 +689,8 @@ const copy = () => {
           <svg
             ref="plot"
             class="d-block mb-2"
-            :viewBox="`0 0 ${plotWidth} ${PLOT_HEIGHT}`"
-            :height="PLOT_HEIGHT"
+            :viewBox="`0 0 ${plotWidth} ${plotHeight}`"
+            :height="plotHeight"
             style="width: 100%; touch-action: none; cursor: crosshair"
             @pointermove="track"
             @pointerdown="track"
@@ -683,6 +712,8 @@ const copy = () => {
               :x="written.x"
               :y="written.y"
               :text-anchor="written.anchor"
+              :transform="`rotate(-90 ${written.x} ${written.y})`"
+              dy="0.35em"
               :font-size="LABEL_SIZE"
               :font-weight="written.kind === 'turn' ? 600 : 400"
               :fill="written.kind === 'turn' ? '#ef6c00' : '#1976d2'"
@@ -750,7 +781,7 @@ const copy = () => {
                 :x1="atX(asked.x)"
                 y1="4"
                 :x2="atX(asked.x)"
-                :y2="PLOT_HEIGHT - 4"
+                :y2="plotHeight - 4"
                 stroke="#d81b60"
                 stroke-width="1"
                 stroke-dasharray="3 2"
