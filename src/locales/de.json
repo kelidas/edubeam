@@ -405,5 +405,13 @@
       "title": "Speichern & Teilen",
       "body": "Speichere das Modell als Datei, kopiere einen Link, der die ganze Struktur enthält, oder binde eine schreibgeschützte Ansicht in eine eigene Seite ein."
     }
+  },
+  "freeBody": {
+    "elementTab": "Freigeschnittener Stab",
+    "nodeTab": "Knotengleichgewicht",
+    "load": "Last",
+    "reaction": "Auflagerkraft",
+    "balanced": "Im Gleichgewicht",
+    "nodeMissing": "Knoten {label} existiert nicht mehr."
   }
 }

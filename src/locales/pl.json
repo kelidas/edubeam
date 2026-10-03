@@ -405,5 +405,13 @@
       "title": "Zapis i udostępnianie",
       "body": "Zapisz model do pliku, skopiuj link zawierający całą konstrukcję albo osadź podgląd tylko do odczytu na własnej stronie."
     }
+  },
+  "freeBody": {
+    "elementTab": "Pręt wycięty",
+    "nodeTab": "Równowaga węzła",
+    "load": "Obciążenie",
+    "reaction": "Reakcja",
+    "balanced": "W równowadze",
+    "nodeMissing": "Węzeł {label} już nie istnieje."
   }
 }

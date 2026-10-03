@@ -405,5 +405,13 @@
       "title": "Guardar y compartir",
       "body": "Guarda el modelo como archivo, copia un enlace que contiene toda la estructura o incrusta un visor de solo lectura en tu propia página."
     }
+  },
+  "freeBody": {
+    "elementTab": "Cuerpo libre",
+    "nodeTab": "Equilibrio del nudo",
+    "load": "Carga",
+    "reaction": "Reacción",
+    "balanced": "En equilibrio",
+    "nodeMissing": "El nudo {label} ya no existe."
   }
 }

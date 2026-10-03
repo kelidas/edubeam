@@ -405,5 +405,13 @@
       "title": "Enregistrer et partager",
       "body": "Enregistrez le modèle dans un fichier, copiez un lien contenant toute la structure, ou intégrez une vue en lecture seule dans votre page."
     }
+  },
+  "freeBody": {
+    "elementTab": "Corps libre",
+    "nodeTab": "Équilibre du nœud",
+    "load": "Charge",
+    "reaction": "Réaction",
+    "balanced": "En équilibre",
+    "nodeMissing": "Le nœud {label} n'existe plus."
   }
 }

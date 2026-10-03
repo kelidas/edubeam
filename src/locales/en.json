@@ -504,5 +504,13 @@
     "title": "Examples",
     "instructions": "Open a ready-made model to explore. It replaces the current one, and Ctrl+Z brings yours back.",
     "moreInDocs": "More examples and exercises"
+  },
+  "freeBody": {
+    "elementTab": "Free body",
+    "nodeTab": "Node equilibrium",
+    "load": "Load",
+    "reaction": "Reaction",
+    "balanced": "In equilibrium",
+    "nodeMissing": "Node {label} no longer exists."
   }
 }

@@ -27,8 +27,8 @@ const props = withDefaults(
     fills the frame and its content scrolls within it, which is what makes the resize worth having.
   -->
   <vue-draggable-resizable
-    :w="400"
-    :h="320"
+    :w="props.widget.props.w ?? 400"
+    :h="props.widget.props.h ?? 320"
     :min-width="240"
     :min-height="160"
     :x="props.widget.props.x"

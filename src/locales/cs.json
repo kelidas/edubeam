@@ -496,5 +496,13 @@
     "title": "Příklady",
     "instructions": "Otevřete připravený model a zkoumejte ho. Nahradí ten současný, Ctrl+Z vám ho vrátí zpět.",
     "moreInDocs": "Další příklady a cvičení"
+  },
+  "freeBody": {
+    "elementTab": "Uvolněný prut",
+    "nodeTab": "Rovnováha styčníku",
+    "load": "Zatížení",
+    "reaction": "Reakce",
+    "balanced": "V rovnováze",
+    "nodeMissing": "Uzel {label} už neexistuje."
   }
 }

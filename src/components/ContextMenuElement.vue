@@ -165,7 +165,11 @@ watch([n1, n2], () => {
       link
       class="text-body-2"
       @click="
-        layoutStore.openWidget($t('common.elementMatrices'), ElementMatrices, { label: projectStore.selection.label });
+        layoutStore.openWidget($t('common.elementMatrices'), ElementMatrices, {
+          label: projectStore.selection.label,
+          w: 480,
+          h: 520,
+        });
         projectStore.selection.type = null;
       "
     >

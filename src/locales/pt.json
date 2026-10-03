@@ -405,5 +405,13 @@
       "title": "Salvar e compartilhar",
       "body": "Salve o modelo como arquivo, copie um link que carrega toda a estrutura ou incorpore um visualizador somente leitura na sua página."
     }
+  },
+  "freeBody": {
+    "elementTab": "Corpo livre",
+    "nodeTab": "Equilíbrio do nó",
+    "load": "Carga",
+    "reaction": "Reação",
+    "balanced": "Em equilíbrio",
+    "nodeMissing": "O nó {label} já não existe."
   }
 }
