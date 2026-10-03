@@ -149,6 +149,34 @@ describe('the Structure F tab', () => {
 
   const colHeaders = (wrapper: ReturnType<typeof open>) => wrapper.findAll('thead th').map((th) => th.text());
 
+  /**
+   * K and F are one system written twice: a row of each is the same equation, whichever switches
+   * are on - including an equation that carries no load, which used to drop out of F alone.
+   */
+  it('lists the same equations as K, whatever is switched on', async () => {
+    const store = buildLoaded();
+    const wrapper = open({});
+    const rowNames = () => wrapper.findAll('tbody th').map((th) => th.text());
+    const checkbox = (start: string) => wrapper.findAll('.v-checkbox-btn').find((c) => c.text().startsWith(start))!;
+
+    store.selection2.elements = ['a'];
+    await nextTick();
+
+    for (const toggle of [null, 'Free block', 'Hide empty', 'Selected elem']) {
+      if (toggle) {
+        const input = checkbox(toggle).find('input');
+        await input.setValue(!(input.element as HTMLInputElement).checked);
+        await nextTick();
+      }
+
+      await openTab(wrapper, 'Structure K');
+      const k = rowNames();
+      await openTab(wrapper, 'Structure F');
+
+      expect(rowNames()).toEqual(k);
+    }
+  });
+
   it('offers F node, F elem, F, K·rₚ, b and r as a short header plus a tooltip, not a paragraph', async () => {
     buildLoaded();
     const wrapper = open({});

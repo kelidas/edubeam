@@ -149,21 +149,38 @@ const VECTOR_COLUMNS = [
   ['r', 'common.rHint'],
 ] as const;
 
-/**
- * The equations "Structure F" shows: the free block, or everything - filtered down to a selection's
- * own rows, same as K can be, but by filtering the real, whole-system vectors rather than
- * re-assembling a smaller structure's worth of them, which would be a different reading entirely.
- */
-const structureFRows = computed(() => {
+/** The assembled structure: all of it, or only what the elements picked in the drawing contribute. */
+const structureGrid = computed<Grid>(() => {
   if (!hasSystemMatrix(projectStore.solver)) return [];
 
-  const size = reduced.value ? projectStore.solver.neq : projectStore.solver.neq + projectStore.solver.pneq;
-  const all = Array.from({ length: size }, (_, i) => i);
+  return selectionOnly.value && selected.value.length > 0
+    ? assembleFrom(projectStore.solver, selected.value, reduced.value)
+    : systemStiffness(projectStore.solver, reduced.value);
+});
 
-  if (!selectionOnly.value || selected.value.length === 0) return all;
+/**
+ * The equations both structure tabs show, so a row of K and a row of F are always the same
+ * equation and the two tables are the same length: the free block or everything; with a selection,
+ * the equations its elements reach; and with empty rows hidden, those the matrix has nothing in.
+ *
+ * F follows K's rows rather than its own zeros - an equation without a load on it is still an
+ * equation, and leaving it out of one table but not the other read as two different systems.
+ */
+const structureRows = computed<number[]>(() => {
+  const grid = structureGrid.value;
+  let rows = grid.map((_, i) => i);
 
-  const equations = new Set(selected.value.flatMap((el) => el.getLocationArray()));
-  return all.filter((i) => equations.has(i));
+  if (selectionOnly.value && selected.value.length > 0) {
+    const reached = new Set(selected.value.flatMap((el) => el.getLocationArray()));
+    rows = rows.filter((i) => reached.has(i));
+  }
+
+  if (hideEmpty.value) {
+    const used = new Set(occupied(grid));
+    rows = rows.filter((i) => used.has(i));
+  }
+
+  return rows;
 });
 
 /** What the open tab puts in the one table below: its numbers, and the names around them. */
@@ -196,14 +213,10 @@ const view = computed(() => {
   }
 
   if (tab.value === 'structureK') {
-    const grid = !hasSystemMatrix(projectStore.solver)
-      ? []
-      : selectionOnly.value
-        ? assembleFrom(projectStore.solver, selected.value, reduced.value)
-        : systemStiffness(projectStore.solver, reduced.value);
+    const grid = structureGrid.value;
     // the same names as an element's own, so one element's 6x6 can be found inside the assembled one
     const names = grid.length ? structureDofNames(projectStore.solver) : [];
-    const kept = hideEmpty.value ? occupied(grid) : grid.map((_, i) => i);
+    const kept = structureRows.value;
 
     return { ...nothing, grid: only(grid, kept), rows: kept.map((i) => names[i]), cols: kept.map((i) => names[i]) };
   }
@@ -229,8 +242,7 @@ const view = computed(() => {
       r[i]?.[0] ?? NaN,
     ];
 
-    const all = structureFRows.value;
-    const kept = hideEmpty.value ? all.filter((i) => row(i).some((v) => !Number.isNaN(v) && v !== 0)) : all;
+    const kept = structureRows.value;
 
     return {
       grid: kept.map(row),
@@ -243,25 +255,11 @@ const view = computed(() => {
   return { ...nothing, grid: localStiffness(el!, condensed.value), rows: dofNames.value, cols: dofNames.value };
 });
 
-/** How many rows the open tab is not showing, which is worth saying rather than hiding. */
+/** How many rows the structure tabs are not showing, which is worth saying rather than hiding. */
 const dropped = computed(() => {
-  if (!hideEmpty.value || !hasSystemMatrix(projectStore.solver)) return 0;
+  if (tab.value !== 'structureK' && tab.value !== 'structureF') return 0;
 
-  if (tab.value === 'structureK') {
-    const size = selectionOnly.value
-      ? assembleFrom(projectStore.solver, selected.value, reduced.value).length
-      : systemStiffness(projectStore.solver, reduced.value).length;
-
-    return size - view.value.grid.length;
-  }
-
-  if (tab.value === 'structureF') {
-    if (!loadCase.value) return 0;
-
-    return structureFRows.value.length - view.value.grid.length;
-  }
-
-  return 0;
+  return structureGrid.value.length - structureRows.value.length;
 });
 
 /** A square matrix gets its leading diagonal marked; a set of vectors has no diagonal to mark. */
