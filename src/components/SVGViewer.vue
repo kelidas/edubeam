@@ -25,6 +25,7 @@ import SVGElementConcentratedLoad from './svg/ElementConcentratedLoad.vue';
 import SVGElementConcentratedDeformation from './svg/ElementConcentratedDeformation.vue';
 import SVGNodalLoad from './svg/NodalLoad.vue';
 import SVGPrescribedDisplacement from './svg/PrescribedDisplacement.vue';
+import { drawnPrescribed } from '@/utils/drawnPrescribed';
 import SVGNode from './svg/Node.vue';
 import SVGSolveIssues from './svg/SolveIssues.vue';
 import SVGElement from './svg/Element.vue';
@@ -3272,7 +3273,7 @@ defineExpose({ centerContent, fitContent });
               "
             />
             <SVGPrescribedDisplacement
-              v-for="(nload, index) in viewerLoadCase.prescribedBC"
+              v-for="{ nload, index } in drawnPrescribed(viewerLoadCase.prescribedBC)"
               :key="`prescribed-bc-${index}`"
               :class="{ selected: projectStore.selection2.prescribedBC.includes(index), 'load-off': !nload.active }"
               :nload="nload"
