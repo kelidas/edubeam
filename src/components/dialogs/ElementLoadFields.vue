@@ -159,11 +159,7 @@
           </v-col>
         </template>
 
-        <v-col
-          v-if="['udl', 'trapezoidal', 'concentrated'].includes(loadType)"
-          cols="12"
-          md="12"
-        >
+        <v-col v-if="['udl', 'trapezoidal', 'concentrated'].includes(loadType)" cols="12" md="12">
           <v-checkbox
             v-model="lcs"
             v-tooltip="{ text: $t('common.lcs'), location: 'left', openOnClick: !deviceHasHover }"
