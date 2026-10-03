@@ -51,6 +51,14 @@ const nodes = computed<Node[]>(() => {
 });
 
 /**
+ * How far below the element a dimension is drawn, in pixels so it stays clear of the element, its
+ * supports and its labels however small the preview - a share of the element's length came out a
+ * few pixels there, on the beam - and how far apart two of them are stacked.
+ */
+const DIMENSION_OFFSET_PX = 30;
+const DIMENSION_STEP_PX = 24;
+
+/**
  * What the preview measures out: where along the element the load sits.
  *
  * A concentrated load has one such distance and a trapezoidal load given a position has two, and
@@ -75,7 +83,6 @@ const dimensionLines = computed(() => {
 
   const cos = geo.dx / elementLength || 0;
   const sin = geo.dz / elementLength || 0;
-  const step = Math.min(Math.max(elementLength * 0.15, 0.25), 2);
 
   /** One dimension, from the first node to a point that far along the element. */
   const measured = (distance: number, label: string, line: number) => {
@@ -92,7 +99,8 @@ const dimensionLines = computed(() => {
         createDimensionRenderableNode({ x: to.coords[0], y: to.coords[2] }, to.label),
       ],
       // stacked, so two of them are read one under the other rather than on top of each other
-      distance: step * line,
+      distance: DIMENSION_OFFSET_PX + (line - 1) * DIMENSION_STEP_PX,
+      distanceUnit: 'pixel' as const,
       numberFormat: appStore.numberFormatter,
       convertLength: appStore.convertLength,
     };
