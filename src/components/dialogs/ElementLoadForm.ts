@@ -328,7 +328,7 @@ export function useElementLoadForm(loadTypeRef: Ref<string>, targetElementIdRef:
         elementId,
         domain,
         [realFx.value, realFz.value, realMy.value, realDist.value],
-        lcs.value
+        true
       );
     }
     if (loadTypeRef.value === 'temperature') {
