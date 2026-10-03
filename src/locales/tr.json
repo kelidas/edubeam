@@ -75,7 +75,8 @@
     "fTotalHint": "F node + F elem, before any support is accounted for.",
     "bHint": "What the free block is solved against: f minus the prescribed block's contribution.",
     "rHint": "The solved displacement: free equations and prescribed ones alike.",
-    "couplingHint": "K[free,prescribed] times r[prescribed]: what a settlement couples back into the free block. b = F minus this."
+    "couplingHint": "K[free,prescribed] times r[prescribed]: what a settlement couples back into the free block. b = F minus this.",
+    "wholeBeam": "Tüm kiriş"
   },
   "nodes": {
     "addNode": "Düğüm ekle",

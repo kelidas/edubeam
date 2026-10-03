@@ -75,7 +75,8 @@
     "undo": "Undo",
     "redo": "Redo",
     "ok": "OK",
-    "name": "Name"
+    "name": "Name",
+    "wholeBeam": "Whole beam"
   },
   "nodes": {
     "addNode": "Add node",

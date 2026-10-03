@@ -69,7 +69,8 @@
     "undo": "Zpět",
     "redo": "Znovu",
     "ok": "OK",
-    "name": "Název"
+    "name": "Název",
+    "wholeBeam": "Celý nosník"
   },
   "tabs": {
     "nodes": "Uzly",
