@@ -763,5 +763,18 @@
       "firstBeam": "Replaced by the first-beam task",
       "restore": "Replaced by a restored structure"
     }
+  },
+  "freeBody": {
+    "elementForces": "End forces",
+    "nodeEquilibrium": "Node equilibrium",
+    "local": "Local",
+    "global": "Global",
+    "load": "Load",
+    "reaction": "Reaction",
+    "balanced": "In equilibrium",
+    "notSolved": "No results yet: the structure has not been solved.",
+    "nodeMissing": "Node {label} no longer exists.",
+    "elementHint": "What the nodes do to the element",
+    "nodeHint": "Forces acting on the node"
   }
 }

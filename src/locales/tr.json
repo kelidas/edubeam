@@ -763,5 +763,18 @@
       "firstBeam": "“İlk kiriş” göreviyle değiştirildi",
       "restore": "Geri yüklenen modelle değiştirildi"
     }
+  },
+  "freeBody": {
+    "elementForces": "Uç kuvvetleri",
+    "nodeEquilibrium": "Düğüm dengesi",
+    "local": "Yerel",
+    "global": "Global",
+    "load": "Yük",
+    "reaction": "Mesnet tepkisi",
+    "balanced": "Dengede",
+    "notSolved": "Henüz sonuç yok: yapı çözülmedi.",
+    "nodeMissing": "{label} düğümü artık yok.",
+    "elementHint": "Düğümlerin elemana etkisi",
+    "nodeHint": "Düğüme etkiyen kuvvetler"
   }
 }

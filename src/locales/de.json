@@ -763,5 +763,18 @@
       "firstBeam": "Durch die Aufgabe „Erster Balken“ ersetzt",
       "restore": "Durch wiederhergestelltes Modell ersetzt"
     }
+  },
+  "freeBody": {
+    "elementForces": "Stabendkräfte",
+    "nodeEquilibrium": "Knotengleichgewicht",
+    "local": "Lokal",
+    "global": "Global",
+    "load": "Last",
+    "reaction": "Auflagerkraft",
+    "balanced": "Im Gleichgewicht",
+    "notSolved": "Noch keine Ergebnisse: Das Tragwerk wurde nicht berechnet.",
+    "nodeMissing": "Knoten {label} existiert nicht mehr.",
+    "elementHint": "Was die Knoten auf den Stab ausüben",
+    "nodeHint": "Am Knoten angreifende Kräfte"
   }
 }

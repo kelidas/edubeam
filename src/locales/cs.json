@@ -763,5 +763,18 @@
       "firstBeam": "Nahrazeno úlohou „první nosník“",
       "restore": "Nahrazeno obnovenou konstrukcí"
     }
+  },
+  "freeBody": {
+    "elementForces": "Síly na prutu",
+    "nodeEquilibrium": "Rovnováha styčníku",
+    "local": "Lokální",
+    "global": "Globální",
+    "load": "Zatížení",
+    "reaction": "Reakce",
+    "balanced": "V rovnováze",
+    "notSolved": "Zatím bez výsledků: konstrukce není vyřešena.",
+    "nodeMissing": "Uzel {label} už neexistuje.",
+    "elementHint": "Síly, kterými uzly působí na prut",
+    "nodeHint": "Síly působící na uzel"
   }
 }

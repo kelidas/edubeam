@@ -763,5 +763,18 @@
       "firstBeam": "被“第一根梁”任务替换",
       "restore": "被恢复的结构替换"
     }
+  },
+  "freeBody": {
+    "elementForces": "杆端力",
+    "nodeEquilibrium": "节点平衡",
+    "local": "局部",
+    "global": "整体",
+    "load": "荷载",
+    "reaction": "反力",
+    "balanced": "平衡",
+    "notSolved": "暂无结果：结构尚未求解。",
+    "nodeMissing": "节点 {label} 已不存在。",
+    "elementHint": "节点对杆件的作用",
+    "nodeHint": "作用在节点上的力"
   }
 }
