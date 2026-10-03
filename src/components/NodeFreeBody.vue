@@ -123,9 +123,14 @@ const arrows = computed(() =>
       const { at, stub } = anchor(c);
       const direction = { x: axis.x * Math.sign(value), y: axis.y * Math.sign(value) };
 
-      return [
-        { key: `${i}${k}`, at, ...forceArrow(at, direction, length, !stub), color: color(c), text: props.show(size) },
-      ];
+      const arrow = forceArrow(at, direction, length, !stub);
+
+      // an element's arrow pointing at the node would write its number on the node: it goes at the tail
+      if (stub && Math.hypot(arrow.tip.x, arrow.tip.y) < Math.hypot(arrow.from.x, arrow.from.y)) {
+        arrow.label = labelBeyond(arrow.from, { x: -direction.x, y: -direction.y });
+      }
+
+      return [{ key: `${i}${k}`, at, ...arrow, color: color(c), text: props.show(size) }];
     })
   )
 );
