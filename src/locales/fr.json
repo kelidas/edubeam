@@ -763,5 +763,13 @@
       "firstBeam": "Remplacée par la tâche « première poutre »",
       "restore": "Remplacée par une structure restaurée"
     }
+  },
+  "freeBody": {
+    "elementTab": "Corps libre",
+    "nodeTab": "Équilibre du nœud",
+    "load": "Charge",
+    "reaction": "Réaction",
+    "balanced": "En équilibre",
+    "nodeMissing": "Le nœud {label} n'existe plus."
   }
 }

@@ -763,5 +763,13 @@
       "firstBeam": "Nahrazeno úlohou „první nosník“",
       "restore": "Nahrazeno obnovenou konstrukcí"
     }
+  },
+  "freeBody": {
+    "elementTab": "Uvolněný prut",
+    "nodeTab": "Rovnováha styčníku",
+    "load": "Zatížení",
+    "reaction": "Reakce",
+    "balanced": "V rovnováze",
+    "nodeMissing": "Uzel {label} už neexistuje."
   }
 }

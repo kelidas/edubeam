@@ -763,5 +763,13 @@
       "firstBeam": "Replaced by the first-beam task",
       "restore": "Replaced by a restored structure"
     }
+  },
+  "freeBody": {
+    "elementTab": "Free body",
+    "nodeTab": "Node equilibrium",
+    "load": "Load",
+    "reaction": "Reaction",
+    "balanced": "In equilibrium",
+    "nodeMissing": "Node {label} no longer exists."
   }
 }

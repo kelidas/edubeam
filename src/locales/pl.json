@@ -763,5 +763,13 @@
       "firstBeam": "Zastąpiony zadaniem „pierwsza belka”",
       "restore": "Zastąpiony przywróconym modelem"
     }
+  },
+  "freeBody": {
+    "elementTab": "Pręt wycięty",
+    "nodeTab": "Równowaga węzła",
+    "load": "Obciążenie",
+    "reaction": "Reakcja",
+    "balanced": "W równowadze",
+    "nodeMissing": "Węzeł {label} już nie istnieje."
   }
 }

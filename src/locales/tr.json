@@ -763,5 +763,13 @@
       "firstBeam": "“İlk kiriş” göreviyle değiştirildi",
       "restore": "Geri yüklenen modelle değiştirildi"
     }
+  },
+  "freeBody": {
+    "elementTab": "Serbest cisim",
+    "nodeTab": "Düğüm dengesi",
+    "load": "Yük",
+    "reaction": "Mesnet tepkisi",
+    "balanced": "Dengede",
+    "nodeMissing": "{label} düğümü artık yok."
   }
 }

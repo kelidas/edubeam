@@ -763,5 +763,13 @@
       "firstBeam": "Reemplazada por la tarea «primera viga»",
       "restore": "Reemplazada por una estructura restaurada"
     }
+  },
+  "freeBody": {
+    "elementTab": "Cuerpo libre",
+    "nodeTab": "Equilibrio del nudo",
+    "load": "Carga",
+    "reaction": "Reacción",
+    "balanced": "En equilibrio",
+    "nodeMissing": "El nudo {label} ya no existe."
   }
 }

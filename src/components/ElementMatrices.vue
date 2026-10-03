@@ -4,6 +4,9 @@ import { Beam2D } from 'ts-fem';
 import { useProjectStore } from '../store/project';
 import { useAppStore } from '../store/app';
 import { formatResultAsText } from '../utils/numberDisplay';
+import type { FreeBodySystem } from '../utils/freeBody';
+import ElementFreeBody from './ElementFreeBody.vue';
+import NodeFreeBody from './NodeFreeBody.vue';
 import {
   assembleFrom,
   directNodalLoadVector,
@@ -33,9 +36,22 @@ const appStore = useAppStore();
 const props = defineProps<{
   /** Without one the widget is about the structure alone, and opens on that tab. */
   label?: string;
+  /** Opened on a node, it is about that node's equilibrium, and opens on that. */
+  node?: string;
 }>();
 
-const tab = ref(props.label ? 'kloc' : 'structureK');
+const tab = ref(props.node ? 'node' : props.label ? 'kloc' : 'structureK');
+
+/**
+ * Which axes the free body tabs split forces into. An element is read in its own axes first, a node
+ * in the global ones its equilibrium is checked in.
+ */
+const bodySystem = ref<FreeBodySystem>(props.node ? 'global' : 'local');
+
+/** The free body tabs draw rather than tabulate. */
+const drawing = computed(() => tab.value === 'body' || tab.value === 'node');
+
+const nodeExists = computed(() => !!props.node && projectStore.solver.domain.nodes.has(props.node));
 
 /**
  * Condensation is the interesting part of a released element, so it is a switch rather than a
@@ -161,6 +177,9 @@ const view = computed(() => {
     colHints: [] as readonly (string | null)[],
   };
 
+  // the free body tabs draw instead, so there is nothing to tabulate
+  if (drawing.value) return nothing;
+
   if (tab.value !== 'structureK' && tab.value !== 'structureF' && (!el || !usable.value)) return nothing;
 
   if (tab.value === 'kglob') {
@@ -280,12 +299,14 @@ const copy = () => {
           <v-tab value="kglob" class="text-none px-3">K glob</v-tab>
           <v-tab value="t" class="text-none px-3">T</v-tab>
           <v-tab value="forces" class="text-none px-3">{{ $t('common.endForces') }}</v-tab>
+          <v-tab value="body" class="text-none px-3">{{ $t('freeBody.elementTab') }}</v-tab>
         </template>
+        <v-tab v-if="props.node" value="node" class="text-none px-3">{{ $t('freeBody.nodeTab') }}</v-tab>
         <v-tab value="structureK" class="text-none px-3">{{ $t('common.structureK') }}</v-tab>
         <v-tab value="structureF" class="text-none px-3">{{ $t('common.structureF') }}</v-tab>
       </v-tabs>
 
-      <div class="flex-grow-1 pa-2" style="min-height: 0; overflow: auto">
+      <div class="flex-grow-1 pa-2" :class="{ 'd-flex flex-column': drawing }" style="min-height: 0; overflow: auto">
         <div class="d-flex align-center ga-3 mb-2 text-caption">
           <v-checkbox-btn
             v-if="tab === 'kloc'"
@@ -323,11 +344,20 @@ const copy = () => {
             hide-details
             :label="$t('common.hideEmptyRows')"
           />
+          <v-btn-toggle v-if="drawing" v-model="bodySystem" density="compact" mandatory variant="outlined" divided>
+            <v-btn value="local" size="small" class="text-none">loc</v-btn>
+            <v-btn value="global" size="small" class="text-none">glob</v-btn>
+          </v-btn-toggle>
           <span v-if="tab === 't'" class="text-medium-emphasis">{{ $t('common.transformationHint') }}</span>
           <span v-if="dropped > 0" class="text-medium-emphasis">{{
             $t('common.emptyRowsHidden', { n: dropped })
           }}</span>
-          <v-chip v-if="tab === 'forces' && appStore.workspace === 'influence'" size="x-small" color="primary" label>
+          <v-chip
+            v-if="(tab === 'forces' || drawing) && appStore.workspace === 'influence'"
+            size="x-small"
+            color="primary"
+            label
+          >
             {{ $t('tabView.influence') }}
           </v-chip>
           <!--
@@ -349,7 +379,29 @@ const copy = () => {
           />
         </div>
 
-        <div v-if="empty" class="text-caption text-medium-emphasis">{{ $t('common.notSolved') }}</div>
+        <template v-if="drawing">
+          <div v-if="!solved" class="text-caption text-medium-emphasis">{{ $t('common.notSolved') }}</div>
+          <ElementFreeBody
+            v-else-if="tab === 'body' && element"
+            :element="element"
+            :load-case="loadCase"
+            :system="bodySystem"
+            :show="show"
+          />
+          <div v-else-if="tab === 'node' && !nodeExists" class="text-caption">
+            {{ $t('freeBody.nodeMissing', { label: props.node }) }}
+          </div>
+          <NodeFreeBody
+            v-else-if="tab === 'node' && props.node"
+            :solver="projectStore.solver"
+            :node="props.node"
+            :load-case="loadCase"
+            :system="bodySystem"
+            :show="show"
+          />
+        </template>
+
+        <div v-else-if="empty" class="text-caption text-medium-emphasis">{{ $t('common.notSolved') }}</div>
 
         <v-table v-else class="border text-right" density="compact" style="white-space: nowrap">
           <thead>

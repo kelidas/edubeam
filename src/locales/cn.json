@@ -763,5 +763,13 @@
       "firstBeam": "被“第一根梁”任务替换",
       "restore": "被恢复的结构替换"
     }
+  },
+  "freeBody": {
+    "elementTab": "隔离体",
+    "nodeTab": "节点平衡",
+    "load": "荷载",
+    "reaction": "反力",
+    "balanced": "平衡",
+    "nodeMissing": "节点 {label} 已不存在。"
   }
 }

@@ -763,5 +763,13 @@
       "firstBeam": "Durch die Aufgabe „Erster Balken“ ersetzt",
       "restore": "Durch wiederhergestelltes Modell ersetzt"
     }
+  },
+  "freeBody": {
+    "elementTab": "Freigeschnittener Stab",
+    "nodeTab": "Knotengleichgewicht",
+    "load": "Last",
+    "reaction": "Auflagerkraft",
+    "balanced": "Im Gleichgewicht",
+    "nodeMissing": "Knoten {label} existiert nicht mehr."
   }
 }

@@ -763,5 +763,13 @@
       "firstBeam": "Substituída pela tarefa “primeira viga”",
       "restore": "Substituída por uma estrutura restaurada"
     }
+  },
+  "freeBody": {
+    "elementTab": "Corpo livre",
+    "nodeTab": "Equilíbrio do nó",
+    "load": "Carga",
+    "reaction": "Reação",
+    "balanced": "Em equilíbrio",
+    "nodeMissing": "O nó {label} já não existe."
   }
 }
