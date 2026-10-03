@@ -43,6 +43,7 @@ const ARC = 24;
 const BAND = 46;
 const BAND_MIN = 10;
 const FONT = 18;
+const LABEL_FONT = 15;
 
 const axes = computed(() => elementAxes(props.element));
 const along = computed<Vec>(() => ({ x: axes.value.along.x, y: axes.value.along.z }));
@@ -272,33 +273,49 @@ const pointLoads = computed(() =>
   })
 );
 
+/**
+ * A node's label as the drawing writes it: in a circle up and to the left of the node, the circle
+ * a little wider for a longer label.
+ */
 const nodeLabels = computed(() =>
-  props.element.nodes.map((label, end) => {
-    const inward = { x: -outward(end).x, y: -outward(end).y };
-    const at = {
-      x: ends.value[end].x + inward.x * 18 + normal.value.x * 18,
-      y: ends.value[end].y + inward.y * 18 + normal.value.y * 18,
-    };
+  props.element.nodes.map((node, end) => {
+    const label = String(node);
+    const longer = label.length - 1;
 
-    return { label: String(label), ...at };
+    return {
+      label,
+      x: ends.value[end].x - 14 - longer * 2,
+      y: ends.value[end].y - 14,
+      r: 1 + (LABEL_FONT / 2) * (1 + Math.pow(longer, 1.7) * 0.3),
+    };
   })
 );
 
-/** A released end is drawn as the model draws a hinge: an open circle just inside the end. */
-const joints = computed(() =>
-  ends.value.map((point, end) => {
-    const inward = { x: -outward(end).x, y: -outward(end).y };
+/** The bottom fibres: a dashed line beside the element, on the side its own z points to. */
+const fibres = computed(() => {
+  const offset = { x: normal.value.x * 3, y: normal.value.y * 3 };
+  const [a, b] = ends.value;
 
-    return hinges.value[end]
-      ? { hinge: true, x: point.x + inward.x * 7, y: point.y + inward.y * 7 }
-      : { hinge: false, x: point.x, y: point.y };
+  return { x1: a.x + offset.x, y1: a.y + offset.y, x2: b.x + offset.x, y2: b.y + offset.y };
+});
+
+/** A released end gets the drawing's hinge: an open circle a little inside the end. */
+const hingeMarks = computed(() =>
+  ends.value.flatMap((point, end) => {
+    if (!hinges.value[end]) return [];
+
+    const inward = { x: -outward(end).x, y: -outward(end).y };
+    return [{ end, x: point.x + inward.x * 9, y: point.y + inward.y * 9 }];
   })
 );
 
 const viewBox = computed(() =>
   viewBoxAround([
     ...ends.value,
-    ...nodeLabels.value.flatMap((n) => textCorners({ ...n, anchor: 'middle' }, n.label, FONT)),
+    ...nodeLabels.value.flatMap((n) => [
+      { x: n.x - n.r, y: n.y - n.r },
+      { x: n.x + n.r, y: n.y + n.r },
+    ]),
     ...endArrows.value.flatMap((a) => [a.from, a.tip, ...textCorners(a.label, a.text, FONT)]),
     ...[...endArcs.value, ...pointLoads.value.flatMap((p) => p.arcs)].flatMap((a) => [
       { x: a.center.x - a.radius, y: a.center.y - a.radius },
@@ -345,14 +362,15 @@ const viewBox = computed(() =>
       </g>
     </g>
 
+    <!-- drawn as the canvas draws an element: the line, its bottom fibres, its nodes and hinges -->
     <line :x1="ends[0].x" :y1="ends[0].y" :x2="ends[1].x" :y2="ends[1].y" class="member" />
-    <template v-for="(j, i) in joints" :key="i">
-      <circle v-if="j.hinge" :cx="j.x" :cy="j.y" r="5" class="hinge" />
-      <circle v-else :cx="j.x" :cy="j.y" r="3" class="joint" />
-    </template>
-    <text v-for="n in nodeLabels" :key="n.label" :x="n.x" :y="n.y + 5" text-anchor="middle" class="node-label">
-      {{ n.label }}
-    </text>
+    <line v-bind="fibres" class="fibres" stroke-dasharray="5 4" />
+    <rect v-for="(p, i) in ends" :key="`n${i}`" :x="p.x - 3" :y="p.y - 3" width="6" height="6" class="node" />
+    <circle v-for="h in hingeMarks" :key="`h${h.end}`" :cx="h.x" :cy="h.y" r="6" class="hinge" />
+    <g v-for="n in nodeLabels" :key="n.label" class="node-label">
+      <circle :cx="n.x" :cy="n.y" :r="n.r" />
+      <text :x="n.x" :y="n.y" text-anchor="middle" dy="0.35em" :font-size="LABEL_FONT">{{ n.label }}</text>
+    </g>
 
     <g class="force">
       <g v-for="a in endArrows" :key="a.key">
@@ -378,10 +396,16 @@ const viewBox = computed(() =>
 
 .member {
   stroke: rgb(var(--v-theme-on-surface));
-  stroke-width: 3;
+  stroke-width: 2;
+  stroke-linecap: round;
 }
 
-.joint {
+.fibres {
+  stroke: #666;
+  stroke-width: 1;
+}
+
+.node {
   fill: rgb(var(--v-theme-on-surface));
 }
 
@@ -391,9 +415,15 @@ const viewBox = computed(() =>
   stroke-width: 2;
 }
 
-.node-label {
+.node-label circle {
+  fill: rgb(var(--v-theme-surface));
+  fill-opacity: 0.8;
+  stroke: rgb(var(--v-theme-on-surface));
+  stroke-width: 1;
+}
+
+.node-label text {
   fill: rgb(var(--v-theme-on-surface));
-  opacity: 0.6;
 }
 
 /* the element's own end forces take the theme's colour; its loads the drawing's colour for loads */

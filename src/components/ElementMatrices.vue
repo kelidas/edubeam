@@ -180,7 +180,10 @@ const show = (value: number) =>
           <v-tab value="body" class="text-none px-3">{{ $t('freeBody.elementTab') }}</v-tab>
         </template>
         <v-tab v-if="props.node" value="node" class="text-none px-3">{{ $t('freeBody.nodeTab') }}</v-tab>
-        <v-tab value="system" class="text-none px-3">{{ $t('common.structure') }}</v-tab>
+        <!-- the structure's own matrices have a window of their own, opened from the drawing -->
+        <v-tab v-if="!props.label && !props.node" value="system" class="text-none px-3">{{
+          $t('common.structure')
+        }}</v-tab>
       </v-tabs>
 
       <div class="flex-grow-1 pa-2" :class="{ 'd-flex flex-column': drawing }" style="min-height: 0; overflow: auto">
