@@ -718,5 +718,18 @@
       "firstBeam": "Substituída pela tarefa “primeira viga”",
       "restore": "Substituída por uma estrutura restaurada"
     }
+  },
+  "freeBody": {
+    "elementForces": "Forças nas extremidades",
+    "nodeEquilibrium": "Equilíbrio do nó",
+    "local": "Local",
+    "global": "Global",
+    "load": "Carga",
+    "reaction": "Reação",
+    "balanced": "Em equilíbrio",
+    "notSolved": "Ainda sem resultados: a estrutura não foi resolvida.",
+    "nodeMissing": "O nó {label} já não existe.",
+    "elementHint": "O que os nós exercem sobre o elemento",
+    "nodeHint": "Forças que atuam no nó"
   }
 }

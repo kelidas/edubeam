@@ -3,6 +3,8 @@ import { openModal } from 'jenesius-vue-modal';
 import AddNodalLoadDialog from './dialogs/AddNodalLoad.vue';
 import { useProjectStore } from '@/store/project';
 import { useAppStore } from '@/store/app';
+import { useLayoutStore } from '@/store/layout';
+import NodeEquilibrium from './NodeEquilibrium.vue';
 import { deleteNode, nodeLcsAngle, setNodeLcsAngle, toggleSet } from '@/utils';
 import { computed, ref, watch } from 'vue';
 import SupportPicker from './SupportPicker.vue';
@@ -10,6 +12,7 @@ import { setSupportType } from '@/utils/supports';
 
 const projectStore = useProjectStore();
 const appStore = useAppStore();
+const layoutStore = useLayoutStore();
 
 const lcs = ref('0');
 
@@ -123,6 +126,24 @@ const removeNode = () => {
         <div class="pr-2"><v-icon size="16" icon="mdi-ruler" /></div>
       </template>
       {{ $t('loads.addPrescribedDisplacement') }}
+    </v-list-item>
+    <v-list-item
+      v-if="projectStore.selection.type === 'node'"
+      link
+      class="text-body-2"
+      @click="
+        layoutStore.openWidget($t('freeBody.nodeEquilibrium'), NodeEquilibrium, {
+          node: projectStore.selection.label,
+          w: 460,
+          h: 600,
+        });
+        projectStore.selection.type = null;
+      "
+    >
+      <template #prepend>
+        <div class="pr-2"><v-icon size="16" icon="mdi-scale-balance" /></div>
+      </template>
+      {{ $t('freeBody.nodeEquilibrium') }}
     </v-list-item>
     <v-divider v-if="projectStore.selection.type === 'node'" />
     <v-list-item v-if="projectStore.selection.type === 'node'" link class="text-body-2 text-error" @click="removeNode">
