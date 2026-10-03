@@ -608,10 +608,18 @@
                 height="16"
                 aria-hidden="true"
               >
-                <!-- a square rather than the force's dot, an open arrowhead rather than its filled one -->
-                <rect x="2.2" y="6" width="4.4" height="4.4" fill="currentColor" />
-                <line x1="7.3" y1="8.2" x2="15.5" y2="8.2" stroke="currentColor" stroke-width="1.5" />
-                <polygon points="18,8.2 13,5.3 13,11.1" fill="none" stroke="currentColor" stroke-width="1.5" />
+                <!-- a support moved: where it was, dashed, where it went, and the move between them -->
+                <polygon
+                  points="4.5,2 1.5,7 7.5,7"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1"
+                  stroke-dasharray="1.6 1.2"
+                />
+                <polygon points="14.5,8 11.5,13 17.5,13" fill="none" stroke="currentColor" stroke-width="1.3" />
+                <line x1="11" y1="15" x2="18" y2="15" stroke="currentColor" stroke-width="1.3" />
+                <line x1="6.5" y1="5" x2="10.8" y2="7.6" stroke="currentColor" stroke-width="1.2" />
+                <polygon points="12.6,8.7 9.4,8.4 10.9,6" fill="currentColor" />
               </svg>
               <svg
                 v-else-if="loadTypeKey(item) === 'udl'"
@@ -661,10 +669,14 @@
                 height="16"
                 aria-hidden="true"
               >
-                <!-- the hinge the drawing itself marks a release with, at the section it opens -->
-                <line x1="10" y1="1" x2="10" y2="4.3" stroke="currentColor" stroke-width="1.5" />
-                <line x1="10" y1="11.7" x2="10" y2="15" stroke="currentColor" stroke-width="1.5" />
-                <circle cx="10" cy="8" r="3" fill="none" stroke="currentColor" stroke-width="1.4" />
+                <!-- the element opened at a hinge, its two sides turned against each other -->
+                <line x1="1" y1="11" x2="7.4" y2="11" stroke="currentColor" stroke-width="1.5" />
+                <line x1="12.6" y1="11" x2="19" y2="11" stroke="currentColor" stroke-width="1.5" />
+                <circle cx="10" cy="11" r="2.6" fill="none" stroke="currentColor" stroke-width="1.3" />
+                <path d="M 2.5 7.5 A 6 6 0 0 1 6.6 3.4" fill="none" stroke="currentColor" stroke-width="1.1" />
+                <polygon points="8.4,2.6 5.6,1.9 6.4,4.9" fill="currentColor" />
+                <path d="M 17.5 7.5 A 6 6 0 0 0 13.4 3.4" fill="none" stroke="currentColor" stroke-width="1.1" />
+                <polygon points="11.6,2.6 14.4,1.9 13.6,4.9" fill="currentColor" />
               </svg>
               <span class="sr-only">{{ loadTypeLabel(item) }}</span>
             </span>
