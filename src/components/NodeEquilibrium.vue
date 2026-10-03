@@ -37,8 +37,7 @@ const label = computed(() => String(props.node));
 /** The widget stays open while the model changes, so the node may be gone by now. */
 const found = computed(() => projectStore.solver.domain.nodes.get(label.value));
 
-/** The case the open tab is about: an influence line's unit dislocation is solved and balanced too. */
-const loadCase = computed(() => projectStore.loadCase ?? projectStore.solver.loadCases[0]);
+const loadCase = computed(() => projectStore.solver.loadCases[0]);
 
 const equilibrium = computed(() =>
   found.value && loadCase.value?.solved ? nodeEquilibrium(projectStore.solver, label.value, loadCase.value) : null

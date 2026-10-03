@@ -32,8 +32,7 @@ const element = computed(() => {
   return found instanceof Beam2D ? found : undefined;
 });
 
-/** The case the open tab is about: an influence line's unit dislocation is solved and balanced too. */
-const loadCase = computed(() => projectStore.loadCase ?? projectStore.solver.loadCases[0]);
+const loadCase = computed(() => projectStore.solver.loadCases[0]);
 
 const forces = computed(() =>
   element.value && loadCase.value?.solved ? elementEndForces(element.value, loadCase.value)[system.value] : null
