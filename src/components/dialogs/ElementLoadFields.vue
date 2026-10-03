@@ -121,7 +121,7 @@
         </template>
 
         <v-col
-          v-if="['udl', 'trapezoidal', 'concentrated', 'concentrated_deformation'].includes(loadType)"
+          v-if="['udl', 'trapezoidal', 'concentrated'].includes(loadType)"
           cols="12"
           md="12"
         >
