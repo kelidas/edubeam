@@ -68,9 +68,10 @@ describe('the free body tabs of the matrices widget', () => {
 
     const svg = wrapper.find('svg.free-body');
     expect(svg.exists()).toBe(true);
-    // the released end is an open circle, the other a plain joint
+    // drawn as the canvas draws it: both nodes, the bottom fibres, a hinge only at the released end
+    expect(svg.findAll('rect.node')).toHaveLength(2);
+    expect(svg.find('line.fibres').exists()).toBe(true);
     expect(svg.findAll('circle.hinge')).toHaveLength(1);
-    expect(svg.findAll('circle.joint')).toHaveLength(1);
     // the uniform load is a band of arrows
     expect(svg.findAll('.load polygon.band')).toHaveLength(1);
     expect(svg.findAll('.force polygon').length).toBeGreaterThan(0);

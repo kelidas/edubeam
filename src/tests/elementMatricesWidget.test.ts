@@ -56,6 +56,14 @@ describe('the matrices widget', () => {
     expect(tabs(open({ label: 'a' })).length).toBeGreaterThan(1);
   });
 
+  it('leaves the structure to its own window when opened on an element', () => {
+    build();
+    const names = tabs(open({ label: 'a' }));
+
+    expect(names).not.toContain('Structure K');
+    expect(names).not.toContain('Structure F');
+  });
+
   it('offers only the structure when opened without one', () => {
     build();
     const names = tabs(open({}));
@@ -103,7 +111,8 @@ describe('what the matrices are indexed by', () => {
 
   it('indexes the structure the same way, so an element can be found inside it', async () => {
     build();
-    const wrapper = open({ label: 'b' });
+    // the structure has a window of its own: the one opened from the drawing without an element
+    const wrapper = open({});
 
     await openTab(wrapper, 'Structure K');
     const labels = rowLabels(wrapper);
@@ -114,7 +123,8 @@ describe('what the matrices are indexed by', () => {
 
   it('leaves the full structure matrix whole', async () => {
     const store = build();
-    const wrapper = open({ label: 'b' });
+    // the structure has a window of its own: the one opened from the drawing without an element
+    const wrapper = open({});
 
     await openTab(wrapper, 'Structure K');
 

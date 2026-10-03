@@ -302,8 +302,11 @@ const copy = () => {
           <v-tab value="body" class="text-none px-3">{{ $t('freeBody.elementTab') }}</v-tab>
         </template>
         <v-tab v-if="props.node" value="node" class="text-none px-3">{{ $t('freeBody.nodeTab') }}</v-tab>
-        <v-tab value="structureK" class="text-none px-3">{{ $t('common.structureK') }}</v-tab>
-        <v-tab value="structureF" class="text-none px-3">{{ $t('common.structureF') }}</v-tab>
+        <!-- the structure's own matrices have a window of their own, opened from the drawing -->
+        <template v-if="!props.label && !props.node">
+          <v-tab value="structureK" class="text-none px-3">{{ $t('common.structureK') }}</v-tab>
+          <v-tab value="structureF" class="text-none px-3">{{ $t('common.structureF') }}</v-tab>
+        </template>
       </v-tabs>
 
       <div class="flex-grow-1 pa-2" :class="{ 'd-flex flex-column': drawing }" style="min-height: 0; overflow: auto">

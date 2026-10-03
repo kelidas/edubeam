@@ -38,7 +38,7 @@ const viewerStore = useViewerStore();
  */
 const STUB = 170;
 const AT = 100;
-const FONT = 15;
+const FONT = 13;
 
 const equilibrium = computed(() => nodeEquilibrium(props.solver, props.node, props.loadCase));
 
@@ -185,9 +185,15 @@ const elementLabels = computed(() =>
   }))
 );
 
+const labelAt = computed(() => {
+  const longer = props.node.length - 1;
+  return { x: -14 - longer * 2, y: -14, r: 1 + (FONT / 2) * (1 + Math.pow(longer, 1.7) * 0.3) };
+});
+
 const viewBox = computed(() =>
   viewBoxAround([
     { x: 0, y: 0 },
+    { x: labelAt.value.x - labelAt.value.r, y: labelAt.value.y - labelAt.value.r },
     ...elementLabels.value.flatMap((l) => [l.end, ...textCorners(l, l.element, FONT)]),
     ...arrows.value.flatMap((a) => [a.from, a.tip, ...textCorners(a.label, a.text, FONT)]),
     ...arcs.value.flatMap((a) => [
@@ -232,7 +238,12 @@ const rows = computed(() => {
           {{ s.element }}
         </text>
       </g>
-      <circle cx="0" cy="0" r="5" class="joint" />
+      <!-- the node as the canvas draws it: a square, its label in a circle up and to the left -->
+      <rect x="-3" y="-3" width="6" height="6" class="joint" />
+      <g class="node-label">
+        <circle :cx="labelAt.x" :cy="labelAt.y" :r="labelAt.r" />
+        <text :x="labelAt.x" :y="labelAt.y" text-anchor="middle" dy="0.35em">{{ props.node }}</text>
+      </g>
 
       <g v-for="a in arrows" :key="a.key" class="force" :style="a.color ? { color: a.color } : undefined">
         <line :x1="a.from.x" :y1="a.from.y" :x2="a.to.x" :y2="a.to.y" />
@@ -292,9 +303,18 @@ const rows = computed(() => {
 }
 
 .joint {
+  fill: rgb(var(--v-theme-on-surface));
+}
+
+.node-label circle {
   fill: rgb(var(--v-theme-surface));
+  fill-opacity: 0.8;
   stroke: rgb(var(--v-theme-on-surface));
-  stroke-width: 1.5;
+  stroke-width: 1;
+}
+
+.node-label text {
+  fill: rgb(var(--v-theme-on-surface));
 }
 
 /* an element's force takes the theme's colour; a load and a reaction the drawing's own for them */
