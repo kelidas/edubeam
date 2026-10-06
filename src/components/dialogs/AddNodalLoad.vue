@@ -27,7 +27,13 @@
             <v-row no-gutters>
               <v-col cols="6" align-self="center">
                 <div class="d-flex justify-center">
-                  <Vector2DHelper v-if="loadType === 'force'" :fx="realFx" :fz="realFz" :my="realMy" />
+                  <Vector2DHelper
+                    :fx="loadType === 'force' ? realFx : realDx"
+                    :fz="loadType === 'force' ? realFz : realDz"
+                    :my="loadType === 'force' ? realMy : realRy"
+                    :type="loadType === 'force' ? 'force' : 'displacement'"
+                    :label="loadNodeId"
+                  />
                 </div>
               </v-col>
 
@@ -169,7 +175,9 @@ onMounted(() => {
 const addNodalLoad = () => {
   if (valid.value === false || !selectedNode.value) return;
 
-  if (loadType.value !== 'force') {
+  // The influence lines tab keeps several unit dislocations at one support - one for each reaction
+  // whose line is wanted - and switches between them; a structure has one settlement per node.
+  if (loadType.value !== 'force' && appStore.workspace !== 'influence') {
     // check if the node already has a prescribed displacement
     for (const load of projectStore.loadCase.prescribedBC) {
       if (load.target === loadNodeId.value) {

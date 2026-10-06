@@ -1,7 +1,7 @@
 {
   "tabView": {
     "influence": "Linie wpływu",
-    "viewer": "Widok",
+    "viewer": "Konstrukcja",
     "settings": "Ustawienia",
     "results": "Wyniki"
   },
@@ -102,6 +102,11 @@
     "results_scale": "Skala wyników",
     "grid_snap_step": "Krok przyciągania do siatki",
     "snap_to_grid": "Przyciągaj do siatki",
+    "number_format": "Format liczb",
+    "number_format_description": "Jak zapisywane są wyniki; separator dziesiętny zależy od języka.",
+    "number_format_auto": "Automatyczny",
+    "number_format_scientific": "Naukowy (1,5 · 10⁴)",
+    "number_format_engineering": "Inżynierski (15 · 10³)",
     "language": "Język",
     "language_and_locale": "Język i ustawienia regionalne",
     "show_normal_force": "Pokaż siłę normalną",
@@ -316,12 +321,14 @@
     "loadType": "Typ obciążenia",
     "concentrated_deformation": "Odkształcenie skupione",
     "concentrated": "Obciążenie skupione",
+    "concentrated_deformation": "Odkształcenie skupione",
     "trapezoidal": "Obciążenie trapezowe",
     "udl": "Obciążenie równomiernie rozłożone",
     "temperature": "Obciążenie termiczne"
   },
   "dimensioning": {
-    "add_dimension": "Dodaj wymiar"
+    "add_dimension": "Dodaj wymiar",
+    "add_along_element": "Wymiaruj element {label}"
   },
   "warnings": {
     "noMaterialsDefined": "Nie zdefiniowano materiałów.",

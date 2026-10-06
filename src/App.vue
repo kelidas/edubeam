@@ -1,6 +1,14 @@
 <script lang="ts">
 import { container, openModal } from 'jenesius-vue-modal';
-import { deserializeModel, parseSerializedModel, download, exportJSON, importJSON } from './utils';
+import {
+  deserializeModel,
+  parseSerializedModel,
+  download,
+  exportJSON,
+  importJSON,
+  redoModelChange,
+  undoModelChange,
+} from './utils';
 import { provide, nextTick } from 'vue';
 import { undoRedoManager } from './CommandManager';
 import { useViewerStore } from './store/viewer';
@@ -44,9 +52,29 @@ provide('onboardingWrapper', onboardingWrapper);
 
 const file = ref(null);
 
+/**
+ * A step that points into the drawing needs the drawing on screen.
+ *
+ * The tour used to run only on a first visit, with the drawing open behind it. Started from the
+ * menu it can begin from any tab, and from one that is not a drawing its first steps had nothing to
+ * attach to: the bubbles piled up in the corner of the window pointing at nothing. So a step that
+ * needs the drawing asks for it first.
+ */
+const showDrawing = async () => {
+  const drawing = appStore.tabs.findIndex((tab) => tab.props.id === 'viewer');
+
+  if (drawing < 0 || appStore.tab === drawing) return;
+
+  appStore.tab = drawing;
+  await nextTick();
+};
+
+const onDrawing = { beforeStep: showDrawing };
+
 const steps = computed(() => [
   {
     attachTo: { element: '#viewerControls' },
+    on: onDrawing,
     content: {
       title: t('tour.viewerControls.title'),
       description: t('tour.viewerControls.description'),
@@ -54,6 +82,18 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#viewerSettings' },
+    /*
+     * The panel is behind the gear and is not in the page at all while it is shut, so the step had
+     * nothing to attach to and the bubble stayed where the one before it was - pointing at the
+     * viewer buttons and saying something else. Open it, and leave it open: it is what this step is
+     * about, and shutting it again behind the reader would be stranger than finding it open.
+     */
+    on: {
+      beforeStep: async () => {
+        await showDrawing();
+        viewerStore.settingsOpen = true;
+      },
+    },
     content: {
       title: t('tour.viewerSettings.title'),
       description: t('tour.viewerSettings.description'),
@@ -61,9 +101,62 @@ const steps = computed(() => [
   },
   {
     attachTo: { element: '#bottomBar' },
+    on: onDrawing,
     content: {
       title: t('tour.bottomBar.title'),
       description: t('tour.bottomBar.description'),
+    },
+  },
+  {
+    attachTo: { element: '#viewerStatus' },
+    on: onDrawing,
+    /*
+     * Above it, into the drawing. The strip sits in the bottom corner of the canvas with the bottom
+     * bar under it, and left to itself the bubble tries to fit beside them - which on a small screen
+     * is nowhere, so it hangs off the window.
+     */
+    options: { popper: { placement: 'top-end' } },
+    content: {
+      title: t('tour.viewerStatus.title'),
+      description: t('tour.viewerStatus.description'),
+    },
+  },
+  // the two workspaces last, once what is in one of them has been shown
+  {
+    attachTo: { element: '#tab-viewer' },
+    content: {
+      title: t('tour.viewer.title'),
+      description: t('tour.viewer.description'),
+    },
+  },
+  {
+    attachTo: { element: '#tab-influence' },
+    content: {
+      title: t('tour.influence.title'),
+      description: t('tour.influence.description'),
+    },
+  },
+  {
+    // the menu itself, opened: pointed at the button instead, the bubble landed under the menu
+    attachTo: { element: '#mainMenu' },
+    /*
+     * The menu slides in, and a bubble placed while it is still moving is placed against a box that
+     * is not where it will be - which put it over the menu instead of beside it. Wait for the slide.
+     */
+    on: {
+      beforeStep: async () => {
+        appStore.drawerOpen = true;
+        await nextTick();
+        await new Promise((settled) => setTimeout(settled, 350));
+      },
+      // and put it away again: the reader did not open it, and it covers a quarter of the screen
+      afterStep: () => (appStore.drawerOpen = false),
+    },
+    // beside the menu, not over it: the menu is what the step is showing
+    options: { popper: { placement: 'right-start' } },
+    content: {
+      title: t('tour.menu.title'),
+      description: t('tour.menu.description'),
     },
   },
 ]);
@@ -77,13 +170,20 @@ onMounted(() => {
     // If CTRL+Z undo
     if (e.ctrlKey && !e.shiftKey && e.code === 'KeyZ') {
       e.preventDefault();
-      undoRedoManager.undo();
+      undoModelChange();
     }
 
     // If CTRL+SHIFT+Z redo
     if (e.ctrlKey && e.shiftKey && e.code === 'KeyZ') {
       e.preventDefault();
-      undoRedoManager.redo();
+      redoModelChange();
+    }
+
+    // Print: the browser's print of the page is meaningless here; the image export is
+    // what "print" means in this app.
+    if ((e.ctrlKey || e.metaKey) && e.code === 'KeyP') {
+      e.preventDefault();
+      openExportImage();
     }
 
     // Save project
@@ -252,6 +352,28 @@ const openExamples = () => {
   openModal(Examples);
 };
 
+/**
+ * The way out, from any step.
+ *
+ * The slot hands out an `exit`, but that only emits an event - the tour carries on. Ending it is
+ * `finish` on the wrapper, which also runs the step's own afterStep, so what the tour opened is put
+ * away.
+ */
+const endTour = () => useVOnboarding(onboardingWrapper).finish();
+
+/**
+ * The tour is offered once, on a first visit, and the answer is kept. Anyone who waved it away then
+ * had no way back to it, so it sits in the menu as well. Starting it puts it back on its first step,
+ * whether it ran before or not; the drawer closes because the tour points at what it covers.
+ */
+const startTour = () => {
+  appStore.drawerOpen = false;
+
+  const { start } = useVOnboarding(onboardingWrapper);
+
+  nextTick(() => start());
+};
+
 const openExportImage = () => {
   openModal(ExportImage);
 };
@@ -347,6 +469,13 @@ const app_commit = APP_COMMIT;
       :steps="steps"
       :options="{
         popper: {
+          /*
+           * Laid out against the window, not the document. Absolutely positioned, a bubble that
+           * lands low can make the page taller than the window, and the page then scrolls to show
+           * it - the app slides up, the bars at the top go off screen and a strip of blank appears
+           * under it. Fixed, a bubble cannot move the page at all.
+           */
+          strategy: 'fixed',
           modifiers: [
             {
               name: 'offset',
@@ -361,9 +490,9 @@ const app_commit = APP_COMMIT;
         },
       }"
     >
-      <template #default="{ previous, next, step, exit, isFirst, isLast, index }">
+      <template #default="{ previous, next, step, isFirst, isLast }">
         <VOnboardingStep>
-          <div class="bg-white shadow rounded-lg" style="max-width: 400px">
+          <div class="bg-white shadow rounded-lg" style="max-width: min(400px, calc(100vw - 32px))">
             <div class="px-4 py-5 sm:p-6">
               <div class="sm:flex sm:items-center sm:justify-between">
                 <div v-if="step.content">
@@ -375,6 +504,16 @@ const app_commit = APP_COMMIT;
                   </div>
                 </div>
                 <div class="mt-5 space-x-4 sm:mt-0 sm:ml-6 sm:flex sm:flex-shrink-0 sm:items-center relative">
+                  <!-- a tour nobody can leave is a trap; the menu will start it again -->
+                  <v-btn
+                    type="button"
+                    icon="mdi-close"
+                    size="x-small"
+                    variant="text"
+                    class="mr-1"
+                    :title="$t('tour.skipTour')"
+                    @click="endTour"
+                  />
                   <template v-if="!isFirst">
                     <v-btn type="button" flat color="grey-lighten-3" @click="previous">
                       {{ $t('tour.previousButton') }}
@@ -435,7 +574,7 @@ const app_commit = APP_COMMIT;
       </v-btn>
     </v-app-bar>
 
-    <v-navigation-drawer v-model="appStore.drawerOpen" temporary>
+    <v-navigation-drawer id="mainMenu" v-model="appStore.drawerOpen" temporary>
       <!-- <v-list-item prepend-avatar="https://randomuser.me/api/portraits/women/9.jpg" title="Jane Doe"></v-list-item> -->
 
       <v-divider></v-divider>

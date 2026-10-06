@@ -65,6 +65,11 @@
     "results_scale": "Měřítko výsledků",
     "snap_to_grid": "Přichytávat k mřížce",
     "grid_snap_step": "Krok příchytu k mřížce",
+    "number_format": "Formát čísel",
+    "number_format_description": "Jak se zapisují hodnoty výsledků; desetinný oddělovač se řídí jazykem.",
+    "number_format_auto": "Automatický",
+    "number_format_scientific": "Vědecký (1,5 · 10⁴)",
+    "number_format_engineering": "Inženýrský (15 · 10³)",
     "language": "Jazyk",
     "show_bending_moment": "Kreslit ohybový moment",
     "show_deformed_shape": "Kreslit deformovaný tvar",
@@ -333,7 +338,23 @@
     },
     "previousButton": "Předchozí",
     "nextButton": "Další",
-    "finishButton": "Dokončit prohlídku"
+    "finishButton": "Dokončit prohlídku",
+    "influence": {
+      "title": "Příčinkové čáry",
+      "description": "Samostatné pracovní prostředí, kde se příčinkové čáry kreslí kinematickou metodou: v řezu se uvolní vazba jednotkovou deformací a výsledná deformovaná konstrukce je hledaná příčinková čára (Müller-Breslau)."
+    },
+    "viewer": {
+      "title": "Konstrukce",
+      "description": "Pracovní prostředí, ve kterém se konstrukce zadává: uzly, prvky, podpory a zatížení, a k nim výsledky - normálová síla, posouvající síla, ohybový moment a deformovaný tvar."
+    },
+    "viewerStatus": {
+      "title": "Rastr, měřítko a jednotky",
+      "description": "Roh, ve kterém výkres říká, jak se má číst: rastr a přichytávání k němu, jak moc jsou průběhy výsledků roztažené, a jednotky, ve kterých jsou všechna čísla na obrazovce."
+    },
+    "menu": {
+      "title": "Všechno ostatní",
+      "description": "Otevření a uložení projektu, export obrázku, odkaz nesoucí celou konstrukci, ukázkové modely – a také tahle prohlídka, kdykoli ji budete chtít znovu."
+    }
   },
   "welcome": {
     "title": "Vítejte v <span class=\"edubeam\">edubeamu</span>! 🚀",
@@ -378,7 +399,8 @@
     "loadType": "Typ zatížení"
   },
   "dimensioning": {
-    "add_dimension": "Přidat kótu"
+    "add_dimension": "Přidat kótu",
+    "add_along_element": "Okótovat prvek {label}"
   },
   "warnings": {
     "noMaterialsDefined": "Není definovaný žádný materiál",
@@ -453,8 +475,10 @@
     "title": "Exportovat obrázek",
     "transparentBackground": "Průhledné pozadí",
     "download": "Stáhnout PNG",
+    "downloadSvg": "Stáhnout SVG",
     "copyToClipboard": "Kopírovat do schránky",
     "copied": "Obrázek zkopírován do schránky",
+    "exported": "Obrázek exportován",
     "failed": "Obrázek se nepodařilo vykreslit.",
     "previewAlt": "Náhled exportovaného obrázku",
     "instructions": "Obrázek se vykreslí přímo pro zvolenou velikost, takže čáry i popisky si zachovají skutečnou tloušťku. Stejná velikost vždy zarámuje konstrukci stejně – hodí se pro export M, N a V vedle sebe.",
@@ -463,7 +487,18 @@
     "lockAspect": "Zachovat poměr stran",
     "fitPreview": "Přizpůsobit",
     "actualSize": "Skutečná velikost",
-    "preview": "Náhled"
+    "preview": "Náhled",
+    "fitAll": "Vše",
+    "window": "Výřez…",
+    "pickWindowHint": "Tažením vyberte oblast výkresu k exportu",
+    "dragEdge": "Tažením rozšiřte nebo ořízněte tuto stranu",
+    "scale": "Měřítko",
+    "scaleCaption": "1 m modelu je {cm} cm na papíře (96 DPI). Kolečkem myši nad náhledem přiblížíte.",
+    "doesNotFit": "V této velikosti se vše nevejde: diagramy, zatížení a popisky přesahují okraj asi o {px} px. Zmenšete diagramy (nyní {diagrams} px) nebo zvětšete plátno.",
+    "shrinkDiagrams": "Zmenšit diagramy",
+    "enlargeCanvas": "Zvětšit plátno",
+    "diagramHeight": "Výška diagramů",
+    "shrinkNotEnough": "Menší diagramy zde nestačí – samotné zatížení a popisky potřebují více místa. Zvětšete plátno."
   },
   "examples": {
     "title": "Příklady",

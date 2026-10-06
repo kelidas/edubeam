@@ -1,7 +1,7 @@
 {
   "tabView": {
     "influence": "Линии влияния",
-    "viewer": "Вид",
+    "viewer": "Конструкция",
     "settings": "Настройки",
     "results": "Результаты"
   },
@@ -102,6 +102,11 @@
     "results_scale": "Масштаб результатов",
     "grid_snap_step": "Шаг привязки к сетке",
     "snap_to_grid": "Привязка к сетке",
+    "number_format": "Формат чисел",
+    "number_format_description": "Как записываются результаты; десятичный разделитель зависит от языка.",
+    "number_format_auto": "Автоматический",
+    "number_format_scientific": "Научный (1,5 · 10⁴)",
+    "number_format_engineering": "Инженерный (15 · 10³)",
     "language": "Язык",
     "language_and_locale": "Язык и локаль",
     "show_normal_force": "Показать продольную силу",
@@ -316,12 +321,14 @@
     "loadType": "Тип нагрузки",
     "concentrated_deformation": "Сосредоточенная деформация",
     "concentrated": "Сосредоточенная нагрузка",
+    "concentrated_deformation": "Сосредоточенная деформация",
     "trapezoidal": "Трапециевидная нагрузка",
     "udl": "Равномерно распределённая нагрузка",
     "temperature": "Температурная нагрузка"
   },
   "dimensioning": {
-    "add_dimension": "Добавить размер"
+    "add_dimension": "Добавить размер",
+    "add_along_element": "Образмерить элемент {label}"
   },
   "warnings": {
     "noMaterialsDefined": "Материалы не определены.",

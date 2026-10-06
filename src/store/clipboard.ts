@@ -4,6 +4,7 @@ import { useProjectStore } from './project';
 import {
   Beam2D,
   BeamConcentratedLoad,
+  BeamConcentratedDeformation,
   BeamElementTrapezoidalEdgeLoad,
   BeamElementUniformEdgeLoad,
   BeamTemperatureLoad,
@@ -103,6 +104,12 @@ export const useClipboardStore = defineStore('clipboard', () => {
         const l = projectStore.loadCase.elementLoadList[load];
         if (l instanceof BeamConcentratedLoad) {
           projectStore.loadCase.createBeamConcentratedLoad(elMap.get(l.target)!, cloneClipboardValue(l.values), l.lcs);
+        } else if (l instanceof BeamConcentratedDeformation) {
+          projectStore.loadCase.createBeamConcentratedDeformation(
+            elMap.get(l.target)!,
+            cloneClipboardValue(l.values),
+            l.lcs
+          );
         } else if (l instanceof BeamElementUniformEdgeLoad) {
           projectStore.loadCase.createBeamElementUniformEdgeLoad(
             elMap.get(l.target)!,

@@ -102,6 +102,11 @@
     "results_scale": "Escala de resultados",
     "grid_snap_step": "Passo do encaixe na grade",
     "snap_to_grid": "Encaixar na grade",
+    "number_format": "Formato numérico",
+    "number_format_description": "Como os resultados são escritos; o separador decimal segue o idioma.",
+    "number_format_auto": "Automático",
+    "number_format_scientific": "Científico (1,5 · 10⁴)",
+    "number_format_engineering": "Engenharia (15 · 10³)",
     "language": "Idioma",
     "language_and_locale": "Idioma e localidade",
     "show_normal_force": "Mostrar esforço normal",
@@ -316,12 +321,14 @@
     "loadType": "Tipo de carga",
     "concentrated_deformation": "Deformação concentrada",
     "concentrated": "Carga concentrada",
+    "concentrated_deformation": "Deformação concentrada",
     "trapezoidal": "Carga trapezoidal",
     "udl": "Carga distribuída uniforme",
     "temperature": "Carga térmica"
   },
   "dimensioning": {
-    "add_dimension": "Adicionar cota"
+    "add_dimension": "Adicionar cota",
+    "add_along_element": "Cotar o elemento {label}"
   },
   "warnings": {
     "noMaterialsDefined": "Nenhum material definido.",

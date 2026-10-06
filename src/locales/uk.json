@@ -1,7 +1,7 @@
 {
   "tabView": {
     "influence": "Лінії впливу",
-    "viewer": "Вигляд",
+    "viewer": "Конструкція",
     "settings": "Налаштування",
     "results": "Результати"
   },
@@ -102,6 +102,11 @@
     "results_scale": "Масштаб результатів",
     "grid_snap_step": "Крок прив'язки до сітки",
     "snap_to_grid": "Прив'язка до сітки",
+    "number_format": "Формат чисел",
+    "number_format_description": "Як записуються результати; десятковий роздільник залежить від мови.",
+    "number_format_auto": "Автоматичний",
+    "number_format_scientific": "Науковий (1,5 · 10⁴)",
+    "number_format_engineering": "Інженерний (15 · 10³)",
     "language": "Мова",
     "language_and_locale": "Мова та локаль",
     "show_normal_force": "Показати поздовжню силу",
@@ -316,12 +321,14 @@
     "loadType": "Тип навантаження",
     "concentrated_deformation": "Зосереджена деформація",
     "concentrated": "Зосереджене навантаження",
+    "concentrated_deformation": "Зосереджена деформація",
     "trapezoidal": "Трапецієподібне навантаження",
     "udl": "Рівномірно розподілене навантаження",
     "temperature": "Температурне навантаження"
   },
   "dimensioning": {
-    "add_dimension": "Додати розмір"
+    "add_dimension": "Додати розмір",
+    "add_along_element": "Проставити розмір елемента {label}"
   },
   "warnings": {
     "noMaterialsDefined": "Матеріали не визначено.",

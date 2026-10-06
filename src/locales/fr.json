@@ -102,6 +102,11 @@
     "results_scale": "Échelle des résultats",
     "grid_snap_step": "Pas de magnétisme de la grille",
     "snap_to_grid": "Magnétisme à la grille",
+    "number_format": "Format des nombres",
+    "number_format_description": "Comment les résultats sont écrits ; le séparateur décimal suit la langue.",
+    "number_format_auto": "Automatique",
+    "number_format_scientific": "Scientifique (1,5 · 10⁴)",
+    "number_format_engineering": "Ingénierie (15 · 10³)",
     "language": "Langue",
     "language_and_locale": "Langue et paramètres régionaux",
     "show_normal_force": "Afficher l'effort normal",
@@ -316,12 +321,14 @@
     "loadType": "Type de charge",
     "concentrated_deformation": "Déformation ponctuelle",
     "concentrated": "Charge ponctuelle",
+    "concentrated_deformation": "Déformation ponctuelle",
     "trapezoidal": "Charge trapézoïdale",
     "udl": "Charge uniformément répartie",
     "temperature": "Charge thermique"
   },
   "dimensioning": {
-    "add_dimension": "Ajouter une cote"
+    "add_dimension": "Ajouter une cote",
+    "add_along_element": "Coter l'élément {label}"
   },
   "warnings": {
     "noMaterialsDefined": "Aucun matériau défini.",

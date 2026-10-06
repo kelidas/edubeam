@@ -52,6 +52,7 @@ export const useProjectStore = defineStore(
     );
 
     const defoScale = ref(1);
+    const rotationScale = ref(1);
     const normalForceScale = ref(1);
     const bendingMomentScale = ref(1);
     const shearForceScale = ref(1);
@@ -196,6 +197,7 @@ export const useProjectStore = defineStore(
       }
 
       let maxDefo = 1e-32; //Math.max(Math.abs(max(r)), Math.abs(min(r)));
+      let maxRotation = 1e-32;
       let maxNormalForce = 1e-32;
       let maxBendingMoment = 1e-32;
       let maxShearForce = 1e-32;
@@ -232,6 +234,15 @@ export const useProjectStore = defineStore(
         maxBendingMoment = Math.max(maxBendingMoment, Math.abs(max(m)), Math.abs(min(m)));
 
         maxShearForce = Math.max(maxShearForce, Math.abs(max(v)), Math.abs(min(v)));
+
+        // an older build of the library evaluates no rotation, and then none is drawn
+        const rotating = beam as unknown as { computeLocalRotation?: (lc: unknown, n: number) => number[] };
+
+        if (typeof rotating.computeLocalRotation === 'function') {
+          const phi = rotating.computeLocalRotation(loadCase.value, 10);
+
+          maxRotation = Math.max(maxRotation, Math.abs(max(phi)), Math.abs(min(phi)));
+        }
       }
 
       if (maxDefo === 1e-32 && loadCase.value.prescribedBC.length > 0) {
@@ -242,13 +253,36 @@ export const useProjectStore = defineStore(
         }
       }
 
-      useProjectStore().defoScale = 1 / maxDefo;
-      useProjectStore().normalForceScale = 1 / maxNormalForce;
-      useProjectStore().bendingMomentScale = 1 / maxBendingMoment;
-      useProjectStore().shearForceScale = 1 / maxShearForce;
+      // Every diagram is scaled to its own largest value, which turns a quantity that is zero -
+      // no normal force in a beam, say - into a full height plot of floating point dust. Such a
+      // quantity gets no scale at all, so it is drawn flat on its axis.
+      const NEGLIGIBLE_RATIO = 1e-6;
+      const largestForce = Math.max(maxNormalForce, maxShearForce, maxBendingMoment);
+
+      const scaleFor = (value: number, reference: number) => (value > reference * NEGLIGIBLE_RATIO ? 1 / value : 0);
+
+      useProjectStore().defoScale = maxDefo > 1e-30 ? 1 / maxDefo : 0;
+      // the rotation is what the beam does rather than what it carries, so it is scaled to itself
+      useProjectStore().rotationScale = maxRotation > 1e-30 ? 1 / maxRotation : 0;
+      useProjectStore().normalForceScale = scaleFor(maxNormalForce, largestForce);
+      useProjectStore().bendingMomentScale = scaleFor(maxBendingMoment, largestForce);
+      useProjectStore().shearForceScale = scaleFor(maxShearForce, largestForce);
     };
 
     const solve = throttle(_solve, 50);
+
+    /*
+     * The same solve, without waiting its turn.
+     *
+     * Every diagram is scaled to the largest value in the load case being drawn, and those scales
+     * are worked out by the solve. Throttled, a solve asked for while one has just run is put off
+     * for up to a twentieth of a second - long enough to paint a frame. That is harmless while the
+     * case stays the same, but on changing workspace the other case's scale is applied to this
+     * case's results: an influence line of order one drawn at the scale of a structure that deflects
+     * by millimetres lands tens of thousands of pixels off screen, and is then pulled back into the
+     * picture. Where the scales must be right for the first frame, this is the one to call.
+     */
+    const solveNow = _solve;
 
     const selectAll2 = () => {
       clearSelection2();
@@ -336,6 +370,7 @@ export const useProjectStore = defineStore(
       loadCase,
       influenceLoadCase,
       solve,
+      solveNow,
       model,
       selection,
       selection2,
@@ -349,6 +384,7 @@ export const useProjectStore = defineStore(
       solver,
       nthEigenVector,
       defoScale,
+      rotationScale,
       normalForceScale,
       bendingMomentScale,
       shearForceScale,

@@ -3,13 +3,13 @@
     <div class="w-50 overflow-auto">
       <v-data-table :headers="headers" :items="nodes">
         <template #item.solution[0]="{ item }">
-          <div v-html="formatExpValueAsHTML(item.getUnknowns(projectStore.loadCase, [DofID.Dx]), 4)"></div>
+          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.loadCase, [DofID.Dx]))"></div>
         </template>
         <template #item.solution[1]="{ item }">
-          <div v-html="formatExpValueAsHTML(item.getUnknowns(projectStore.loadCase, [DofID.Dz]), 4)"></div>
+          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.loadCase, [DofID.Dz]))"></div>
         </template>
         <template #item.solution[2]="{ item }">
-          <div v-html="formatExpValueAsHTML(item.getUnknowns(projectStore.loadCase, [DofID.Ry]), 4)"></div>
+          <div v-html="appStore.formatResultHTML(item.getUnknowns(projectStore.loadCase, [DofID.Ry]))"></div>
         </template>
       </v-data-table>
     </div>
@@ -22,15 +22,16 @@
 <script setup lang="ts">
 import { computed } from 'vue';
 import { useProjectStore } from '../store/project';
+import { useAppStore } from '../store/app';
 
 import { Node, Element, DofID } from 'ts-fem';
-import { formatExpValueAsHTML } from '../SVGUtils';
 
 import { useI18n } from 'vue-i18n';
 import { reactive } from 'vue';
 const { t } = useI18n();
 
 const projectStore = useProjectStore();
+const appStore = useAppStore();
 
 const headers = reactive([
   { title: t('common.node'), value: 'label' },

@@ -351,7 +351,7 @@ const addElement = () => {
 };
 
 const addNodalLoad = () => {
-  useProjectStore().solver.loadCases[0].createNodalLoad(loadNodeId.value, {
+  useProjectStore().loadCase.createNodalLoad(loadNodeId.value, {
     [DofID.Dx]: loadNodeValueFx.value,
     [DofID.Dz]: loadNodeValueFz.value,
     [DofID.Ry]: loadNodeValueMy.value,
@@ -363,7 +363,7 @@ const addNodalLoad = () => {
 };
 
 const addElementLoad = () => {
-  useProjectStore().solver.loadCases[0].createBeamElementUniformEdgeLoad(
+  useProjectStore().loadCase.createBeamElementUniformEdgeLoad(
     loadElementId.value,
     [loadNodeValueFx.value, loadNodeValueFz.value],
     true

@@ -10,7 +10,6 @@ import {
 } from 'ts-fem';
 import { deflectionSamples } from '@/utils/deflectionSamples';
 import { computed } from 'vue';
-import { formatEngineeringNumber } from '@/utils/formatScientificNumber';
 
 type ResultLabelMode = 'axis' | 'horizontal';
 type ResultLabelAnchor = 'start' | 'end' | 'middle';
@@ -23,6 +22,7 @@ const props = withDefaults(
     showNormalForce: boolean;
     showShearForce: boolean;
     showBendingMoment: boolean;
+    showRotation: boolean;
     showLabel: boolean;
     showLabelBackground?: boolean;
     convertForce: (f: number) => number;
@@ -33,14 +33,11 @@ const props = withDefaults(
     normalForceMultiplier: number;
     shearForceMultiplier: number;
     bendingMomentMultiplier: number;
+    rotationMultiplier: number;
     resultLabelMode?: ResultLabelMode;
     padding?: number;
     fontSize?: number;
     numberFormat?: Intl.NumberFormat;
-    /** Deflections span orders of magnitude, so they are formatted by significant digits. */
-    deformationNumberFormat?: Intl.NumberFormat;
-    /** Values on the deflected shape: what an influence line is read from, noise on a load case. */
-    showDeflectionLabels?: boolean;
     /**
      * A spline reads better for a deflected shape, but rounds off the discontinuity a dislocation
      * makes, so the influence line workspace draws its curve straight through the sample points.
@@ -56,8 +53,6 @@ const props = withDefaults(
     showLabelBackground: true,
     resultLabelMode: 'axis',
     numberFormat: () => new Intl.NumberFormat(),
-    deformationNumberFormat: () => new Intl.NumberFormat(undefined, { maximumSignificantDigits: 4 }),
-    showDeflectionLabels: false,
     smoothDeformedShape: true,
     showGeometry: true,
     showResults: true,
@@ -228,73 +223,67 @@ const results = computed(() => {
 });
 
 /**
- * Deflection labels, at the concentrated loads and imposed deformations on this element - the
- * points a reader looks up, the way the force diagrams label their own values.
+ * The rotation of the cross section along the element, drawn as a curve on the element's normal.
+ *
+ * It belongs with the deflected shape rather than with the internal forces: it is what the beam
+ * does, not what it carries, so it is drawn plain, without a value written at every ordinate.
+ *
+ * ts-fem evaluates it, so the curve is the rotation itself rather than a difference taken from the
+ * deflection it is the slope of.
  */
-const deflectionLabels = computed(() => {
-  if (!props.loadCase.solved || !props.showDeformedShape || !props.showDeflectionLabels) return [];
+const rotationCurve = computed(() => {
+  if (!props.loadCase.solved || !props.showRotation) return '';
+
+  const element = props.element as unknown as { computeLocalRotationAt?: (lc: LoadCase, x: number) => number };
+
+  // an older build of the library has no rotation to ask for
+  if (typeof element.computeLocalRotationAt !== 'function') return '';
 
   const geo = props.element.computeGeo();
   const n1 = props.element.domain.nodes.get(props.element.nodes[0]) as Node;
-  const n2 = props.element.domain.nodes.get(props.element.nodes[1]) as Node;
-
   const cos = geo.dx / geo.l;
   const sin = geo.dz / geo.l;
-  const nx = geo.dz / geo.l;
-  const ny = -geo.dx / geo.l;
-  const scaleBy = props.deformedShapeMultiplier / props.scale;
+  const nx = -geo.dz / geo.l;
+  const ny = geo.dx / geo.l;
+  const by = props.rotationMultiplier / props.scale;
 
-  // the nodes, then every concentrated load and imposed deformation between them
-  const positions: number[] = [0, geo.l];
+  const SEGMENTS = 20;
 
-  for (const load of props.loadCase.elementLoadList) {
-    if (load.target !== props.element.label) continue;
-    if (!(load instanceof BeamConcentratedLoad) && !(load instanceof BeamConcentratedDeformation)) continue;
+  /*
+   * An imposed rotation is a step in this curve, and a curve sampled at even intervals draws a
+   * slope across it: the step is smeared over whichever interval it falls in and stands nowhere
+   * near where it belongs. Read a hair either side of it, the two values sit next to each other and
+   * the line between them stands up where the step is. It is the same hair the deflected shape is
+   * read either side of, so the two agree about where the beam breaks.
+   */
+  const EITHER_SIDE = 1e-7;
+  const steps = (
+    props.loadCase.elementLoadList.filter(
+      (l) => l.target === props.element.label && l instanceof BeamConcentratedDeformation
+    ) as BeamConcentratedDeformation[]
+  )
+    .filter((load) => load.getLocalIntensities().dphi !== 0)
+    .map((load) => load.values[3])
+    .filter((at) => at > EITHER_SIDE && at < geo.l - EITHER_SIDE);
 
-    // an imposed deformation makes the curve jump, so both sides carry a value
-    positions.push(load.values[3] - 1e-7, load.values[3] + 1e-7);
+  const sections = [
+    ...Array.from({ length: SEGMENTS + 1 }, (_, i) => (geo.l * i) / SEGMENTS).filter(
+      (x) => !steps.some((step) => Math.abs(step - x) <= EITHER_SIDE)
+    ),
+    ...steps.flatMap((step) => [step - EITHER_SIDE, step + EITHER_SIDE]),
+  ].sort((a, b) => a - b);
+
+  const points: string[] = [`${n1.coords[0]},${n1.coords[2]}`];
+
+  for (const along of sections) {
+    const value = element.computeLocalRotationAt(props.loadCase, along);
+
+    points.push(`${n1.coords[0] + cos * along + value * nx * by},${n1.coords[2] + sin * along + value * ny * by}`);
   }
 
-  const labels: [number, number, number, number, ResultLabelAnchor][] = [];
-  const placed: { position: number; value: number }[] = [];
+  points.push(`${n1.coords[0] + cos * geo.l},${n1.coords[2] + sin * geo.l}`);
 
-  for (const position of positions) {
-    if (position < 0 || position > geo.l) continue;
-
-    const local = props.element.computeLocalDeflAt(props.loadCase, position);
-    const value = props.convertLength(local.w);
-    if (Math.abs(value) < 1e-8) continue;
-
-    // the two sides of a jump coincide unless the curve really jumps there
-    if (placed.some((p) => Math.abs(p.position - position) < 1e-6 && Math.abs(p.value - value) < 1e-8)) continue;
-    placed.push({ position, value });
-
-    const global = props.element.computeGlobalDeflAt(props.loadCase, position);
-    const x = n1.coords[0] + cos * position + global.u * scaleBy;
-    const z = n1.coords[2] + sin * position + global.w * scaleBy;
-
-    // Offset away from the beam, on the side the curve went: the deflected shape is drawn from the
-    // displacement itself rather than off an axis, so the sign of the value says nothing about
-    // which side of the element the label has to clear.
-    const outward = global.u * nx + global.w * ny;
-    const [dx, dy] = resultLabelOffset(outward, nx, ny);
-
-    const orientation = resultLabelOrientation(
-      outward,
-      nx,
-      ny,
-      position,
-      geo.l,
-      x + dx - (n1.coords[0] + cos * position),
-      cos,
-      x + dx,
-      (n1.coords[0] + n2.coords[0]) / 2
-    );
-
-    labels.push([x + dx, z + dy, value, orientation.angle, orientation.anchor]);
-  }
-
-  return labels;
+  return points.join(' ');
 });
 
 const forces = computed(() => {
@@ -582,32 +571,6 @@ const emit = defineEmits(['elementmousemove', 'elementresultsmousemove', 'elemen
     />
 
     <g
-      v-for="(dl, dli) in showResults ? deflectionLabels : []"
-      :key="`deflection-${dli}`"
-      data-fit-ignore="results"
-      class="pointer-events-none"
-      :transform="`translate(${dl[0]} ${dl[1]}) rotate(${dl[3]})`"
-    >
-      <!--
-        No plate behind these. The one the other labels carry is a white flood over the whole box of
-        the text, which is invisible where they sit - out beyond their diagram, against the page -
-        but an influence line is drawn filled, and its own values sit on top of that fill, where the
-        flood reads as a white card laid over the shape.
-      -->
-      <text
-        :font-size="fontSize / scale"
-        class="deflection-label"
-        font-weight="normal"
-        :x="labelAnchorOffset(dl[4])"
-        y="0"
-        :text-anchor="dl[4]"
-        dominant-baseline="central"
-      >
-        {{ formatEngineeringNumber(dl[2], deformationNumberFormat) }}
-      </text>
-    </g>
-
-    <g
       v-if="showResults && loadCase.solved && showNormalForce"
       class="normal"
       data-fit-ignore="results"
@@ -688,6 +651,15 @@ const emit = defineEmits(['elementmousemove', 'elementresultsmousemove', 'elemen
           {{ numberFormat.format(Math.abs(mv[2]) < 1e-6 ? 0 : mv[2]) }}
         </text>
       </g>
+    </g>
+
+    <g v-if="showResults && loadCase.solved && showRotation" class="rotation" data-fit-ignore="results">
+      <polyline
+        :points="rotationCurve"
+        vector-effect="non-scaling-stroke"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      />
     </g>
 
     <g

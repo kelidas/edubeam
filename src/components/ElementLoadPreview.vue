@@ -2,7 +2,14 @@
 import { computed, nextTick, ref, watch } from 'vue';
 import SVGElementViewer from './SVGElementViewer.vue';
 import { useAppStore } from '@/store/app';
-import { Beam2D, BeamConcentratedLoad, BeamElementLoad, LinearStaticSolver, Node } from 'ts-fem';
+import {
+  Beam2D,
+  BeamConcentratedLoad,
+  BeamConcentratedDeformation,
+  BeamElementLoad,
+  LinearStaticSolver,
+  Node,
+} from 'ts-fem';
 import { useViewerStore } from '@/store/viewer';
 import { createDimensionRenderableNode } from '@/types/dimension';
 
@@ -43,7 +50,9 @@ const nodes = computed<Node[]>(() => {
 });
 
 const dimensionLines = computed(() => {
-  if (!(props.load instanceof BeamConcentratedLoad)) return [];
+  if (!(props.load instanceof BeamConcentratedLoad) && !(props.load instanceof BeamConcentratedDeformation)) {
+    return [];
+  }
 
   const element = props.load.domain.elements.get(props.load.target) as Beam2D | undefined;
   if (!element) return [];
@@ -118,6 +127,7 @@ watch(
       :fit-reserve-px="0"
       :support-size="0.75"
       :number-format="appStore.numberFormatter"
+      :deformation-number-format="appStore.resultFormatter"
       :convert-force="appStore.convertForce"
       :convert-force-distance="appStore.convertForceDistance"
       :convert-moment="appStore.convertMoment"
