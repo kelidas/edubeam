@@ -1515,6 +1515,12 @@ const placeAtPointer = (e: PointerEvent) => {
   if (appStore.mouseMode === MouseMode.ADD_NODE) {
     mouseStartX = -9999;
 
+    /*
+     * A node is already there. An element's end node lies on the element, so this used to offer to
+     * split the element at its own end, and placing the node apart put a second one on top of it.
+     */
+    if (intersected.value.type === 'node' || getNearestDimensionSnapNode()) return true;
+
     let newNodeId = projectStore.solver.domain.nodes.size + 1;
 
     while (projectStore.solver.domain.nodes.has(newNodeId.toString())) {
