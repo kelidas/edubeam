@@ -8,6 +8,7 @@ import {
   BeamConcentratedDeformation,
   BeamElementTrapezoidalEdgeLoad,
 } from 'ts-fem';
+import { deflectionSamples } from '@/utils/deflectionSamples';
 import { computed } from 'vue';
 import { formatEngineeringNumber } from '@/utils/formatScientificNumber';
 
@@ -189,12 +190,8 @@ const results = computed(() => {
   const truss = hinges && eload.length === 0;
   const geo = props.element.computeGeo();
 
-  const nseg = truss ? 1 : 16;
   const scaleBy = props.deformedShapeMultiplier / props.scale;
   const n1 = props.element.domain.nodes.get(props.element.nodes[0]) as Node;
-  let def = null;
-
-  const dvalues: number[] = [];
 
   const straightPath = (points: [number, number][]): string => {
     if (points.length === 0) return '';
@@ -203,35 +200,20 @@ const results = computed(() => {
     }, '');
   };
 
-  // 1. Add concentrated deformation points
-  const concentrated_deformations = props.loadCase.elementLoadList.filter(
-    (l) => l.target === props.element.label && l instanceof BeamConcentratedDeformation
-  ) as BeamConcentratedDeformation[];
+  // an imposed deformation steps or kinks the shape where it sits, so each stretch is sampled apart
+  const steps = props.loadCase.elementLoadList
+    .filter(
+      (l): l is BeamConcentratedDeformation =>
+        l.target === props.element.label && l instanceof BeamConcentratedDeformation
+    )
+    .map((l) => l.values[3]);
 
-  for (const c of concentrated_deformations) {
-    const dVal = c.values[3];
-
-    // Clamp the left point to strictly [0, geo.l]
-    const dLeft = Math.min(Math.max(0, dVal - 1e-7), geo.l);
-
-    // Clamp the right point to strictly [0, geo.l]
-    const dRight = Math.min(Math.max(0, dVal + 1e-7), geo.l);
-
-    dvalues.push(dLeft, dRight);
-  }
-
-  // 2. Add regular segment points
-  for (let s = 0; s <= nseg; s++) {
-    dvalues.push((geo.l * s) / nseg);
-  }
-
-  // 3. Sort points chronologically along the element axis
-  dvalues.sort((a, b) => a - b);
+  const dvalues = truss ? [0, geo.l] : deflectionSamples(geo.l, steps);
 
   const cos = geo.dx / geo.l;
   const sin = geo.dz / geo.l;
 
-  // 4. Compute combined global displacements and original geometry at each d
+  // the displacement at each of them, added to where the section sits on the undeformed element
   const result = dvalues.map((d) => {
     const def = props.element.computeGlobalDeflAt(props.loadCase, d);
 
