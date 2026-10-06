@@ -1815,8 +1815,28 @@ const placeAtPointer = (e: PointerEvent) => {
 
   if (appStore.mouseMode === MouseMode.ADD_ELEMENT) {
     mouseStartX = -9999;
+
+    /*
+     * A node under the pointer is where the element starts or ends, whether or not its own handle
+     * heard the press. During a zoom or a pan the drawing takes no pointer events at all, so a click
+     * on a node went unheard, snapped to the grid - which the node sits on - and placed a second
+     * node on top of it. The nearest node within the handle's own reach is the one meant.
+     */
+    if (intersected.value.type !== 'node') {
+      const near = getNearestDimensionSnapNode();
+
+      if (near) {
+        intersected.value.type = 'node';
+        intersected.value.index = near.label;
+      }
+    }
+
     if (startNode.value === null) {
-      const n = projectStore.solver.domain.nodes.get(intersected.value.index as string);
+      // only a node: the last thing hovered may have been an element that shares its label
+      const n =
+        intersected.value.type === 'node'
+          ? projectStore.solver.domain.nodes.get(intersected.value.index as string)
+          : undefined;
 
       // No node selected, but want to add element
       // So we add a node for the user
