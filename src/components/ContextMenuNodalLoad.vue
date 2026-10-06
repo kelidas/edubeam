@@ -27,7 +27,8 @@ const loadIndex = computed(() => {
 const load = computed(() => {
   if (loadIndex.value === null) return null;
 
-  const loadCase = projectStore.solver.loadCases[0];
+  // the case the open tab is about, as the deletion below reads it, not always the structure's
+  const loadCase = projectStore.loadCase;
 
   return (
     (isPrescribed.value ? loadCase.prescribedBC[loadIndex.value] : loadCase.nodalLoadList[loadIndex.value]) ?? null
