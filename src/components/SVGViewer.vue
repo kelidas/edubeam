@@ -1686,6 +1686,9 @@ const placeAtPointer = (e: PointerEvent) => {
 
       startNode.value = { label: intersected.value.index, x: n.coords[0], y: n.coords[2] };
     } else if (intersected.value.type === 'node') {
+      // the node the element started at, clicked again: an element needs two ends, so nothing is drawn
+      if (String(intersected.value.index) === String(startNode.value.label)) return true;
+
       projectStore.solver.loadCases[0].solved = false;
       let newElId = projectStore.solver.domain.elements.size + 1;
 
