@@ -1518,8 +1518,9 @@ const placeAtPointer = (e: PointerEvent) => {
     /*
      * A node is already there. An element's end node lies on the element, so this used to offer to
      * split the element at its own end, and placing the node apart put a second one on top of it.
+     * Asked of the geometry, not of the hover: this mode never clears a node it hovered once.
      */
-    if (intersected.value.type === 'node' || getNearestDimensionSnapNode()) return true;
+    if (getNearestDimensionSnapNode()) return true;
 
     let newNodeId = projectStore.solver.domain.nodes.size + 1;
 
