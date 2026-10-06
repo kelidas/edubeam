@@ -1,14 +1,7 @@
 <script lang="ts" setup>
 import { smoothPath } from '../../utils/smoothPath';
-import {
-  Node,
-  LoadCase,
-  Beam2D,
-  BeamConcentratedLoad,
-  BeamConcentratedDeformation,
-  BeamElementTrapezoidalEdgeLoad,
-} from 'ts-fem';
-import { deflectionSamples } from '@/utils/deflectionSamples';
+import { Node, LoadCase, Beam2D, BeamConcentratedLoad } from 'ts-fem';
+import { elementBreaks, samplesAlong } from '@/utils/elementSampling';
 import { computed } from 'vue';
 
 type ResultLabelMode = 'axis' | 'horizontal';
@@ -195,15 +188,8 @@ const results = computed(() => {
     }, '');
   };
 
-  // an imposed deformation steps or kinks the shape where it sits, so each stretch is sampled apart
-  const steps = props.loadCase.elementLoadList
-    .filter(
-      (l): l is BeamConcentratedDeformation =>
-        l.target === props.element.label && l instanceof BeamConcentratedDeformation
-    )
-    .map((l) => l.values[3]);
-
-  const dvalues = truss ? [0, geo.l] : deflectionSamples(geo.l, steps);
+  // anything that steps or kinks the shape where it sits gets its stretches sampled apart
+  const dvalues = truss ? [0, geo.l] : samplesAlong(geo.l, elementBreaks(props.element, props.loadCase));
 
   const cos = geo.dx / geo.l;
   const sin = geo.dz / geo.l;
@@ -250,28 +236,13 @@ const rotationCurve = computed(() => {
   const SEGMENTS = 20;
 
   /*
-   * An imposed rotation is a step in this curve, and a curve sampled at even intervals draws a
-   * slope across it: the step is smeared over whichever interval it falls in and stands nowhere
-   * near where it belongs. Read a hair either side of it, the two values sit next to each other and
-   * the line between them stands up where the step is. It is the same hair the deflected shape is
-   * read either side of, so the two agree about where the beam breaks.
+   * An imposed rotation is a step in this curve and a point moment a kink, and a curve sampled at
+   * even intervals draws a chord across either: smeared over whichever interval it falls in, or cut
+   * off by one straight line beside a support. Each stretch between the element's breaks is sampled
+   * on its own and read a hair either side of each break - the same places and the same hair the
+   * deflected shape is read at, so the two agree about where the beam breaks.
    */
-  const EITHER_SIDE = 1e-7;
-  const steps = (
-    props.loadCase.elementLoadList.filter(
-      (l) => l.target === props.element.label && l instanceof BeamConcentratedDeformation
-    ) as BeamConcentratedDeformation[]
-  )
-    .filter((load) => load.getLocalIntensities().dphi !== 0)
-    .map((load) => load.values[3])
-    .filter((at) => at > EITHER_SIDE && at < geo.l - EITHER_SIDE);
-
-  const sections = [
-    ...Array.from({ length: SEGMENTS + 1 }, (_, i) => (geo.l * i) / SEGMENTS).filter(
-      (x) => !steps.some((step) => Math.abs(step - x) <= EITHER_SIDE)
-    ),
-    ...steps.flatMap((step) => [step - EITHER_SIDE, step + EITHER_SIDE]),
-  ].sort((a, b) => a - b);
+  const sections = samplesAlong(geo.l, elementBreaks(props.element, props.loadCase), SEGMENTS);
 
   const points: string[] = [`${n1.coords[0]},${n1.coords[2]}`];
 
@@ -307,8 +278,7 @@ const forces = computed(() => {
   let resultV = '';
   let resultM = '';
 
-  const nseg = 1;
-  const nsegM = props.loadCase.elementLoadList.filter((l) => l.target === props.element.label).length === 0 ? 1 : 20;
+  const loaded = props.loadCase.elementLoadList.some((l) => l.target === props.element.label);
   const scaleBy = props.normalForceMultiplier / props.scale;
   const scaleByV = props.shearForceMultiplier / props.scale;
   const scaleByM = props.bendingMomentMultiplier / props.scale;
@@ -348,42 +318,25 @@ const forces = computed(() => {
     labelsX.push(c.values[3] - 1e-7);
     labelsX.push(c.values[3] + 1e-7);
 
-    nvvalues.push(c.values[3] - 1e-7);
-    nvvalues.push(c.values[3] + 1e-7);
-
     // if concentrated moment
     if (Math.abs(c.values[2]) > 1e-32) {
       labelsXM.push(c.values[3] - 1e-7);
       labelsXM.push(c.values[3] + 1e-7);
-      mvalues.push(c.values[3] - 1e-7);
-      mvalues.push(c.values[3] + 1e-7);
     } else {
       labelsXM.push(c.values[3]);
-      mvalues.push(c.values[3]);
     }
   }
 
-  // if element contains trapezoidal load, need to use segments
-  const hasTrapezoidal = props.loadCase.elementLoadList.some(
-    (l) => l.target === props.element.label && l instanceof BeamElementTrapezoidalEdgeLoad
-  );
+  /*
+   * Unloaded, the normal and shear forces are constant and the moment straight: the two ends say
+   * all of it. Loaded, each stretch between the element's breaks is sampled on its own and read
+   * either side of each break - a point force steps the shear, a point moment steps the moment, and
+   * the ends of a partial load kink the shear, which a chord over even pieces cut straight past.
+   */
+  const breaks = elementBreaks(props.element, props.loadCase);
 
-  // Trapezoidal has second degree Vz(x) and third order My(x)
-  // TODO: must use odd number so we can guess Vz(x)=0 for max My estimation
-  if (hasTrapezoidal) {
-    for (let s = 0; s <= 11; s++) {
-      nvvalues.push((geo.l * s) / 11);
-    }
-  }
-
-  // TODO: why is nseg = 1 by default
-  for (let s = 0; s <= nseg; s++) {
-    nvvalues.push((geo.l * s) / nseg);
-  }
-
-  for (let s = 0; s <= nsegM; s++) {
-    mvalues.push((geo.l * s) / nsegM);
-  }
+  nvvalues.push(...(loaded ? samplesAlong(geo.l, breaks, 12, 4) : [0, geo.l]));
+  mvalues.push(...(loaded ? samplesAlong(geo.l, breaks, 20, 6) : [0, geo.l]));
 
   labelsXM.sort((a, b) => a - b);
   mvalues.sort((a, b) => a - b);
