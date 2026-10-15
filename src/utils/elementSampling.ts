@@ -58,3 +58,11 @@ export const samplesAlong = (length: number, steps: number[], count = 16, least 
 
   return xs;
 };
+
+/**
+ * The indices after which two samples straddle a break, a hair either side of it - where a path
+ * through the samples is better cut than carried across, since what is either side of a step is
+ * not one curve.
+ */
+export const stepsBetween = (xs: number[]): number[] =>
+  xs.flatMap((x, i) => (i < xs.length - 1 && xs[i + 1] - x <= 3 * EITHER_SIDE ? [i] : []));
