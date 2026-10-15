@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { smoothPath } from '../../utils/smoothPath';
 import { Node, LoadCase, Beam2D, BeamConcentratedLoad } from 'ts-fem';
-import { elementBreaks, samplesAlong } from '@/utils/elementSampling';
+import { elementBreaks, samplesAlong, stepsBetween } from '@/utils/elementSampling';
 import { computed } from 'vue';
 
 type ResultLabelMode = 'axis' | 'horizontal';
@@ -205,7 +205,7 @@ const results = computed(() => {
     return [xc + def.u * scaleBy, zc + def.w * scaleBy];
   });
 
-  return props.smoothDeformedShape ? smoothPath(result) : straightPath(result);
+  return props.smoothDeformedShape ? smoothPath(result, stepsBetween(dvalues)) : straightPath(result);
 });
 
 /**
