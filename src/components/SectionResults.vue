@@ -261,8 +261,9 @@ const bar = (section: SectionResult, key: SectionQuantity) => {
  * The element drawn straight, whatever its angle, with one quantity plotted across it.
  *
  * A table gives exact numbers but not the shape, and the shape is half of what a section result
- * means: where the moment peaks, where the shear changes sign, which way the beam bends. Positive
- * is drawn downwards, the way the main drawing plots the same quantities, so the two agree.
+ * means: where the moment peaks, where the shear changes sign, which way the beam bends. Each is
+ * drawn to the side the main drawing plots it on, so the two agree: a positive moment, deflection
+ * or rotation downwards, a positive normal or shear force upwards.
  *
  * Pointing at it sets the section - which is the "walk along the beam and watch the numbers" idea,
  * costing nothing extra here because the widget is already showing one section at a time.
@@ -330,7 +331,7 @@ const rooms = computed(() => {
     Math.max(
       -1,
       ...sections.value
-        .filter((s) => Math.sign(s[drawn.value]) === sign)
+        .filter((s) => Math.sign(s[drawn.value] * downward.value) === sign)
         .map((s) => widthOf(showBriefly(quantityOf(drawn.value).convert(s[drawn.value]), drawn.value), LABEL_SIZE))
     );
   const side = (sign: 1 | -1) => {
@@ -363,13 +364,16 @@ const curve = computed(() =>
   solved.value ? chainResultsAlong(chain.value!, loadCase.value, 100 * (chain.value?.parts.length ?? 1)) : []
 );
 
+/** 1 where a positive value is drawn below the axis, -1 where above it. */
+const downward = computed(() => (drawn.value === 'n' || drawn.value === 'vz' ? -1 : 1));
+
 const scale = computed(() => {
   const peak = curve.value.reduce((max, section) => Math.max(max, Math.abs(section[drawn.value])), 0);
 
   return peak ? axis.value.reach / peak : 0;
 });
 
-const atY = (value: number) => axis.value.y + value * scale.value;
+const atY = (value: number) => axis.value.y + value * downward.value * scale.value;
 
 const outline = computed(() => curve.value.map((s) => `${atX(s.x)},${atY(s[drawn.value])}`).join(' '));
 
@@ -483,8 +487,9 @@ const clashes = (a: DiagramLabel, b: DiagramLabel) => {
   return overlap(one.across, other.across, em) && overlap(one.along, other.along, 2 * em);
 };
 
-/** Away from the axis, the way a value is drawn: down for a positive one, up for a negative one. */
-const outward = (value: number) => (value >= 0 ? 1 : -1);
+/** Away from the axis, the way a value is drawn: 1 for one drawn below it, -1 for one above. */
+const outward = (value: number) => (value * downward.value >= 0 ? 1 : -1);
+const anchorFor = (value: number) => (outward(value) === 1 ? 'end' : 'start');
 
 const labels = computed<DiagramLabel[]>(() => {
   const wanted: DiagramLabel[] = [];
@@ -495,7 +500,7 @@ const labels = computed<DiagramLabel[]>(() => {
       wanted.push({
         x: mark.x + mark.side * (LABEL_SIZE / 2 + em),
         y: mark.y + outward(mark.value) * GAP,
-        anchor: mark.value >= 0 ? 'end' : 'start',
+        anchor: anchorFor(mark.value),
         text: mark.text,
         kind: 'jump',
       });
@@ -507,7 +512,7 @@ const labels = computed<DiagramLabel[]>(() => {
     wanted.push({
       x: mark.x,
       y: mark.y + outward(mark.value) * (GAP + 3 * em),
-      anchor: mark.value >= 0 ? 'end' : 'start',
+      anchor: anchorFor(mark.value),
       text: mark.text,
       kind: 'turn',
     });
@@ -523,7 +528,7 @@ const labels = computed<DiagramLabel[]>(() => {
     wanted.push({
       x: mark.x,
       y: mark.y + outward(mark.value) * GAP,
-      anchor: mark.value >= 0 ? 'end' : 'start',
+      anchor: anchorFor(mark.value),
       text: mark.text,
       kind: 'ordinate',
     });

@@ -129,6 +129,33 @@ describe('what the widget draws', () => {
     expect(points.length).toBeGreaterThan(50);
   });
 
+  /**
+   * Each to the side the main drawing puts it on: a sagging moment below the beam, and the positive
+   * shear at the left support of a span - like a normal force in tension - above it.
+   */
+  it('draws a positive moment below the axis and a positive shear force above it', async () => {
+    build();
+    const w = widget();
+    const ordinates = () => {
+      const [axis, ...curve] = w
+        .find('polygon')
+        .attributes('points')!
+        .split(' ')
+        .map((p) => Number(p.split(',')[1]));
+
+      return { axis, first: curve[0], middle: curve[Math.floor(curve.length / 2) - 1] };
+    };
+
+    const moment = ordinates();
+    expect(moment.middle).toBeGreaterThan(moment.axis);
+
+    const shear = w.findAllComponents({ name: 'VBtn' }).find((b) => b.props('value') === 'vz')!;
+    await shear.trigger('click');
+
+    const v = ordinates();
+    expect(v.first).toBeLessThan(v.axis);
+  });
+
   it('names the node at each end, which is where x is measured from', () => {
     build();
     const names = widget()
